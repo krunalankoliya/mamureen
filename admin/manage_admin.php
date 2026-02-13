@@ -1,48 +1,46 @@
 <?php
-require_once __DIR__ . '/../session.php';
-$current_page = 'manage_admin';
-require_once __DIR__ . '/../inc/header.php';
+    require_once __DIR__ . '/../session.php';
+    $current_page = 'manage_admin';
+    require_once __DIR__ . '/../inc/header.php';
 
-function executeQuery($mysqli, $query)
-{
+    function executeQuery($mysqli, $query)
+    {
     try {
         $result = mysqli_query($mysqli, $query);
         return $result;
     } catch (Exception $e) {
-        return array('text' => $e->getMessage(), 'tag' => 'danger');
+        return ['text' => $e->getMessage(), 'tag' => 'danger'];
     }
-}
+    }
 
-
-
-// Handle delete operation
-if (isset($_POST['delete'])) {
-    $its_id = (int)$_POST['its_id'];
-    $query = "DELETE FROM `users_admin` WHERE `its_id` = '$its_id'";
+    // Handle delete operation
+    if (isset($_POST['delete'])) {
+    $its_id = (int) $_POST['its_id'];
+    $query  = "DELETE FROM `users_admin` WHERE `its_id` = '$its_id'";
     try {
-        $result = mysqli_query($mysqli, $query);
+        $result          = mysqli_query($mysqli, $query);
         $message['text'] = "Admin Deleted Successfully";
-        $message['tag'] = 'success';
+        $message['tag']  = 'success';
     } catch (Exception $e) {
-        $message = array('text' => $e->getMessage(), 'tag' => 'danger');
+        $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
     }
-}
+    }
 
-// Handle submit operation
-if (isset($_POST['submit'])) {
-    $user_its = $_COOKIE['user_its'];
-    $ver = $_COOKIE['ver'];
+    // Handle submit operation
+    if (isset($_POST['submit'])) {
+    $user_its  = $_COOKIE['user_its'];
+    $ver       = $_COOKIE['ver'];
     $is_active = 1;
-    $its_id = (int)$_POST['its_id'];
+    $its_id    = (int) $_POST['its_id'];
 
     $api_url = "https://www.talabulilm.com/api2022/core/user/getUserDetailsByItsID/$its_id";
-    $auth = base64_encode("$user_its:$ver");
-    $headers = array(
-        "Authorization: Basic $auth"
-    );
+    $auth    = base64_encode("$user_its:$ver");
+    $headers = [
+        "Authorization: Basic $auth",
+    ];
 
     $ch = curl_init();
-    curl_setopt($ch, CURLOPT_RESOLVE, ['www.talabulilm.com:443:23.111.171.44']);
+    curl_setopt($ch, CURLOPT_RESOLVE, ['www.talabulilm.com:443:66.85.132.227']);
     curl_setopt($ch, CURLOPT_URL, $api_url);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
@@ -52,44 +50,43 @@ if (isset($_POST['submit'])) {
     curl_close($ch);
     $data = json_decode($response, true);
 
-
     if ($data) {
-        $nationality = $data->nationality;
+        $nationality          = $data->nationality;
         $miqaat_india_foreign = ($nationality === 'Indian') ? 'I' : 'F';
 
         $dob = $data['dob'];
 
         // Calculate age from date of birth
-        $today = new DateTime();
+        $today     = new DateTime();
         $birthdate = new DateTime($dob);
-        $age = $today->diff($birthdate)->y;
+        $age       = $today->diff($birthdate)->y;
 
         $insertQuery = "INSERT INTO `users_admin` (`its_id`, `fullname`, `fullname_ar`, `email_id`, `mobile`, `miqaat_mauze`, `kg_age`, `miqaat_india_foreign`)
         VALUES ('$its_id', '$data[full_name_en]', '$data[full_name_ar]', '$data[email]', '$data[mobile]', '$data[jamaat]', '$age', '$miqaat_india_foreign')";
 
         try {
-            $result = mysqli_query($mysqli, $insertQuery);
+            $result          = mysqli_query($mysqli, $insertQuery);
             $message['text'] = "Admin Added Successfully";
-            $message['tag'] = 'success';
+            $message['tag']  = 'success';
         } catch (Exception $e) {
-            $message = array('text' => $e->getMessage(), 'tag' => 'danger');
+            $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
         }
     } else {
         $message['text'] = "Invalid ITS ID : $its_id";
-        $message['tag'] = 'danger';
+        $message['tag']  = 'danger';
     }
-}
+    }
 
-// Fetch admin list
-$query = "SELECT * FROM `users_admin`";
-$result = mysqli_query($mysqli, $query);
-$admin_list = $result->fetch_all(MYSQLI_ASSOC);
+    // Fetch admin list
+    $query      = "SELECT * FROM `users_admin`";
+    $result     = mysqli_query($mysqli, $query);
+    $admin_list = $result->fetch_all(MYSQLI_ASSOC);
 ?>
 
 <main id="main" class="main">
     <section class="section dashboard">
         <div class="row">
-            <?php require_once(__DIR__ . '/../inc/messages.php'); ?>
+            <?php require_once __DIR__ . '/../inc/messages.php'; ?>
             <div class="card">
                 <div class="card-body" style="overflow-y: auto;">
                     <h5 class="card-title">Manage Admin</h5>
@@ -126,15 +123,15 @@ $admin_list = $result->fetch_all(MYSQLI_ASSOC);
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($admin_list as $admin) : ?>
+                                    <?php foreach ($admin_list as $admin): ?>
                                         <tr>
                                             <form method="post">
-                                                <td><?= $admin['its_id'] ?></td>
-                                                <td><?= $admin['fullname'] ?></td>
-                                                <td><?= $admin['email_id'] ?></td>
-                                                <td><?= $admin['mobile'] ?></td>
+                                                <td><?php echo $admin['its_id'] ?></td>
+                                                <td><?php echo $admin['fullname'] ?></td>
+                                                <td><?php echo $admin['email_id'] ?></td>
+                                                <td><?php echo $admin['mobile'] ?></td>
                                                 <td>
-                                                    <input type="hidden" name="its_id" value="<?= $admin['its_id'] ?>" />
+                                                    <input type="hidden" name="its_id" value="<?php echo $admin['its_id'] ?>" />
                                                     <button type="submit" name="delete" class="btn btn-outline-danger remove-btn"><i class="bi bi-trash-fill"></i></button>
                                                 </td>
                                             </form>
@@ -152,8 +149,8 @@ $admin_list = $result->fetch_all(MYSQLI_ASSOC);
 </main>
 
 <?php
-require_once(__DIR__ . '/../inc/footer.php');
-require_once(__DIR__ . '/../inc/js-block.php');
+    require_once __DIR__ . '/../inc/footer.php';
+    require_once __DIR__ . '/../inc/js-block.php';
 ?>
 </body>
 <script>

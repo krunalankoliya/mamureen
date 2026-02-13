@@ -1,321 +1,321 @@
 <?php
-// Initialize session and dependencies
-require_once(__DIR__ . '/session.php');
-$current_page = 'bqi_17_session_attendees';
-require_once(__DIR__ . '/inc/header.php');
+    // Initialize session and dependencies
+    require_once __DIR__ . '/session.php';
+    $current_page = 'bqi_17_session_attendees';
+    require_once __DIR__ . '/inc/header.php';
 
-// Initialize variables
-$its_ids = isset($_GET['its_id']) ? filter_var($_GET['its_id'], FILTER_SANITIZE_STRING) : '';
-$edit_its_id = isset($_GET['edit_its_id']) ? filter_var($_GET['edit_its_id'], FILTER_SANITIZE_NUMBER_INT) : '';
-$userdata_list = [];
-$not_found_its = [];
-$lddata = [];
-$message = [];
+    // Initialize variables
+    $its_ids       = isset($_GET['its_id']) ? filter_var($_GET['its_id'], FILTER_SANITIZE_STRING) : '';
+    $edit_its_id   = isset($_GET['edit_its_id']) ? filter_var($_GET['edit_its_id'], FILTER_SANITIZE_NUMBER_INT) : '';
+    $userdata_list = [];
+    $not_found_its = [];
+    $lddata        = [];
+    $message       = [];
 
-// Function to log queries to a file
-function logQuery($query, $message = null)
-{
+    // Function to log queries to a file
+    function logQuery($query, $message = null)
+    {
     $logFilePath = __DIR__ . '/bqi_17_session_attendees.log';
-    $timestamp = date('Y-m-d H:i:s');
-    $logMessage = "$timestamp - Query: $query" . PHP_EOL;
-    
+    $timestamp   = date('Y-m-d H:i:s');
+    $logMessage  = "$timestamp - Query: $query" . PHP_EOL;
+
     if ($message) {
         $logMessage .= "Message: $message" . PHP_EOL;
     }
-    
+
     file_put_contents($logFilePath, $logMessage, FILE_APPEND);
-}
+    }
 
-// Function to fetch user data from API
-// function fetchUserData($its_id) 
-// {
-//     if (empty($its_id)) {
-//         return null;
-//     }
-    
-//     $user_its = $_COOKIE['user_its'] ?? '';
-//     $ver = $_COOKIE['ver'] ?? '';
-    
-//     if (empty($user_its) || empty($ver)) {
-//         return null;
-//     }
-    
-//     $api_url = "https://www.talabulilm.com/api2022/core/user/getUserDetailsByItsID/" . urlencode($its_id);
-//     $auth = base64_encode("$user_its:$ver");
-//     $headers = ["Authorization: Basic $auth"];
+    // Function to fetch user data from API
+    // function fetchUserData($its_id)
+    // {
+    //     if (empty($its_id)) {
+    //         return null;
+    //     }
 
-//     $ch = curl_init();
-//     curl_setopt($ch, CURLOPT_RESOLVE, ['www.talabulilm.com:443:23.111.171.44']);
-//     curl_setopt($ch, CURLOPT_URL, $api_url);
-//     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-//     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    //     $user_its = $_COOKIE['user_its'] ?? '';
+    //     $ver = $_COOKIE['ver'] ?? '';
 
-//     $response = curl_exec($ch);
-//     $error = curl_error($ch);
-//     curl_close($ch);
-    
-//     if ($error) {
-//         logQuery($error, 'API Error');
-//         return null;
-//     }
-    
-//     $data = json_decode($response, true);
-//     if (empty($data) || !isset($data['its_id'])) {
-//         return null;
-//     }
-    
-//     return $data;
-// }
+    //     if (empty($user_its) || empty($ver)) {
+    //         return null;
+    //     }
 
-// // Function to fetch multiple user data
-// function fetchMultipleUserData($its_ids_str) 
-// {
-//     $its_ids = preg_split('/[\s,;]+/', $its_ids_str, -1, PREG_SPLIT_NO_EMPTY);
-    
-//     // Limit to maximum 50 ITS IDs
-//     $its_ids = array_slice($its_ids, 0, 50);
-    
-//     $result = [];
-//     $not_found = [];
-    
-//     foreach ($its_ids as $its_id) {
-//         $its_id = trim($its_id);
-//         if (!is_numeric($its_id)) {
-//             $not_found[] = $its_id;
-//             continue;
-//         }
-        
-//         $data = fetchUserData($its_id);
-//         if ($data) {
-//             $result[] = $data;
-//         } else {
-//             $not_found[] = $its_id;
-//         }
-//     }
-    
-//     return [
-//         'found' => $result,
-//         'not_found' => $not_found
-//     ];
-// }
+    //     $api_url = "https://www.talabulilm.com/api2022/core/user/getUserDetailsByItsID/" . urlencode($its_id);
+    //     $auth = base64_encode("$user_its:$ver");
+    //     $headers = ["Authorization: Basic $auth"];
 
-// // Function to insert LD record
-// function insertLDRecord($mysqli, $data, $user_its) 
-// {
-//     $its_id = (int)$data['valid_its'];
-    
-//     if ($its_id === 0) {
-//         return [
-//             'success' => false,
-//             'message' => 'ITS ID cannot be 0.',
-//             'tag' => 'danger'
-//         ];
-//     }
-    
-//     // Check if record already exists
-//     $check_query = "SELECT * FROM `bqi_17_session_attendees` WHERE `its_id` = $its_id";
-//     $check_result = $mysqli->query($check_query);
-    
-//     if ($check_result && $check_result->num_rows > 0) {
-//         return [
-//             'success' => false,
-//             'message' => 'A record with ITS ID ' . $its_id . ' already exists.',
-//             'tag' => 'danger'
-//         ];
-//     }
-    
-//     $fields = [
-//         'its_id' => $its_id,
-//         'full_name' => $mysqli->real_escape_string($data['full_name_en']),
-//         'gender' => $mysqli->real_escape_string($data['gender']),
-//         'dob' => $mysqli->real_escape_string($data['dob']),
-//         'jamaat' => $mysqli->real_escape_string($data['jamaat']),
-//         'jamiat' => $mysqli->real_escape_string($data['jamiat']),
-//         'email' => $mysqli->real_escape_string($data['email']),
-//         'mobile' => $mysqli->real_escape_string($data['mobile']),
-//         'added_its' => (int)$user_its,
-//         'added_ts' => date('Y-m-d H:i:s')
-//     ];
-    
-//     $columns = implode('`, `', array_keys($fields));
-//     $values = implode("', '", array_values($fields));
-    
-//     $query = "INSERT INTO `bqi_17_session_attendees` (`$columns`) VALUES ('$values')";
-//     $result = $mysqli->query($query);
-    
-//     logQuery($query, $result ? 'BQI 17 Session Attendees record inserted successfully' : 'BQI 17 Session Attendees insertion failed: ' . $mysqli->error);
-    
-//     return [
-//         'success' => (bool)$result,
-//         'message' => $result ? 'BQI 17 Session Attendees Record inserted Successfully for ITS ID ' . $its_id : 'Database Error for ITS ID ' . $its_id . ': ' . $mysqli->error,
-//         'tag' => $result ? 'success' : 'danger'
-//     ];
-// }
+    //     $ch = curl_init();
+    //     curl_setopt($ch, CURLOPT_RESOLVE, ['www.talabulilm.com:443:66.85.132.227']);
+    //     curl_setopt($ch, CURLOPT_URL, $api_url);
+    //     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    //     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
-// Function to delete LD record
-// function deleteLDRecord($mysqli, $its_id) 
-// {
-//     $its_id = (int)$its_id;
-    
-//     if ($its_id === 0) {
-//         return [
-//             'success' => false,
-//             'message' => 'Invalid ITS ID.',
-//             'tag' => 'danger'
-//         ];
-//     }
-    
-//     $query = "DELETE FROM `bqi_17_session_attendees` WHERE `its_id` = $its_id";
-//     $result = $mysqli->query($query);
-    
-//     logQuery($query, $result ? 'BQI 17 Session Attendees record deleted successfully' : 'BQI 17 Session Attendees deletion failed: ' . $mysqli->error);
-    
-//     return [
-//         'success' => (bool)$result,
-//         'message' => $result ? 'BQI 17 Session Attendees Record deleted Successfully' : 'Database Error: ' . $mysqli->error,
-//         'tag' => $result ? 'success' : 'danger'
-//     ];
-// }
+    //     $response = curl_exec($ch);
+    //     $error = curl_error($ch);
+    //     curl_close($ch);
 
-// Function to fetch LD record by ITS ID
-function getLDRecord($mysqli, $its_id) 
-{
-    $its_id = (int)$its_id;
-    
+    //     if ($error) {
+    //         logQuery($error, 'API Error');
+    //         return null;
+    //     }
+
+    //     $data = json_decode($response, true);
+    //     if (empty($data) || !isset($data['its_id'])) {
+    //         return null;
+    //     }
+
+    //     return $data;
+    // }
+
+    // // Function to fetch multiple user data
+    // function fetchMultipleUserData($its_ids_str)
+    // {
+    //     $its_ids = preg_split('/[\s,;]+/', $its_ids_str, -1, PREG_SPLIT_NO_EMPTY);
+
+    //     // Limit to maximum 50 ITS IDs
+    //     $its_ids = array_slice($its_ids, 0, 50);
+
+    //     $result = [];
+    //     $not_found = [];
+
+    //     foreach ($its_ids as $its_id) {
+    //         $its_id = trim($its_id);
+    //         if (!is_numeric($its_id)) {
+    //             $not_found[] = $its_id;
+    //             continue;
+    //         }
+
+    //         $data = fetchUserData($its_id);
+    //         if ($data) {
+    //             $result[] = $data;
+    //         } else {
+    //             $not_found[] = $its_id;
+    //         }
+    //     }
+
+    //     return [
+    //         'found' => $result,
+    //         'not_found' => $not_found
+    //     ];
+    // }
+
+    // // Function to insert LD record
+    // function insertLDRecord($mysqli, $data, $user_its)
+    // {
+    //     $its_id = (int)$data['valid_its'];
+
+    //     if ($its_id === 0) {
+    //         return [
+    //             'success' => false,
+    //             'message' => 'ITS ID cannot be 0.',
+    //             'tag' => 'danger'
+    //         ];
+    //     }
+
+    //     // Check if record already exists
+    //     $check_query = "SELECT * FROM `bqi_17_session_attendees` WHERE `its_id` = $its_id";
+    //     $check_result = $mysqli->query($check_query);
+
+    //     if ($check_result && $check_result->num_rows > 0) {
+    //         return [
+    //             'success' => false,
+    //             'message' => 'A record with ITS ID ' . $its_id . ' already exists.',
+    //             'tag' => 'danger'
+    //         ];
+    //     }
+
+    //     $fields = [
+    //         'its_id' => $its_id,
+    //         'full_name' => $mysqli->real_escape_string($data['full_name_en']),
+    //         'gender' => $mysqli->real_escape_string($data['gender']),
+    //         'dob' => $mysqli->real_escape_string($data['dob']),
+    //         'jamaat' => $mysqli->real_escape_string($data['jamaat']),
+    //         'jamiat' => $mysqli->real_escape_string($data['jamiat']),
+    //         'email' => $mysqli->real_escape_string($data['email']),
+    //         'mobile' => $mysqli->real_escape_string($data['mobile']),
+    //         'added_its' => (int)$user_its,
+    //         'added_ts' => date('Y-m-d H:i:s')
+    //     ];
+
+    //     $columns = implode('`, `', array_keys($fields));
+    //     $values = implode("', '", array_values($fields));
+
+    //     $query = "INSERT INTO `bqi_17_session_attendees` (`$columns`) VALUES ('$values')";
+    //     $result = $mysqli->query($query);
+
+    //     logQuery($query, $result ? 'BQI 17 Session Attendees record inserted successfully' : 'BQI 17 Session Attendees insertion failed: ' . $mysqli->error);
+
+    //     return [
+    //         'success' => (bool)$result,
+    //         'message' => $result ? 'BQI 17 Session Attendees Record inserted Successfully for ITS ID ' . $its_id : 'Database Error for ITS ID ' . $its_id . ': ' . $mysqli->error,
+    //         'tag' => $result ? 'success' : 'danger'
+    //     ];
+    // }
+
+    // Function to delete LD record
+    // function deleteLDRecord($mysqli, $its_id)
+    // {
+    //     $its_id = (int)$its_id;
+
+    //     if ($its_id === 0) {
+    //         return [
+    //             'success' => false,
+    //             'message' => 'Invalid ITS ID.',
+    //             'tag' => 'danger'
+    //         ];
+    //     }
+
+    //     $query = "DELETE FROM `bqi_17_session_attendees` WHERE `its_id` = $its_id";
+    //     $result = $mysqli->query($query);
+
+    //     logQuery($query, $result ? 'BQI 17 Session Attendees record deleted successfully' : 'BQI 17 Session Attendees deletion failed: ' . $mysqli->error);
+
+    //     return [
+    //         'success' => (bool)$result,
+    //         'message' => $result ? 'BQI 17 Session Attendees Record deleted Successfully' : 'Database Error: ' . $mysqli->error,
+    //         'tag' => $result ? 'success' : 'danger'
+    //     ];
+    // }
+
+    // Function to fetch LD record by ITS ID
+    function getLDRecord($mysqli, $its_id)
+    {
+    $its_id = (int) $its_id;
+
     if ($its_id === 0) {
         return null;
     }
-    
-    $query = "SELECT * FROM `bqi_17_session_attendees` WHERE `its_id` = $its_id";
+
+    $query  = "SELECT * FROM `bqi_17_session_attendees` WHERE `its_id` = $its_id";
     $result = $mysqli->query($query);
-    
-    if (!$result || $result->num_rows === 0) {
+
+    if (! $result || $result->num_rows === 0) {
         return null;
     }
-    
+
     return $result->fetch_assoc();
-}
+    }
 
-// Process fetch request for multiple ITS IDs
-// if (isset($_POST['fetch']) && !empty($_POST['its_ids'])) {
-//     $its_ids = $_POST['its_ids'];
-    
-//     // Split and remove empty entries
-//     $its_ids_array = preg_split('/[\s,;]+/', $its_ids, -1, PREG_SPLIT_NO_EMPTY);
-    
-//     // Check if number of ITS IDs exceeds 50
-//     if (count($its_ids_array) > 50) {
-//         $message = [
-//             'text' => "Error: You entered " . count($its_ids_array) . " ITS IDs. Maximum allowed is 50. Please reduce the number of ITS IDs and try again.",
-//             'tag' => 'danger'
-//         ];
-        
-//         // Clear userdata_list to prevent processing
-//         $userdata_list = [];
-//         $not_found_its = [];
-//     } else {
-//         // Proceed with fetching data if within limit
-//         $fetch_result = fetchMultipleUserData($its_ids);
-        
-//         $userdata_list = $fetch_result['found'];
-//         $not_found_its = $fetch_result['not_found'];
-        
-//         if (empty($userdata_list) && !empty($not_found_its)) {
-//             $message = [
-//                 'text' => "No valid ITS IDs found. Please check your input.",
-//                 'tag' => 'danger'
-//             ];
-//         } elseif (!empty($not_found_its)) {
-//             $message = [
-//                 'text' => "Some ITS IDs were not found: " . implode(', ', $not_found_its),
-//                 'tag' => 'warning'
-//             ];
-//         }
-//     }
-// }
+    // Process fetch request for multiple ITS IDs
+    // if (isset($_POST['fetch']) && !empty($_POST['its_ids'])) {
+    //     $its_ids = $_POST['its_ids'];
 
-// Handle delete request
-// if (isset($_GET['delete_its_id'])) {
-//     $delete_its_id = filter_var($_GET['delete_its_id'], FILTER_SANITIZE_NUMBER_INT);
-//     $result = deleteLDRecord($mysqli, $delete_its_id);
-    
-//     $message = [
-//         'text' => $result['message'],
-//         'tag' => $result['tag']
-//     ];
-// }
+    //     // Split and remove empty entries
+    //     $its_ids_array = preg_split('/[\s,;]+/', $its_ids, -1, PREG_SPLIT_NO_EMPTY);
 
-// Handle edit request
-if (!empty($edit_its_id)) {
+    //     // Check if number of ITS IDs exceeds 50
+    //     if (count($its_ids_array) > 50) {
+    //         $message = [
+    //             'text' => "Error: You entered " . count($its_ids_array) . " ITS IDs. Maximum allowed is 50. Please reduce the number of ITS IDs and try again.",
+    //             'tag' => 'danger'
+    //         ];
+
+    //         // Clear userdata_list to prevent processing
+    //         $userdata_list = [];
+    //         $not_found_its = [];
+    //     } else {
+    //         // Proceed with fetching data if within limit
+    //         $fetch_result = fetchMultipleUserData($its_ids);
+
+    //         $userdata_list = $fetch_result['found'];
+    //         $not_found_its = $fetch_result['not_found'];
+
+    //         if (empty($userdata_list) && !empty($not_found_its)) {
+    //             $message = [
+    //                 'text' => "No valid ITS IDs found. Please check your input.",
+    //                 'tag' => 'danger'
+    //             ];
+    //         } elseif (!empty($not_found_its)) {
+    //             $message = [
+    //                 'text' => "Some ITS IDs were not found: " . implode(', ', $not_found_its),
+    //                 'tag' => 'warning'
+    //             ];
+    //         }
+    //     }
+    // }
+
+    // Handle delete request
+    // if (isset($_GET['delete_its_id'])) {
+    //     $delete_its_id = filter_var($_GET['delete_its_id'], FILTER_SANITIZE_NUMBER_INT);
+    //     $result = deleteLDRecord($mysqli, $delete_its_id);
+
+    //     $message = [
+    //         'text' => $result['message'],
+    //         'tag' => $result['tag']
+    //     ];
+    // }
+
+    // Handle edit request
+    if (! empty($edit_its_id)) {
     $lddata = getLDRecord($mysqli, $edit_its_id);
-    
-    if (!$lddata) {
+
+    if (! $lddata) {
         $message = [
             'text' => "Record not found with ITS ID: " . htmlspecialchars($edit_its_id),
-            'tag' => 'danger'
+            'tag'  => 'danger',
         ];
     }
-}
+    }
 
-// Process form submission
-// if (isset($_POST['submit']) && isset($_POST['valid_its_array'])) {
-//     $success_count = 0;
-//     $error_count = 0;
-//     $error_messages = [];
-    
-//     // Process each selected ITS ID
-//     foreach ($_POST['valid_its_array'] as $index => $its_id) {
-//         $data = [
-//             'valid_its' => $its_id,
-//             'full_name_en' => $_POST['full_name_en'][$index],
-//             'gender' => $_POST['gender'][$index],
-//             'dob' => $_POST['dob'][$index],
-//             'jamaat' => $_POST['jamaat'][$index],
-//             'jamiat' => $_POST['jamiat'][$index],
-//             'mobile' => $_POST['mobile'][$index],
-//             'email' => $_POST['email'][$index]
-//         ];
-        
-//         $result = insertLDRecord($mysqli, $data, $user_its ?? 0);
-        
-//         if ($result['success']) {
-//             $success_count++;
-//         } else {
-//             $error_count++;
-//             $error_messages[] = $result['message'];
-//         }
-//     }
-    
-//     if ($success_count > 0 && $error_count == 0) {
-//         $message = [
-//             'text' => "$success_count records inserted successfully.",
-//             'tag' => 'success'
-//         ];
-//     } elseif ($success_count > 0 && $error_count > 0) {
-//         $message = [
-//             'text' => "$success_count records inserted successfully. $error_count failed: " . implode('; ', $error_messages),
-//             'tag' => 'warning'
-//         ];
-//     } else {
-//         $message = [
-//             'text' => "Failed to insert records: " . implode('; ', $error_messages),
-//             'tag' => 'danger'
-//         ];
-//     }
-// }
+    // Process form submission
+    // if (isset($_POST['submit']) && isset($_POST['valid_its_array'])) {
+    //     $success_count = 0;
+    //     $error_count = 0;
+    //     $error_messages = [];
 
-// Fetch existing LD records
-$mauze = $mysqli->real_escape_string($mauze ?? '');
+    //     // Process each selected ITS ID
+    //     foreach ($_POST['valid_its_array'] as $index => $its_id) {
+    //         $data = [
+    //             'valid_its' => $its_id,
+    //             'full_name_en' => $_POST['full_name_en'][$index],
+    //             'gender' => $_POST['gender'][$index],
+    //             'dob' => $_POST['dob'][$index],
+    //             'jamaat' => $_POST['jamaat'][$index],
+    //             'jamiat' => $_POST['jamiat'][$index],
+    //             'mobile' => $_POST['mobile'][$index],
+    //             'email' => $_POST['email'][$index]
+    //         ];
 
-$query = "SELECT `hn`.*,`um`.`fullname` FROM `bqi_17_session_attendees` `hn`
+    //         $result = insertLDRecord($mysqli, $data, $user_its ?? 0);
+
+    //         if ($result['success']) {
+    //             $success_count++;
+    //         } else {
+    //             $error_count++;
+    //             $error_messages[] = $result['message'];
+    //         }
+    //     }
+
+    //     if ($success_count > 0 && $error_count == 0) {
+    //         $message = [
+    //             'text' => "$success_count records inserted successfully.",
+    //             'tag' => 'success'
+    //         ];
+    //     } elseif ($success_count > 0 && $error_count > 0) {
+    //         $message = [
+    //             'text' => "$success_count records inserted successfully. $error_count failed: " . implode('; ', $error_messages),
+    //             'tag' => 'warning'
+    //         ];
+    //     } else {
+    //         $message = [
+    //             'text' => "Failed to insert records: " . implode('; ', $error_messages),
+    //             'tag' => 'danger'
+    //         ];
+    //     }
+    // }
+
+    // Fetch existing LD records
+    $mauze = $mysqli->real_escape_string($mauze ?? '');
+
+    $query = "SELECT `hn`.*,`um`.`fullname` FROM `bqi_17_session_attendees` `hn`
               LEFT JOIN `users_mamureen` `um` ON `hn`.`added_its` = `um`.`its_id`
               WHERE `hn`.`added_its` = '$user_its'";
-              
-// $query = "SELECT `bs`.*,`um`.`fullname` FROM `bqi_17_session_attendees` `bs`
-// LEFT JOIN `users_mamureen` `um` ON `bs`.`added_its` = `um`.`its_id`
-// WHERE `bs`.`added_its` = '$user_its'";
-$result = $mysqli->query($query);
-$data = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+
+    // $query = "SELECT `bs`.*,`um`.`fullname` FROM `bqi_17_session_attendees` `bs`
+    // LEFT JOIN `users_mamureen` `um` ON `bs`.`added_its` = `um`.`its_id`
+    // WHERE `bs`.`added_its` = '$user_its'";
+    $result = $mysqli->query($query);
+    $data   = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 ?>
 
 <main id="main" class="main">
@@ -325,11 +325,11 @@ $data = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 
     <section class="section dashboard">
         <div class="row">
-            <?php require_once(__DIR__ . '/inc/messages.php'); ?>
+            <?php require_once __DIR__ . '/inc/messages.php'; ?>
             <div class="card">
                 <div class="card-body">
                     <!--<div class="row">-->
-                    <!--    <h5 class="card-title"><?= $edit_its_id ? 'Edit BQI 17 Session Attendees' : 'Add new BQI 17 Session Attendees' ?></h5>-->
+                    <!--    <h5 class="card-title"><?php echo $edit_its_id ? 'Edit BQI 17 Session Attendees' : 'Add new BQI 17 Session Attendees' ?></h5>-->
                     <!--    <p><strong>IMPORTANT INSTRUCTIONS:</strong></p>-->
                     <!--    <ul>-->
                     <!--        <li>All fields marked with <span class="required_star">*</span> are required.</li>-->
@@ -338,16 +338,16 @@ $data = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                     <!--        <li><strong>You can submit a maximum of 50 ITS IDs at a time.</strong> </li>-->
                     <!--        <li>For bulk submissions exceeding 50 ITS IDs, please split your entries into multiple batches.</li>-->
                     <!--    </ul>-->
-                        
+
                         <!-- Search student by ITS ID (only for new records) -->
-                    <!--    <?php if (!$lddata): ?>-->
+                    <!--    <?php if (! $lddata): ?>-->
                     <!--        <div class="card">-->
                     <!--            <div class="card-body pt-3">-->
-                    <!--                <?php if (!empty($userdata_list)): ?>-->
+                    <!--                <?php if (! empty($userdata_list)): ?>-->
                     <!--                    <form method="post" id="bulkSubmitForm">-->
                     <!--                        <div class="row mb-3">-->
                     <!--                            <div class="col-md-12">-->
-                    <!--                                <h5>Found ITS Records (<?= count($userdata_list) ?>)</h5>-->
+                    <!--                                <h5>Found ITS Records (<?php echo count($userdata_list) ?>)</h5>-->
                     <!--                                <p>The following records were found. Select the records you want to add.</p>-->
                     <!--                                <div class="table-responsive">-->
                     <!--                                    <table class="table table-bordered">-->
@@ -365,25 +365,25 @@ $data = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                     <!--                                            <?php foreach ($userdata_list as $index => $user): ?>-->
                     <!--                                                <tr>-->
                     <!--                                                    <td>-->
-                    <!--                                                        <input type="checkbox" name="selected_its[]" value="<?= $index ?>" class="select-its" checked>-->
-                    <!--                                                        <input type="hidden" name="valid_its_array[]" value="<?= htmlspecialchars($user['its_id']) ?>">-->
-                    <!--                                                        <input type="hidden" name="full_name_en[]" value="<?= htmlspecialchars($user['full_name_en']) ?>">-->
-                    <!--                                                        <input type="hidden" name="gender[]" value="<?= htmlspecialchars($user['gender']) ?>">-->
-                    <!--                                                        <input type="hidden" name="jamaat[]" value="<?= htmlspecialchars($user['jamaat']) ?>">-->
-                    <!--                                                        <input type="hidden" name="jamiat[]" value="<?= htmlspecialchars($user['jamiat'] ?? '') ?>">-->
-                    <!--                                                        <input type="hidden" name="mobile[]" value="<?= htmlspecialchars($user['mobile'] ?? '') ?>">-->
-                    <!--                                                        <input type="hidden" name="email[]" value="<?= htmlspecialchars($user['email'] ?? '') ?>">-->
-                    <!--                                                        <input type="hidden" name="dob[]" value="<?= htmlspecialchars($user['dob'] ?? '') ?>">-->
+                    <!--                                                        <input type="checkbox" name="selected_its[]" value="<?php echo $index ?>" class="select-its" checked>-->
+                    <!--                                                        <input type="hidden" name="valid_its_array[]" value="<?php echo htmlspecialchars($user['its_id']) ?>">-->
+                    <!--                                                        <input type="hidden" name="full_name_en[]" value="<?php echo htmlspecialchars($user['full_name_en']) ?>">-->
+                    <!--                                                        <input type="hidden" name="gender[]" value="<?php echo htmlspecialchars($user['gender']) ?>">-->
+                    <!--                                                        <input type="hidden" name="jamaat[]" value="<?php echo htmlspecialchars($user['jamaat']) ?>">-->
+                    <!--                                                        <input type="hidden" name="jamiat[]" value="<?php echo htmlspecialchars($user['jamiat'] ?? '') ?>">-->
+                    <!--                                                        <input type="hidden" name="mobile[]" value="<?php echo htmlspecialchars($user['mobile'] ?? '') ?>">-->
+                    <!--                                                        <input type="hidden" name="email[]" value="<?php echo htmlspecialchars($user['email'] ?? '') ?>">-->
+                    <!--                                                        <input type="hidden" name="dob[]" value="<?php echo htmlspecialchars($user['dob'] ?? '') ?>">-->
                     <!--                                                    </td>-->
-                    <!--                                                    <td><?= htmlspecialchars($user['its_id']) ?></td>-->
+                    <!--                                                    <td><?php echo htmlspecialchars($user['its_id']) ?></td>-->
                     <!--                                                    <td>-->
-                    <!--                                                        <img src="https://www.talabulilm.com/mumin_images/<?= htmlspecialchars($user['its_id']) ?>.png" -->
+                    <!--                                                        <img src="https://www.talabulilm.com/mumin_images/<?php echo htmlspecialchars($user['its_id']) ?>.png" -->
                     <!--                                                             class="fetch_photo" style="height: 50px; width: auto;" -->
-                    <!--                                                             alt="<?= htmlspecialchars($user['full_name_en']) ?>">-->
+                    <!--                                                             alt="<?php echo htmlspecialchars($user['full_name_en']) ?>">-->
                     <!--                                                    </td>-->
-                    <!--                                                    <td><?= htmlspecialchars($user['full_name_en']) ?></td>-->
-                    <!--                                                    <td><?= htmlspecialchars($user['gender']) ?></td>-->
-                    <!--                                                    <td><?= htmlspecialchars($user['jamaat']) ?></td>-->
+                    <!--                                                    <td><?php echo htmlspecialchars($user['full_name_en']) ?></td>-->
+                    <!--                                                    <td><?php echo htmlspecialchars($user['gender']) ?></td>-->
+                    <!--                                                    <td><?php echo htmlspecialchars($user['jamaat']) ?></td>-->
                     <!--                                                </tr>-->
                     <!--                                            <?php endforeach; ?>-->
                     <!--                                        </tbody>-->
@@ -391,30 +391,30 @@ $data = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                     <!--                                </div>-->
                     <!--                            </div>-->
                     <!--                        </div>-->
-                                            
-                    <!--                        <?php if (!empty($not_found_its)): ?>-->
+
+                    <!--                        <?php if (! empty($not_found_its)): ?>-->
                     <!--                            <div class="row mb-3">-->
                     <!--                                <div class="col-md-12">-->
                     <!--                                    <div class="alert alert-warning">-->
-                    <!--                                        <h5>Not Found ITS Records (<?= count($not_found_its) ?>)</h5>-->
+                    <!--                                        <h5>Not Found ITS Records (<?php echo count($not_found_its) ?>)</h5>-->
                     <!--                                        <p>The following ITS IDs could not be found:</p>-->
                     <!--                                        <ul>-->
                     <!--                                            <?php foreach ($not_found_its as $its): ?>-->
-                    <!--                                                <li><?= htmlspecialchars($its) ?></li>-->
+                    <!--                                                <li><?php echo htmlspecialchars($its) ?></li>-->
                     <!--                                            <?php endforeach; ?>-->
                     <!--                                        </ul>-->
                     <!--                                    </div>-->
                     <!--                                </div>-->
                     <!--                            </div>-->
                     <!--                        <?php endif; ?>-->
-                                            
+
                     <!--                        <div class="row mb-3">-->
                     <!--                            <div class="col-md-12">-->
                     <!--                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">-->
                     <!--                                    <button type="submit" name="submit" class="btn btn-primary">-->
                     <!--                                        Submit Selected Records-->
                     <!--                                    </button>-->
-                    <!--                                    <a href="<?= htmlspecialchars($_SERVER['PHP_SELF']) ?>" class="btn btn-secondary">-->
+                    <!--                                    <a href="<?php echo htmlspecialchars($_SERVER['PHP_SELF']) ?>" class="btn btn-secondary">-->
                     <!--                                        Cancel-->
                     <!--                                    </a>-->
                     <!--                                </div>-->
@@ -422,7 +422,7 @@ $data = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                     <!--                        </div>-->
                     <!--                    </form>-->
                     <!--                <?php else: ?>-->
-                    <!--                    <form method="post" action="<?= htmlspecialchars($_SERVER['PHP_SELF']) ?>">-->
+                    <!--                    <form method="post" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']) ?>">-->
                     <!--                        <div class="row mb-3">-->
                     <!--                            <label for="its_ids" class="col-sm-2 col-form-label">-->
                     <!--                                ITS ID(s)<span class="required_star">*</span>-->
@@ -430,7 +430,7 @@ $data = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                     <!--                            <div class="col-sm-8">-->
                     <!--                                <textarea name="its_ids" id="its_ids" class="form-control" -->
                     <!--                                       placeholder="Enter multiple ITS IDs separated by commas, spaces, or paste from Excel" -->
-                    <!--                                       rows="3" required><?= htmlspecialchars($its_ids) ?></textarea>-->
+                    <!--                                       rows="3" required><?php echo htmlspecialchars($its_ids) ?></textarea>-->
                     <!--                                <small class="form-text text-muted">You can enter multiple ITS IDs separated by commas, -->
                     <!--                                    spaces, or paste directly from Excel.</small>-->
                     <!--                            </div>-->
@@ -463,25 +463,25 @@ $data = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                                 </thead>
                                 <tbody>
                                     <?php foreach ($data as $student): ?>
-                                    <?php 
-                                                // Calculate age from DOB
-                                                $dob = new DateTime($student['dob']);
-                                                $today = new DateTime('today');
-                                                $age = $dob->diff($today)->y;
-                                            ?>
+                                    <?php
+                                        // Calculate age from DOB
+                                        $dob   = new DateTime($student['dob']);
+                                        $today = new DateTime('today');
+                                        $age   = $dob->diff($today)->y;
+                                    ?>
                                         <tr>
-                                            <td><?= htmlspecialchars($student['its_id']) ?></td>
-                                            <td><?= htmlspecialchars($student['full_name']) ?></td>
-                                            <td><?= htmlspecialchars($student['gender']) ?></td>
-                                            <td><?= $age ?></td>
-                                            <td><?= htmlspecialchars($student['mobile']) ?></td>
-                                            <td><?= htmlspecialchars($student['email']) ?></td>
-                                            <td><?= htmlspecialchars($student['added_its']) ?></td>
-                                            <td><?= htmlspecialchars($student['fullname']) ?></td>
+                                            <td><?php echo htmlspecialchars($student['its_id']) ?></td>
+                                            <td><?php echo htmlspecialchars($student['full_name']) ?></td>
+                                            <td><?php echo htmlspecialchars($student['gender']) ?></td>
+                                            <td><?php echo $age ?></td>
+                                            <td><?php echo htmlspecialchars($student['mobile']) ?></td>
+                                            <td><?php echo htmlspecialchars($student['email']) ?></td>
+                                            <td><?php echo htmlspecialchars($student['added_its']) ?></td>
+                                            <td><?php echo htmlspecialchars($student['fullname']) ?></td>
                                             <!--<td>-->
                                             <!--    <a href="#" class="btn btn-sm btn-danger delete-record" -->
-                                            <!--       data-its-id="<?= $student['its_id'] ?>" -->
-                                            <!--       data-name="<?= htmlspecialchars($student['full_name']) ?>">-->
+                                            <!--       data-its-id="<?php echo $student['its_id'] ?>" -->
+                                            <!--       data-name="<?php echo htmlspecialchars($student['full_name']) ?>">-->
                                             <!--        <i class="bi bi-trash"></i>-->
                                             <!--    </a>-->
                                             <!--</td>-->
@@ -513,14 +513,14 @@ $data = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
     </div>
 </div>
 
-<?php require_once(__DIR__ . '/inc/footer.php'); ?>
+<?php require_once __DIR__ . '/inc/footer.php'; ?>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Select all checkbox functionality
     const selectAllCheckbox = document.getElementById('selectAll');
     const individualCheckboxes = document.querySelectorAll('.select-its');
-    
+
     if (selectAllCheckbox) {
         selectAllCheckbox.addEventListener('change', function() {
             const isChecked = this.checked;
@@ -529,20 +529,20 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-    
+
     if (individualCheckboxes.length > 0) {
         individualCheckboxes.forEach(checkbox => {
             checkbox.addEventListener('change', function() {
                 const allChecked = Array.from(individualCheckboxes).every(cb => cb.checked);
                 if (selectAllCheckbox) {
                     selectAllCheckbox.checked = allChecked;
-                    selectAllCheckbox.indeterminate = !allChecked && 
+                    selectAllCheckbox.indeterminate = !allChecked &&
                         Array.from(individualCheckboxes).some(cb => cb.checked);
                 }
             });
         });
     }
-    
+
     // Form submission validation
     const bulkSubmitForm = document.getElementById('bulkSubmitForm');
     if (bulkSubmitForm) {
@@ -556,7 +556,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return true;
         });
     }
-    
+
     // ITS IDs format enhancement
     const itsIdsTextarea = document.getElementById('its_ids');
     if (itsIdsTextarea) {
@@ -571,7 +571,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 0);
         });
     }
-    
+
     // Initialize DataTable
     if ($.fn.DataTable) {
         $("#datatable_bqi_17_session_attendees").DataTable({
@@ -603,25 +603,25 @@ document.addEventListener('DOMContentLoaded', function() {
             ]
         });
     }
-    
+
     // Delete confirmation
     const deleteButtons = document.querySelectorAll('.delete-record');
     const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
     const deleteName = document.getElementById('delete-name');
     const confirmDelete = document.getElementById('confirm-delete');
-    
+
     deleteButtons.forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
             const itsId = this.getAttribute('data-its-id');
             const name = this.getAttribute('data-name');
-            
+
             // Set the student name in the modal
             deleteName.textContent = name;
-            
+
             // Set the delete confirmation link
             confirmDelete.href = `${window.location.pathname}?delete_its_id=${itsId}`;
-            
+
             // Show the modal
             deleteModal.show();
         });
@@ -633,7 +633,7 @@ function toggleCustomLanguage() {
     const languageSelect = document.getElementById('preferred_language');
     const customLanguageContainer = document.getElementById('custom_language_container');
     const customLanguageInput = document.getElementById('custom_language');
-    
+
     if (languageSelect && customLanguageContainer && customLanguageInput) {
         if (languageSelect.value === 'others') {
             customLanguageContainer.style.display = 'flex';
@@ -649,13 +649,13 @@ function toggleCustomLanguage() {
 function validateForm() {
     const languageSelect = document.getElementById('preferred_language');
     const customLanguageInput = document.getElementById('custom_language');
-    
+
     if (!languageSelect.value) {
         alert('Please select a preferred language');
         languageSelect.focus();
         return false;
     }
-    
+
     // Validate custom language if "others" is selected
     if (languageSelect.value === 'others') {
         if (!customLanguageInput.value.trim()) {
@@ -664,7 +664,7 @@ function validateForm() {
             return false;
         }
     }
-    
+
     return true;
 }
 </script>

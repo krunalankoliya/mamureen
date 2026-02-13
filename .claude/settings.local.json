@@ -7,7 +7,17 @@
       "Bash(git -C C:xampphtdocsmamureen ls-files)",
       "Bash(git -C C:xampphtdocsmamureen status -u)",
       "Bash(git config:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(pip install:*)",
+      "Bash(python:*)",
+      "Bash(where:*)",
+      "Bash(\"C:\\\\Users\\\\kruna\\\\AppData\\\\Local\\\\Microsoft\\\\WindowsApps\\\\python.exe\" -m pip install pymupdf)",
+      "Bash(\"C:\\\\Users\\\\kruna\\\\AppData\\\\Local\\\\Microsoft\\\\WindowsApps\\\\python.exe\" -c \"\nimport fitz\ndoc = fitz.open\\(''C:/xampp/htdocs/mamureen/BRS BQI 1447.pdf''\\)\nprint\\(f''Total Pages: {len\\(doc\\)}''\\)\nfor i, page in enumerate\\(doc\\):\n    text = page.get_text\\(\\)\n    print\\(f''\\\\n=== PAGE {i+1} ===''\\)\n    print\\(text\\)\n\")",
+      "Bash(\"C:\\\\Users\\\\kruna\\\\AppData\\\\Local\\\\Microsoft\\\\WindowsApps\\\\python.exe\" -c \"\nimport fitz, sys, io\nsys.stdout = io.TextIOWrapper\\(sys.stdout.buffer, encoding=''utf-8''\\)\ndoc = fitz.open\\(''C:/xampp/htdocs/mamureen/BRS BQI 1447.pdf''\\)\nprint\\(f''Total Pages: {len\\(doc\\)}''\\)\nfor i, page in enumerate\\(doc\\):\n    text = page.get_text\\(\\)\n    print\\(f''\\\\n=== PAGE {i+1} ===''\\)\n    print\\(text\\)\n\")",
+      "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" -r \"\n$conn = new mysqli\\(''localhost'', ''root'', '''', ''talabulilm_mamureen''\\);\nif \\($conn->connect_error\\) die\\(''Connection failed: '' . $conn->connect_error\\);\n$result = $conn->query\\(''SHOW TABLES''\\);\nwhile \\($row = $result->fetch_row\\(\\)\\) echo $row[0] . PHP_EOL;\n$conn->close\\(\\);\n\")",
+      "Bash(dir:*)",
+      "Bash(git add:*)",
+      "Bash(git reset:*)"
     ]
   }
 }

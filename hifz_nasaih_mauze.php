@@ -1,309 +1,307 @@
 <?php
-// Initialize session and dependencies
-require_once(__DIR__ . '/session.php');
-$current_page = 'hifz_nasaih';
-require_once(__DIR__ . '/inc/header.php');
+    // Initialize session and dependencies
+    require_once __DIR__ . '/session.php';
+    $current_page = 'hifz_nasaih';
+    require_once __DIR__ . '/inc/header.php';
 
-// Initialize variables
-$its_ids = isset($_GET['its_id']) ? $_GET['its_id'] : '';
-$edit_its_id = isset($_GET['edit_its_id']) ? $_GET['edit_its_id'] : '';
-$userdata_list = [];
-$not_found_its = [];
-$lddata = [];
-$message = [];
+    // Initialize variables
+    $its_ids       = isset($_GET['its_id']) ? $_GET['its_id'] : '';
+    $edit_its_id   = isset($_GET['edit_its_id']) ? $_GET['edit_its_id'] : '';
+    $userdata_list = [];
+    $not_found_its = [];
+    $lddata        = [];
+    $message       = [];
 
-// Function to log queries to a file
-function logQuery($query, $message = null)
-{
+    // Function to log queries to a file
+    function logQuery($query, $message = null)
+    {
     $logFilePath = __DIR__ . '/hifz_nasaih_mauze.log';
-    $timestamp = date('Y-m-d H:i:s');
-    $logMessage = "$timestamp - Query: $query" . PHP_EOL;
-    
+    $timestamp   = date('Y-m-d H:i:s');
+    $logMessage  = "$timestamp - Query: $query" . PHP_EOL;
+
     if ($message) {
         $logMessage .= "Message: $message" . PHP_EOL;
     }
-    
+
     file_put_contents($logFilePath, $logMessage, FILE_APPEND);
-}
+    }
 
-// Function to fetch user data from API
-// function fetchUserData($its_id) 
-// {
-//     if (empty($its_id)) {
-//         return null;
-//     }
-    
-//     $user_its = $_COOKIE['user_its'] ?? '';
-//     $ver = $_COOKIE['ver'] ?? '';
-    
-//     if (empty($user_its) || empty($ver)) {
-//         return null;
-//     }
-    
-//     $api_url = "https://www.talabulilm.com/api2022/core/user/getUserDetailsByItsID/" . urlencode($its_id);
-//     $auth = base64_encode("$user_its:$ver");
-//     $headers = ["Authorization: Basic $auth"];
+    // Function to fetch user data from API
+    // function fetchUserData($its_id)
+    // {
+    //     if (empty($its_id)) {
+    //         return null;
+    //     }
 
-//     $ch = curl_init();
-//     curl_setopt($ch, CURLOPT_RESOLVE, ['www.talabulilm.com:443:23.111.171.44']);
-//     curl_setopt($ch, CURLOPT_URL, $api_url);
-//     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-//     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    //     $user_its = $_COOKIE['user_its'] ?? '';
+    //     $ver = $_COOKIE['ver'] ?? '';
 
-//     $response = curl_exec($ch);
-//     $error = curl_error($ch);
-//     curl_close($ch);
-    
-//     if ($error) {
-//         logQuery($error, 'API Error');
-//         return null;
-//     }
-    
-//     $data = json_decode($response, true);
-//     if (empty($data) || !isset($data['its_id'])) {
-//         return null;
-//     }
-    
-//     return $data;
-// }
+    //     if (empty($user_its) || empty($ver)) {
+    //         return null;
+    //     }
 
-// // Function to fetch multiple user data
-// function fetchMultipleUserData($its_ids_str) 
-// {
-//     $its_ids = preg_split('/[\s,;]+/', $its_ids_str, -1, PREG_SPLIT_NO_EMPTY);
-//     $result = [];
-//     $not_found = [];
-    
-//     foreach ($its_ids as $its_id) {
-//         $its_id = trim($its_id);
-//         if (!is_numeric($its_id)) {
-//             $not_found[] = $its_id;
-//             continue;
-//         }
-        
-//         $data = fetchUserData($its_id);
-//         if ($data) {
-//             $result[] = $data;
-//         } else {
-//             $not_found[] = $its_id;
-//         }
-//     }
-    
-//     return [
-//         'found' => $result,
-//         'not_found' => $not_found
-//     ];
-// }
+    //     $api_url = "https://www.talabulilm.com/api2022/core/user/getUserDetailsByItsID/" . urlencode($its_id);
+    //     $auth = base64_encode("$user_its:$ver");
+    //     $headers = ["Authorization: Basic $auth"];
 
-// // Function to insert LD record
-// function insertLDRecord($mysqli, $data, $user_its) 
-// {
-//     $its_id = (int)$data['valid_its'];
-    
-//     if ($its_id === 0) {
-//         return [
-//             'success' => false,
-//             'message' => 'ITS ID cannot be 0.',
-//             'tag' => 'danger'
-//         ];
-//     }
-    
-//     // Check if record already exists
-//     $check_query = "SELECT * FROM `hifz_nasaih` WHERE `its_id` = $its_id";
-//     $check_result = $mysqli->query($check_query);
-    
-//     if ($check_result && $check_result->num_rows > 0) {
-//         return [
-//             'success' => false,
-//             'message' => 'A record with ITS ID ' . $its_id . ' already exists.',
-//             'tag' => 'danger'
-//         ];
-//     }
-    
-//     $unique_code = substr(bin2hex(random_bytes(10)), 0, 15);
-    
-//     $fields = [
-//         'its_id' => $its_id,
-//         'full_name' => $mysqli->real_escape_string($data['full_name_en']),
-//         'full_name_ar' => $mysqli->real_escape_string($data['full_name_ar']),
-//         'gender' => $mysqli->real_escape_string($data['gender']),
-//         'dob' => $mysqli->real_escape_string($data['dob']),
-//         'jamaat' => $mysqli->real_escape_string($data['jamaat']),
-//         'jamiat' => $mysqli->real_escape_string($data['jamiat']),
-//         'email' => $mysqli->real_escape_string($data['email']),
-//         'mobile' => $mysqli->real_escape_string($data['mobile']),
-//         'code' => $unique_code,
-//         'added_its' => (int)$user_its,
-//         'added_ts' => date('Y-m-d H:i:s')
-//     ];
-    
-//     $columns = implode('`, `', array_keys($fields));
-//     $values = implode("', '", array_values($fields));
-    
-//     $query = "INSERT INTO `hifz_nasaih` (`$columns`) VALUES ('$values')";
-//     $result = $mysqli->query($query);
-    
-//     logQuery($query, $result ? 'Hifz Nasaih record inserted successfully' : 'Hifz Nasaih insertion failed: ' . $mysqli->error);
-    
-//     return [
-//         'success' => (bool)$result,
-//         'message' => $result ? 'Hifz Nasaih Record inserted Successfully for ITS ID ' . $its_id : 'Database Error for ITS ID ' . $its_id . ': ' . $mysqli->error,
-//         'tag' => $result ? 'success' : 'danger'
-//     ];
-// }
+    //     $ch = curl_init();
+    //     curl_setopt($ch, CURLOPT_RESOLVE, ['www.talabulilm.com:443:66.85.132.227']);
+    //     curl_setopt($ch, CURLOPT_URL, $api_url);
+    //     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    //     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
-// Function to delete LD record
-// function deleteLDRecord($mysqli, $its_id) 
-// {
-//     $its_id = (int)$its_id;
-    
-//     if ($its_id === 0) {
-//         return [
-//             'success' => false,
-//             'message' => 'Invalid ITS ID.',
-//             'tag' => 'danger'
-//         ];
-//     }
-    
-//     $query = "DELETE FROM `hifz_nasaih` WHERE `its_id` = $its_id";
-//     $result = $mysqli->query($query);
-    
-//     logQuery($query, $result ? 'Hifz Nasaih record deleted successfully' : 'LD deletion failed: ' . $mysqli->error);
-    
-//     return [
-//         'success' => (bool)$result,
-//         'message' => $result ? 'Hifz Nasaih Record deleted Successfully' : 'Database Error: ' . $mysqli->error,
-//         'tag' => $result ? 'success' : 'danger'
-//     ];
-// }
+    //     $response = curl_exec($ch);
+    //     $error = curl_error($ch);
+    //     curl_close($ch);
 
-// Function to fetch LD record by ITS ID
-function getLDRecord($mysqli, $its_id) 
-{
-    $its_id = (int)$its_id;
-    
+    //     if ($error) {
+    //         logQuery($error, 'API Error');
+    //         return null;
+    //     }
+
+    //     $data = json_decode($response, true);
+    //     if (empty($data) || !isset($data['its_id'])) {
+    //         return null;
+    //     }
+
+    //     return $data;
+    // }
+
+    // // Function to fetch multiple user data
+    // function fetchMultipleUserData($its_ids_str)
+    // {
+    //     $its_ids = preg_split('/[\s,;]+/', $its_ids_str, -1, PREG_SPLIT_NO_EMPTY);
+    //     $result = [];
+    //     $not_found = [];
+
+    //     foreach ($its_ids as $its_id) {
+    //         $its_id = trim($its_id);
+    //         if (!is_numeric($its_id)) {
+    //             $not_found[] = $its_id;
+    //             continue;
+    //         }
+
+    //         $data = fetchUserData($its_id);
+    //         if ($data) {
+    //             $result[] = $data;
+    //         } else {
+    //             $not_found[] = $its_id;
+    //         }
+    //     }
+
+    //     return [
+    //         'found' => $result,
+    //         'not_found' => $not_found
+    //     ];
+    // }
+
+    // // Function to insert LD record
+    // function insertLDRecord($mysqli, $data, $user_its)
+    // {
+    //     $its_id = (int)$data['valid_its'];
+
+    //     if ($its_id === 0) {
+    //         return [
+    //             'success' => false,
+    //             'message' => 'ITS ID cannot be 0.',
+    //             'tag' => 'danger'
+    //         ];
+    //     }
+
+    //     // Check if record already exists
+    //     $check_query = "SELECT * FROM `hifz_nasaih` WHERE `its_id` = $its_id";
+    //     $check_result = $mysqli->query($check_query);
+
+    //     if ($check_result && $check_result->num_rows > 0) {
+    //         return [
+    //             'success' => false,
+    //             'message' => 'A record with ITS ID ' . $its_id . ' already exists.',
+    //             'tag' => 'danger'
+    //         ];
+    //     }
+
+    //     $unique_code = substr(bin2hex(random_bytes(10)), 0, 15);
+
+    //     $fields = [
+    //         'its_id' => $its_id,
+    //         'full_name' => $mysqli->real_escape_string($data['full_name_en']),
+    //         'full_name_ar' => $mysqli->real_escape_string($data['full_name_ar']),
+    //         'gender' => $mysqli->real_escape_string($data['gender']),
+    //         'dob' => $mysqli->real_escape_string($data['dob']),
+    //         'jamaat' => $mysqli->real_escape_string($data['jamaat']),
+    //         'jamiat' => $mysqli->real_escape_string($data['jamiat']),
+    //         'email' => $mysqli->real_escape_string($data['email']),
+    //         'mobile' => $mysqli->real_escape_string($data['mobile']),
+    //         'code' => $unique_code,
+    //         'added_its' => (int)$user_its,
+    //         'added_ts' => date('Y-m-d H:i:s')
+    //     ];
+
+    //     $columns = implode('`, `', array_keys($fields));
+    //     $values = implode("', '", array_values($fields));
+
+    //     $query = "INSERT INTO `hifz_nasaih` (`$columns`) VALUES ('$values')";
+    //     $result = $mysqli->query($query);
+
+    //     logQuery($query, $result ? 'Hifz Nasaih record inserted successfully' : 'Hifz Nasaih insertion failed: ' . $mysqli->error);
+
+    //     return [
+    //         'success' => (bool)$result,
+    //         'message' => $result ? 'Hifz Nasaih Record inserted Successfully for ITS ID ' . $its_id : 'Database Error for ITS ID ' . $its_id . ': ' . $mysqli->error,
+    //         'tag' => $result ? 'success' : 'danger'
+    //     ];
+    // }
+
+    // Function to delete LD record
+    // function deleteLDRecord($mysqli, $its_id)
+    // {
+    //     $its_id = (int)$its_id;
+
+    //     if ($its_id === 0) {
+    //         return [
+    //             'success' => false,
+    //             'message' => 'Invalid ITS ID.',
+    //             'tag' => 'danger'
+    //         ];
+    //     }
+
+    //     $query = "DELETE FROM `hifz_nasaih` WHERE `its_id` = $its_id";
+    //     $result = $mysqli->query($query);
+
+    //     logQuery($query, $result ? 'Hifz Nasaih record deleted successfully' : 'LD deletion failed: ' . $mysqli->error);
+
+    //     return [
+    //         'success' => (bool)$result,
+    //         'message' => $result ? 'Hifz Nasaih Record deleted Successfully' : 'Database Error: ' . $mysqli->error,
+    //         'tag' => $result ? 'success' : 'danger'
+    //     ];
+    // }
+
+    // Function to fetch LD record by ITS ID
+    function getLDRecord($mysqli, $its_id)
+    {
+    $its_id = (int) $its_id;
+
     if ($its_id === 0) {
         return null;
     }
-    
-    $query = "SELECT * FROM `hifz_nasaih` WHERE `its_id` = $its_id";
+
+    $query  = "SELECT * FROM `hifz_nasaih` WHERE `its_id` = $its_id";
     $result = $mysqli->query($query);
-    
-    if (!$result || $result->num_rows === 0) {
+
+    if (! $result || $result->num_rows === 0) {
         return null;
     }
-    
+
     return $result->fetch_assoc();
-}
+    }
 
-// Process fetch request for multiple ITS IDs
-// if (isset($_POST['fetch']) && !empty($_POST['its_ids'])) {
-//     $its_ids = $_POST['its_ids'];
-//     $fetch_result = fetchMultipleUserData($its_ids);
-    
-//     $userdata_list = $fetch_result['found'];
-//     $not_found_its = $fetch_result['not_found'];
-    
-//     if (empty($userdata_list) && !empty($not_found_its)) {
-//         $message = [
-//             'text' => "No valid ITS IDs found. Please check your input.",
-//             'tag' => 'danger'
-//         ];
-//     } elseif (!empty($not_found_its)) {
-//         $message = [
-//             'text' => "Some ITS IDs were not found: " . implode(', ', $not_found_its),
-//             'tag' => 'warning'
-//         ];
-//     }
-// }
+    // Process fetch request for multiple ITS IDs
+    // if (isset($_POST['fetch']) && !empty($_POST['its_ids'])) {
+    //     $its_ids = $_POST['its_ids'];
+    //     $fetch_result = fetchMultipleUserData($its_ids);
 
-// Handle delete request
-// if (isset($_GET['delete_its_id'])) {
-//     $delete_its_id = filter_var($_GET['delete_its_id'], FILTER_SANITIZE_NUMBER_INT);
-//     $result = deleteLDRecord($mysqli, $delete_its_id);
-    
-//     $message = [
-//         'text' => $result['message'],
-//         'tag' => $result['tag']
-//     ];
-// }
+    //     $userdata_list = $fetch_result['found'];
+    //     $not_found_its = $fetch_result['not_found'];
 
-// Handle edit request
-if (!empty($edit_its_id)) {
+    //     if (empty($userdata_list) && !empty($not_found_its)) {
+    //         $message = [
+    //             'text' => "No valid ITS IDs found. Please check your input.",
+    //             'tag' => 'danger'
+    //         ];
+    //     } elseif (!empty($not_found_its)) {
+    //         $message = [
+    //             'text' => "Some ITS IDs were not found: " . implode(', ', $not_found_its),
+    //             'tag' => 'warning'
+    //         ];
+    //     }
+    // }
+
+    // Handle delete request
+    // if (isset($_GET['delete_its_id'])) {
+    //     $delete_its_id = filter_var($_GET['delete_its_id'], FILTER_SANITIZE_NUMBER_INT);
+    //     $result = deleteLDRecord($mysqli, $delete_its_id);
+
+    //     $message = [
+    //         'text' => $result['message'],
+    //         'tag' => $result['tag']
+    //     ];
+    // }
+
+    // Handle edit request
+    if (! empty($edit_its_id)) {
     $lddata = getLDRecord($mysqli, $edit_its_id);
-    
-    if (!$lddata) {
+
+    if (! $lddata) {
         $message = [
             'text' => "Record not found with ITS ID: " . htmlspecialchars($edit_its_id),
-            'tag' => 'danger'
+            'tag'  => 'danger',
         ];
     }
-}
+    }
 
-// Process form submission
-// if (isset($_POST['submit']) && isset($_POST['valid_its_array'])) {
-//     $success_count = 0;
-//     $error_count = 0;
-//     $error_messages = [];
-    
-//     // Process each selected ITS ID
-//     foreach ($_POST['valid_its_array'] as $index => $its_id) {
-//         $data = [
-//             'valid_its' => $its_id,
-//             'full_name_en' => $_POST['full_name_en'][$index],
-//             'full_name_ar' => $_POST['full_name_ar'][$index],
-//             'gender' => $_POST['gender'][$index],
-//             'dob' => $_POST['dob'][$index],
-//             'jamaat' => $_POST['jamaat'][$index],
-//             'jamiat' => $_POST['jamiat'][$index],
-//             'mobile' => $_POST['mobile'][$index],
-//             'email' => $_POST['email'][$index]
-//         ];
-        
-//         $result = insertLDRecord($mysqli, $data, $user_its ?? 0);
-        
-//         if ($result['success']) {
-//             $success_count++;
-//         } else {
-//             $error_count++;
-//             $error_messages[] = $result['message'];
-//         }
-//     }
-    
-//     if ($success_count > 0 && $error_count == 0) {
-//         $message = [
-//             'text' => "$success_count records inserted successfully.",
-//             'tag' => 'success'
-//         ];
-//     } elseif ($success_count > 0 && $error_count > 0) {
-//         $message = [
-//             'text' => "$success_count records inserted successfully. $error_count failed: " . implode('; ', $error_messages),
-//             'tag' => 'warning'
-//         ];
-//     } else {
-//         $message = [
-//             'text' => "Failed to insert records: " . implode('; ', $error_messages),
-//             'tag' => 'danger'
-//         ];
-//     }
-// }
+    // Process form submission
+    // if (isset($_POST['submit']) && isset($_POST['valid_its_array'])) {
+    //     $success_count = 0;
+    //     $error_count = 0;
+    //     $error_messages = [];
 
-// Fetch existing LD records
-$mauze = $mysqli->real_escape_string($mauze ?? '');
-// $query = "SELECT `hn`.*,`um`.`fullname` FROM `hifz_nasaih` `hn`
-// LEFT JOIN `users_mamureen` `um` ON `hn`.`added_its` = `um`.`its_id`
-// WHERE `hn`.`added_its` = '$user_its'";
-// $result = $mysqli->query($query);
-// $data = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+    //     // Process each selected ITS ID
+    //     foreach ($_POST['valid_its_array'] as $index => $its_id) {
+    //         $data = [
+    //             'valid_its' => $its_id,
+    //             'full_name_en' => $_POST['full_name_en'][$index],
+    //             'full_name_ar' => $_POST['full_name_ar'][$index],
+    //             'gender' => $_POST['gender'][$index],
+    //             'dob' => $_POST['dob'][$index],
+    //             'jamaat' => $_POST['jamaat'][$index],
+    //             'jamiat' => $_POST['jamiat'][$index],
+    //             'mobile' => $_POST['mobile'][$index],
+    //             'email' => $_POST['email'][$index]
+    //         ];
 
+    //         $result = insertLDRecord($mysqli, $data, $user_its ?? 0);
+
+    //         if ($result['success']) {
+    //             $success_count++;
+    //         } else {
+    //             $error_count++;
+    //             $error_messages[] = $result['message'];
+    //         }
+    //     }
+
+    //     if ($success_count > 0 && $error_count == 0) {
+    //         $message = [
+    //             'text' => "$success_count records inserted successfully.",
+    //             'tag' => 'success'
+    //         ];
+    //     } elseif ($success_count > 0 && $error_count > 0) {
+    //         $message = [
+    //             'text' => "$success_count records inserted successfully. $error_count failed: " . implode('; ', $error_messages),
+    //             'tag' => 'warning'
+    //         ];
+    //     } else {
+    //         $message = [
+    //             'text' => "Failed to insert records: " . implode('; ', $error_messages),
+    //             'tag' => 'danger'
+    //         ];
+    //     }
+    // }
+
+    // Fetch existing LD records
+    $mauze = $mysqli->real_escape_string($mauze ?? '');
+    // $query = "SELECT `hn`.*,`um`.`fullname` FROM `hifz_nasaih` `hn`
+    // LEFT JOIN `users_mamureen` `um` ON `hn`.`added_its` = `um`.`its_id`
+    // WHERE `hn`.`added_its` = '$user_its'";
+    // $result = $mysqli->query($query);
+    // $data = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 
     $query = "SELECT `hn`.*,`um`.`full_name_en` AS `fullname` FROM `hifz_nasaih` `hn`
               LEFT JOIN `talabulilm_core`.`user` `um`  ON `hn`.`added_its` = `um`.`its_id`
               WHERE `hn`.`jamaat` = '$mauze'";
 
-
-$result = $mysqli->query($query);
-$data = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+    $result = $mysqli->query($query);
+    $data   = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 ?>
 
 <main id="main" class="main">
@@ -313,27 +311,27 @@ $data = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 
     <section class="section dashboard">
         <div class="row">
-            <?php require_once(__DIR__ . '/inc/messages.php'); ?>
+            <?php require_once __DIR__ . '/inc/messages.php'; ?>
             <div class="card">
                 <div class="card-body">
                     <!--<div class="row">-->
-                    <!--    <h5 class="card-title"><?= $edit_its_id ? 'Edit new Hifz entry' : 'Add new Hifz entry' ?></h5>-->
-                        
+                    <!--    <h5 class="card-title"><?php echo $edit_its_id ? 'Edit new Hifz entry' : 'Add new Hifz entry' ?></h5>-->
+
                     <!--    <p><strong>IMPORTANT INSTRUCTIONS:</strong></p>-->
                     <!--    <ul>-->
                     <!--        <li>All fields marked with <span class="required_star">*</span> are required.</li>-->
                     <!--        <li><b>Important: This entry page is for Mumineen who have memorized all Nisaab Nasa'ih. By submitting their ITS, you confirm that you have listened to their recitation and agree.</b></li>-->
                     <!--    </ul>-->
-                        
+
                         <!-- Search student by ITS ID (only for new records) -->
-                    <!--    <?php if (!$lddata): ?>-->
+                    <!--    <?php if (! $lddata): ?>-->
                     <!--        <div class="card">-->
                     <!--            <div class="card-body pt-3">-->
-                    <!--                <?php if (!empty($userdata_list)): ?>-->
+                    <!--                <?php if (! empty($userdata_list)): ?>-->
                     <!--                    <form method="post" id="bulkSubmitForm">-->
                     <!--                        <div class="row mb-3">-->
                     <!--                            <div class="col-md-12">-->
-                    <!--                                <h5>Found ITS Records (<?= count($userdata_list) ?>)</h5>-->
+                    <!--                                <h5>Found ITS Records (<?php echo count($userdata_list) ?>)</h5>-->
                     <!--                                <p>The following records were found. Select the records you want to add.</p>-->
                     <!--                                <div class="table-responsive">-->
                     <!--                                    <table class="table table-bordered">-->
@@ -351,26 +349,26 @@ $data = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                     <!--                                            <?php foreach ($userdata_list as $index => $user): ?>-->
                     <!--                                                <tr>-->
                     <!--                                                    <td>-->
-                    <!--                                                        <input type="checkbox" name="selected_its[]" value="<?= $index ?>" class="select-its" checked>-->
-                    <!--                                                        <input type="hidden" name="valid_its_array[]" value="<?= htmlspecialchars($user['its_id']) ?>">-->
-                    <!--                                                        <input type="hidden" name="full_name_en[]" value="<?= htmlspecialchars($user['full_name_en']) ?>">-->
-                    <!--                                                        <input type="hidden" name="full_name_ar[]" value="<?= htmlspecialchars($user['full_name_ar']) ?>">-->
-                    <!--                                                        <input type="hidden" name="gender[]" value="<?= htmlspecialchars($user['gender']) ?>">-->
-                    <!--                                                        <input type="hidden" name="jamaat[]" value="<?= htmlspecialchars($user['jamaat']) ?>">-->
-                    <!--                                                        <input type="hidden" name="jamiat[]" value="<?= htmlspecialchars($user['jamiat'] ?? '') ?>">-->
-                    <!--                                                        <input type="hidden" name="mobile[]" value="<?= htmlspecialchars($user['mobile'] ?? '') ?>">-->
-                    <!--                                                        <input type="hidden" name="email[]" value="<?= htmlspecialchars($user['email'] ?? '') ?>">-->
-                    <!--                                                        <input type="hidden" name="dob[]" value="<?= htmlspecialchars($user['dob'] ?? '') ?>">-->
+                    <!--                                                        <input type="checkbox" name="selected_its[]" value="<?php echo $index ?>" class="select-its" checked>-->
+                    <!--                                                        <input type="hidden" name="valid_its_array[]" value="<?php echo htmlspecialchars($user['its_id']) ?>">-->
+                    <!--                                                        <input type="hidden" name="full_name_en[]" value="<?php echo htmlspecialchars($user['full_name_en']) ?>">-->
+                    <!--                                                        <input type="hidden" name="full_name_ar[]" value="<?php echo htmlspecialchars($user['full_name_ar']) ?>">-->
+                    <!--                                                        <input type="hidden" name="gender[]" value="<?php echo htmlspecialchars($user['gender']) ?>">-->
+                    <!--                                                        <input type="hidden" name="jamaat[]" value="<?php echo htmlspecialchars($user['jamaat']) ?>">-->
+                    <!--                                                        <input type="hidden" name="jamiat[]" value="<?php echo htmlspecialchars($user['jamiat'] ?? '') ?>">-->
+                    <!--                                                        <input type="hidden" name="mobile[]" value="<?php echo htmlspecialchars($user['mobile'] ?? '') ?>">-->
+                    <!--                                                        <input type="hidden" name="email[]" value="<?php echo htmlspecialchars($user['email'] ?? '') ?>">-->
+                    <!--                                                        <input type="hidden" name="dob[]" value="<?php echo htmlspecialchars($user['dob'] ?? '') ?>">-->
                     <!--                                                    </td>-->
-                    <!--                                                    <td><?= htmlspecialchars($user['its_id']) ?></td>-->
+                    <!--                                                    <td><?php echo htmlspecialchars($user['its_id']) ?></td>-->
                     <!--                                                    <td>-->
-                    <!--                                                        <img src="https://www.talabulilm.com/mumin_images/<?= htmlspecialchars($user['its_id']) ?>.png" -->
+                    <!--                                                        <img src="https://www.talabulilm.com/mumin_images/<?php echo htmlspecialchars($user['its_id']) ?>.png" -->
                     <!--                                                             class="fetch_photo" style="height: 50px; width: auto;" -->
-                    <!--                                                             alt="<?= htmlspecialchars($user['full_name_en']) ?>">-->
+                    <!--                                                             alt="<?php echo htmlspecialchars($user['full_name_en']) ?>">-->
                     <!--                                                    </td>-->
-                    <!--                                                    <td><?= htmlspecialchars($user['full_name_en']) ?></td>-->
-                    <!--                                                    <td><?= htmlspecialchars($user['gender']) ?></td>-->
-                    <!--                                                    <td><?= htmlspecialchars($user['jamaat']) ?></td>-->
+                    <!--                                                    <td><?php echo htmlspecialchars($user['full_name_en']) ?></td>-->
+                    <!--                                                    <td><?php echo htmlspecialchars($user['gender']) ?></td>-->
+                    <!--                                                    <td><?php echo htmlspecialchars($user['jamaat']) ?></td>-->
                     <!--                                                </tr>-->
                     <!--                                            <?php endforeach; ?>-->
                     <!--                                        </tbody>-->
@@ -378,30 +376,30 @@ $data = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                     <!--                                </div>-->
                     <!--                            </div>-->
                     <!--                        </div>-->
-                                            
-                    <!--                        <?php if (!empty($not_found_its)): ?>-->
+
+                    <!--                        <?php if (! empty($not_found_its)): ?>-->
                     <!--                            <div class="row mb-3">-->
                     <!--                                <div class="col-md-12">-->
                     <!--                                    <div class="alert alert-warning">-->
-                    <!--                                        <h5>Not Found ITS Records (<?= count($not_found_its) ?>)</h5>-->
+                    <!--                                        <h5>Not Found ITS Records (<?php echo count($not_found_its) ?>)</h5>-->
                     <!--                                        <p>The following ITS IDs could not be found:</p>-->
                     <!--                                        <ul>-->
                     <!--                                            <?php foreach ($not_found_its as $its): ?>-->
-                    <!--                                                <li><?= htmlspecialchars($its) ?></li>-->
+                    <!--                                                <li><?php echo htmlspecialchars($its) ?></li>-->
                     <!--                                            <?php endforeach; ?>-->
                     <!--                                        </ul>-->
                     <!--                                    </div>-->
                     <!--                                </div>-->
                     <!--                            </div>-->
                     <!--                        <?php endif; ?>-->
-                                            
+
                     <!--                        <div class="row mb-3">-->
                     <!--                            <div class="col-md-12">-->
                     <!--                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">-->
                     <!--                                    <button type="submit" name="submit" class="btn btn-primary">-->
                     <!--                                        Submit Selected Records-->
                     <!--                                    </button>-->
-                    <!--                                    <a href="<?= htmlspecialchars($_SERVER['PHP_SELF']) ?>" class="btn btn-secondary">-->
+                    <!--                                    <a href="<?php echo htmlspecialchars($_SERVER['PHP_SELF']) ?>" class="btn btn-secondary">-->
                     <!--                                        Cancel-->
                     <!--                                    </a>-->
                     <!--                                </div>-->
@@ -409,7 +407,7 @@ $data = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                     <!--                        </div>-->
                     <!--                    </form>-->
                     <!--                <?php else: ?>-->
-                    <!--                    <form method="post" action="<?= htmlspecialchars($_SERVER['PHP_SELF']) ?>">-->
+                    <!--                    <form method="post" action="<?php echo htmlspecialchars($_SERVER['PHP_SELF']) ?>">-->
                     <!--                        <div class="row mb-3">-->
                     <!--                            <label for="its_ids" class="col-sm-2 col-form-label">-->
                     <!--                                ITS ID(s)<span class="required_star">*</span>-->
@@ -417,7 +415,7 @@ $data = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                     <!--                            <div class="col-sm-8">-->
                     <!--                                <textarea name="its_ids" id="its_ids" class="form-control" -->
                     <!--                                       placeholder="Enter multiple ITS IDs separated by commas, spaces, or paste from Excel" -->
-                    <!--                                       rows="3" required><?= htmlspecialchars($its_ids) ?></textarea>-->
+                    <!--                                       rows="3" required><?php echo htmlspecialchars($its_ids) ?></textarea>-->
                     <!--                                <small class="form-text text-muted">You can enter multiple ITS IDs separated by commas, -->
                     <!--                                    spaces, or paste directly from Excel.</small>-->
                     <!--                            </div>-->
@@ -433,11 +431,11 @@ $data = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                     <!--</div>-->
                     <!-- List of existing records -->
                         <div class="col-md-12 mt-4">
-                            
+
                             <div class="col-md-12">
                             <div class="d-flex justify-content-between align-items-center">
                                 <h5 class="card-title">List Of Hifz Nasaih</h5>
-                                <a href="all_certificates.php?mauze=<?= $mauze ?>" 
+                                <a href="all_certificates.php?mauze=<?php echo $mauze ?>"
                                    class="btn btn-primary" target="_blank">
                                     <i class="bi bi-file-earmark-text"></i> Print All Certificates
                                 </a>
@@ -445,16 +443,16 @@ $data = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                         </div>
                             <ul class="nav nav-tabs  pt-4" id="myTabs">
                                 <li class="nav-item">
-                                    <a class="nav-link" id="migrated_in_students" data-toggle="tab" href="<?= MODULE_PATH ?>hifz_nasaih.php">Your Entries</a>
+                                    <a class="nav-link" id="migrated_in_students" data-toggle="tab" href="<?php echo MODULE_PATH ?>hifz_nasaih.php">Your Entries</a>
                                 </li>
                                 <li class="nav-item">
-                                    <a class="nav-link active" id="migrated_out_students" data-toggle="tab" href="<?= MODULE_PATH ?>hifz_nasaih_mauze.php">Your Mauze Entries</a>
+                                    <a class="nav-link active" id="migrated_out_students" data-toggle="tab" href="<?php echo MODULE_PATH ?>hifz_nasaih_mauze.php">Your Mauze Entries</a>
                                 </li>
                              </ul>
                             <div class="tab-content" id="hifzTabContent">
                                 <div class="tab-pane fade show active" id="your-entries" role="tabpanel" aria-labelledby="your-entries-tab">
                                     <p class='note' style="padding-top: 15px;">This page shows all the Nasihat hifz entries done in your Jamaat by various khidmat guzars. You will not see entries done by you in this report if they are not from your jamat. For viewing all the entries done by you, kindly check the (Report Name) report</p>
-                                    
+
                                     <!-- Your Entries Table -->
                                     <table class="table table-bordered cell-border" id="datatable_your_entries">
                                         <thead>
@@ -464,7 +462,7 @@ $data = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                                                 <th scope="col">Gender</th>
                                                 <th scope="col">Age</th>
                                                 <th scope="col">Mobile</th>
-                                                <th scope="col">Email</th> 
+                                                <th scope="col">Email</th>
                                                 <th scope="col">Mamur ITS</th>
                                                 <th scope="col">Mamur Name</th>
                                                 <th scope="col">Certificate</th>
@@ -473,23 +471,23 @@ $data = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                                         </thead>
                                         <tbody>
                                             <?php foreach ($data as $student): ?>
-                                            <?php 
+                                            <?php
                                                 // Calculate age from DOB
-                                                $dob = new DateTime($student['dob']);
+                                                $dob   = new DateTime($student['dob']);
                                                 $today = new DateTime('today');
-                                                $age = $dob->diff($today)->y;
+                                                $age   = $dob->diff($today)->y;
                                             ?>
                                                 <tr>
-                                                    <td><?= htmlspecialchars($student['its_id']) ?></td>
-                                                    <td><?= htmlspecialchars($student['full_name']) ?></td>
-                                                    <td><?= htmlspecialchars($student['gender']) ?></td>
-                                                    <td><?= $age ?></td>
-                                                    <td><?= htmlspecialchars($student['mobile']) ?></td>
-                                                    <td><?= htmlspecialchars($student['email']) ?></td>
-                                                    <td><?= htmlspecialchars($student['added_its']) ?></td>
-                                                    <td><?= htmlspecialchars($student['fullname']) ?></td>
+                                                    <td><?php echo htmlspecialchars($student['its_id']) ?></td>
+                                                    <td><?php echo htmlspecialchars($student['full_name']) ?></td>
+                                                    <td><?php echo htmlspecialchars($student['gender']) ?></td>
+                                                    <td><?php echo $age ?></td>
+                                                    <td><?php echo htmlspecialchars($student['mobile']) ?></td>
+                                                    <td><?php echo htmlspecialchars($student['email']) ?></td>
+                                                    <td><?php echo htmlspecialchars($student['added_its']) ?></td>
+                                                    <td><?php echo htmlspecialchars($student['fullname']) ?></td>
                                                     <td>
-                                                        <a href="certificates.php?code=<?= $student['code'] ?>" 
+                                                        <a href="certificates.php?code=<?php echo $student['code'] ?>"
                                                            class="btn btn-sm btn-primary" target="_blank">
                                                             <i class="bi bi-file-earmark-text"></i> View
                                                         </a>
@@ -531,13 +529,13 @@ $data = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
     </div>
 </div>
 
-<?php require_once(__DIR__ . '/inc/footer.php'); ?>
+<?php require_once __DIR__ . '/inc/footer.php'; ?>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   // Select all sidebar dropdown toggles
   const sidebarDropdownToggles = document.querySelectorAll('.nav-link[data-bs-toggle="collapse"]');
-  
+
   // Add click event listener to each toggle
   sidebarDropdownToggles.forEach(toggle => {
     toggle.addEventListener('click', function(e) {
@@ -550,7 +548,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Select all checkbox functionality
     const selectAllCheckbox = document.getElementById('selectAll');
     const individualCheckboxes = document.querySelectorAll('.select-its');
-    
+
     if (selectAllCheckbox) {
         selectAllCheckbox.addEventListener('change', function() {
             const isChecked = this.checked;
@@ -559,20 +557,20 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-    
+
     if (individualCheckboxes.length > 0) {
         individualCheckboxes.forEach(checkbox => {
             checkbox.addEventListener('change', function() {
                 const allChecked = Array.from(individualCheckboxes).every(cb => cb.checked);
                 if (selectAllCheckbox) {
                     selectAllCheckbox.checked = allChecked;
-                    selectAllCheckbox.indeterminate = !allChecked && 
+                    selectAllCheckbox.indeterminate = !allChecked &&
                         Array.from(individualCheckboxes).some(cb => cb.checked);
                 }
             });
         });
     }
-    
+
     // Form submission validation
     const bulkSubmitForm = document.getElementById('bulkSubmitForm');
     if (bulkSubmitForm) {
@@ -586,7 +584,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return true;
         });
     }
-    
+
     // ITS IDs format enhancement
     const itsIdsTextarea = document.getElementById('its_ids');
     if (itsIdsTextarea) {
@@ -601,7 +599,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 0);
         });
     }
-    
+
     // Initialize DataTable
     if ($.fn.DataTable) {
         $("#datatable_your_entries").DataTable({
@@ -633,25 +631,25 @@ document.addEventListener('DOMContentLoaded', function() {
             ]
         });
     }
-    
+
     // Delete confirmation
     const deleteButtons = document.querySelectorAll('.delete-record');
     const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
     const deleteName = document.getElementById('delete-name');
     const confirmDelete = document.getElementById('confirm-delete');
-    
+
     deleteButtons.forEach(button => {
         button.addEventListener('click', function(e) {
             e.preventDefault();
             const itsId = this.getAttribute('data-its-id');
             const name = this.getAttribute('data-name');
-            
+
             // Set the student name in the modal
             deleteName.textContent = name;
-            
+
             // Set the delete confirmation link
             confirmDelete.href = `${window.location.pathname}?delete_its_id=${itsId}`;
-            
+
             // Show the modal
             deleteModal.show();
         });
