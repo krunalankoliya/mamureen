@@ -69,6 +69,7 @@ if (isset($_POST['submit'])) {
         try {
             $result = mysqli_query($mysqli, $query);
             $message = ['text' => 'Training session report submitted successfully.', 'tag' => 'success'];
+            $show_popup = true;
         } catch (Exception $e) {
             $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
         }
@@ -204,6 +205,10 @@ $reports = $result->fetch_all(MYSQLI_ASSOC);
 
 <?php require_once(__DIR__ . '/inc/footer.php'); ?>
 <script>
+<?php if (!empty($show_popup)) : ?>
+    alert('Training session report submitted successfully!');
+<?php endif; ?>
+
 function validateFileSize() {
     var fileInputs = document.querySelectorAll('input[type="file"]');
     var maxSize = 4 * 1024 * 1024;

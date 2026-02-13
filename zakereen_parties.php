@@ -16,6 +16,7 @@ if (isset($_POST['add_party'])) {
         try {
             mysqli_query($mysqli, $query);
             $message = ['text' => 'Party added successfully.', 'tag' => 'success'];
+            $show_popup = true;
         } catch (Exception $e) {
             $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
         }
@@ -130,6 +131,10 @@ $parties = $result->fetch_all(MYSQLI_ASSOC);
 
 <?php require_once(__DIR__ . '/inc/footer.php'); ?>
 <script>
+<?php if (!empty($show_popup)) : ?>
+    alert('Party added successfully!');
+<?php endif; ?>
+
 $(document).ready(function () {
     $('#datatable').DataTable({
         dom: 'Bfrtip',

@@ -27,9 +27,9 @@ if (isset($_POST['submit_preparation'])) {
                         $tempPath = $_FILES['attachments']['tmp_name'][$i];
                         $fileSize = $_FILES['attachments']['size'][$i];
                         $fileType = pathinfo($fileName, PATHINFO_EXTENSION);
-                        $acceptable = ['jpeg', 'jpg', 'png'];
+                        $acceptable = ['jpeg', 'jpg', 'png', 'pdf', 'ppt', 'pptx', 'doc', 'docx', 'mp4', 'mov', 'mp3', 'wav'];
 
-                        if ($fileSize > 4194304) continue;
+                        if ($fileSize > 20971520) continue; // 20MB limit
                         if (!in_array(strtolower($fileType), $acceptable)) continue;
 
                         $uploadName = $user_its . '_preparation_' . date('YmdHis') . '_' . $i . '.' . $fileType;
@@ -47,6 +47,7 @@ if (isset($_POST['submit_preparation'])) {
             }
 
             $message = ['text' => 'Khidmat preparation submitted successfully.', 'tag' => 'success'];
+            $show_popup = true;
         } catch (Exception $e) {
             $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
         }
@@ -113,15 +114,18 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                                         <div class="row mb-3">
                                             <label class="col-sm-4 col-form-label">Description<span class="required_star">*</span></label>
                                             <div class="col-sm-8">
-                                                <textarea name="description_text" class="form-control" style="height: 150px;" placeholder="Describe the khidmat preparation..." required></textarea>
+                                                <textarea name="description_text" class="form-control" style="height: 150px;" dir="auto" placeholder="Describe the khidmat preparation..." required></textarea>
                                             </div>
                                         </div>
 
                                         <div class="row mb-3">
                                             <label class="col-sm-4 col-form-label">Attachments</label>
                                             <div class="col-sm-8">
-                                                <input type="file" name="attachments[]" class="form-control" accept="image/*" multiple>
-                                                <small class="text-muted">Optional. JPG/PNG, max 4MB each.</small>
+                                                <input type="file" name="attachments[]" class="form-control" accept="image/*,.pdf,.ppt,.pptx,.doc,.docx,video/*,audio/*" multiple>
+                                                <div class="alert alert-info mt-2 py-1 px-2 mb-0">
+                                                    <small><strong>Allowed:</strong> Images, PPT, PDF, Word, Videos, Audio<br>
+                                                    <strong>Max file size: 20 MB per file</strong></small>
+                                                </div>
                                             </div>
                                         </div>
 
@@ -204,7 +208,7 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description</label>
-                        <textarea name="description_text" id="edit_description" class="form-control" style="height: 180px;" required></textarea>
+                        <textarea name="description_text" id="edit_description" class="form-control" style="height: 180px;" dir="auto" required></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -218,10 +222,27 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
 
 <?php require_once(__DIR__ . '/inc/footer.php'); ?>
 <script>
+<?php if (!empty($show_popup)) : ?>
+    alert('Khidmat preparation submitted successfully!');
+<?php endif; ?>
+
 $('.edit-btn').click(function() {
     $('#edit_id').val($(this).data('id'));
     $('#edit_category').val($(this).data('category'));
     $('#edit_description').val($(this).data('description'));
+});
+
+// File size validation (20MB)
+$('form').on('submit', function(e) {
+    var maxSize = 20 * 1024 * 1024;
+    var files = $('input[name="attachments[]"]')[0].files;
+    for (var i = 0; i < files.length; i++) {
+        if (files[i].size > maxSize) {
+            alert('File "' + files[i].name + '" exceeds the 20 MB limit.');
+            e.preventDefault();
+            return false;
+        }
+    }
 });
 
 $(document).ready(function () {

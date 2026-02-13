@@ -48,6 +48,7 @@ if (isset($_POST['submit_challenge'])) {
             }
 
             $message = ['text' => 'Challenge & Solution report submitted successfully.', 'tag' => 'success'];
+            $show_popup = true;
         } catch (Exception $e) {
             $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
         }
@@ -115,14 +116,14 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                                         <div class="row mb-3">
                                             <label class="col-sm-4 col-form-label">Challenge<span class="required_star">*</span></label>
                                             <div class="col-sm-8">
-                                                <textarea name="challenge_text" class="form-control" style="height: 100px;" placeholder="Describe the challenge faced..." required></textarea>
+                                                <textarea name="challenge_text" class="form-control" style="height: 100px;" dir="auto" placeholder="Describe the challenge faced..." required></textarea>
                                             </div>
                                         </div>
 
                                         <div class="row mb-3">
                                             <label class="col-sm-4 col-form-label">Solution<span class="required_star">*</span></label>
                                             <div class="col-sm-8">
-                                                <textarea name="solution_text" class="form-control" style="height: 100px;" placeholder="Describe the solution applied..." required></textarea>
+                                                <textarea name="solution_text" class="form-control" style="height: 100px;" dir="auto" placeholder="Describe the solution applied..." required></textarea>
                                             </div>
                                         </div>
 
@@ -216,11 +217,11 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Challenge</label>
-                        <textarea name="challenge_text" id="edit_challenge" class="form-control" style="height: 120px;" required></textarea>
+                        <textarea name="challenge_text" id="edit_challenge" class="form-control" style="height: 120px;" dir="auto" required></textarea>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Solution</label>
-                        <textarea name="solution_text" id="edit_solution" class="form-control" style="height: 120px;" required></textarea>
+                        <textarea name="solution_text" id="edit_solution" class="form-control" style="height: 120px;" dir="auto" required></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -234,6 +235,10 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
 
 <?php require_once(__DIR__ . '/inc/footer.php'); ?>
 <script>
+<?php if (!empty($show_popup)) : ?>
+    alert('Challenge & Solution report submitted successfully!');
+<?php endif; ?>
+
 $('.edit-btn').click(function() {
     $('#edit_id').val($(this).data('id'));
     $('#edit_category').val($(this).data('category'));

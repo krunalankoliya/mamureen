@@ -43,6 +43,7 @@
             try {
                 mysqli_query($mysqli, $query);
                 $message = ['text' => "Farzand $full_name ($its_id) added successfully.", 'tag' => 'success'];
+                $show_popup = true;
             } catch (Exception $e) {
                 $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
             }
@@ -312,6 +313,10 @@
 
 <?php require_once __DIR__ . '/inc/footer.php'; ?>
 <script>
+<?php if (!empty($show_popup)) : ?>
+    alert('Farzand added successfully!');
+<?php endif; ?>
+
 // ITS Verification
 $('#verifyBtn').click(function() {
     var its_id = $('#its_id_input').val();

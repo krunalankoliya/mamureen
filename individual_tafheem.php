@@ -49,6 +49,7 @@ if (isset($_POST['submit_tafheem'])) {
             }
 
             $message = ['text' => 'Tafheem report submitted successfully.', 'tag' => 'success'];
+            $show_popup = true;
         } catch (Exception $e) {
             $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
         }
@@ -144,7 +145,7 @@ $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
                                         <div class="row mb-3">
                                             <label class="col-sm-4 col-form-label">Report Details<span class="required_star">*</span></label>
                                             <div class="col-sm-8">
-                                                <textarea name="report_details" class="form-control" style="height: 120px;" required></textarea>
+                                                <textarea name="report_details" class="form-control" style="height: 120px;" dir="auto" required></textarea>
                                             </div>
                                         </div>
 
@@ -244,7 +245,7 @@ $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Report Details</label>
-                        <textarea name="report_details" id="edit_details" class="form-control" style="height: 150px;" required></textarea>
+                        <textarea name="report_details" id="edit_details" class="form-control" style="height: 150px;" dir="auto" required></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -258,6 +259,10 @@ $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
 
 <?php require_once(__DIR__ . '/inc/footer.php'); ?>
 <script>
+<?php if (!empty($show_popup)) : ?>
+    alert('Tafheem report submitted successfully!');
+<?php endif; ?>
+
 // ITS Verification
 $('#verifyBtn').click(function() {
     var its_id = $('#its_id_input').val();
