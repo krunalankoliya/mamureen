@@ -1,0 +1,182 @@
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+@font-face {
+    font-family: "Roboto Condensed";
+    src: url("https://fonts.googleapis.com/css2?family=Roboto+Condensed&display=swap");
+}
+
+body {
+    margin: 0 auto;
+    max-width: 800px;
+}
+
+body,
+table {
+    font-family: "Roboto Condensed", sans-serif;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 8px;
+}
+
+th,
+td {
+    border: 1px solid #999999;
+    padding: 4px;
+    text-align: left;
+    font-size: 8.06pt;
+}
+
+td {
+    font-weight: 500;
+}
+
+th {
+    color: #18589f;
+    font-weight: 600;
+}
+
+tr:nth-child(even) {
+    background-color: #d2e3f6;
+}
+
+header {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    color: #555;
+    font-size: 12px;
+}
+
+.logo {
+    margin-right: 24px;
+    display: flex;
+    align-items: center;
+    width: 10%;
+}
+
+.logo img {
+    max-height: 80px;
+}
+
+.school-header {
+    text-align: center;
+    Width:90%;
+}
+
+.mamur-details{
+    display: flex;
+    justify-content: space-between;
+}
+
+.school-header h1 {
+    color: #18589f;
+    font-size: 20.83pt;
+    margin-bottom: 6px;
+}
+
+.school-header p {
+    /* margin: 4px 0;
+    font-size: 8.06pt; */
+    color: #18589f;
+    font-size: 12pt;
+    margin-bottom: 6px;
+}
+
+.section-header {
+    background-color: #d2e3f6;
+    padding: 10px 0;
+    font-weight: bold;
+    font-size: 9.41pt;
+    color: #18589f;
+    text-align: center;
+    margin-top: 6px;
+}
+
+table.student th,
+table.student td {
+    border: none;
+    padding-top: 0;
+}
+
+table.student th {
+    font-size: 9.41pt;
+    color: #555555;
+    font-weight: 500;
+}
+
+table.student td {
+    font-size: 10.75pt;
+    color: #094a9d;
+    font-weight: bold;
+}
+
+.sign{
+    display: flex;
+    flex-direction: column;
+}
+
+.signatures {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    margin-top: 12px;
+}
+
+.sign img {
+    max-height: 80px;
+}
+
+.sign p {
+    font-size: 8.06pt;
+    font-weight: bold;
+}
+
+.container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.half-width {
+    flex-basis: calc(50% - 10px);
+}
+
+th[colspan="5"] {
+    text-align: center;
+}
+
+.single-student {
+    margin: 0;
+    padding: 0;
+}
+
+p{
+    font-size: 8.06pt;
+    margin-block-start: 4px;
+}
+
+h3{
+    font-size: 10pt;
+    margin-block-end: 0;
+}
+
+h2 {
+    font-size: 12pt;
+    margin-block-end: 0;
+}
+
+@media print {
+    .single-student {
+        page-break-before: always;
+        page-break-after: always;
+        margin: 0;
+        padding: 0;
+    }
+}

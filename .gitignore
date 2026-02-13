@@ -1,0 +1,8 @@
+uploads/
+user_report_uploads/
+user_uploads/
+temp_chunks/
+temp_certificates/
+temp/
+*.log
+assets/vendor/
