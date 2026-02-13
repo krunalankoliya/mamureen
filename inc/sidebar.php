@@ -114,7 +114,23 @@ function generateAdminSection($user_its, $admin_its, $current_page)
         <?php generateSidebarItem('meeting_and_photo_reports', $current_page, 'bx bxs-vector', 'Meetings & Photo - Reports', 'meeting_and_photo_report.php'); ?>
         <?php generateSidebarItem('journal', $current_page, 'bi bi-journal-album', 'Journal', 'journal.php'); ?>
         <?php generateSidebarItem('Closure_Report', $current_page, 'bx bx-bookmark', 'Closure Report', 'closure-report.php'); ?>
-        
+
+        <!-- BQI 1447 Section -->
+        <?php
+        generateCollapsibleSidebarItem(
+            ['zakereen_parties', 'zakereen_farzando', 'individual_tafheem', 'training_sessions'],
+            $current_page,
+            'bi bi-clipboard-data',
+            'BQI 1447',
+            [
+                ['page' => 'zakereen_parties', 'link' => 'zakereen_parties.php', 'text' => 'Zakereen Parties', 'icon' => 'bi bi-circle'],
+                ['page' => 'zakereen_farzando', 'link' => 'zakereen_farzando.php', 'text' => 'Zakereen Farzando', 'icon' => 'bi bi-circle'],
+                ['page' => 'individual_tafheem', 'link' => 'individual_tafheem.php', 'text' => 'Individual Tafheem', 'icon' => 'bi bi-circle'],
+                ['page' => 'training_sessions', 'link' => 'training_sessions.php', 'text' => 'Training Sessions', 'icon' => 'bi bi-circle'],
+            ],
+            'bqi1447'
+        );
+        ?>
 
         <!-- Admin Section -->
         <?php generateAdminSection($user_its, $admin_its, $current_page); ?>

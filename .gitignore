@@ -5,5 +5,8 @@ temp_chunks/
 temp_certificates/
 temp/
 *.log
+*.sql
+*.pdf
+*.ini
 assets/vendor/
 admin/vendor/
