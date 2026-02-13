@@ -118,7 +118,7 @@ function generateAdminSection($user_its, $admin_its, $current_page)
         <!-- BQI 1447 Section -->
         <?php
         generateCollapsibleSidebarItem(
-            ['zakereen_parties', 'zakereen_farzando', 'individual_tafheem', 'training_sessions'],
+            ['zakereen_parties', 'zakereen_farzando', 'individual_tafheem', 'training_sessions', 'challenges_solutions', 'noteworthy_experiences', 'khidmat_preparations'],
             $current_page,
             'bi bi-clipboard-data',
             'BQI 1447',
@@ -127,6 +127,9 @@ function generateAdminSection($user_its, $admin_its, $current_page)
                 ['page' => 'zakereen_farzando', 'link' => 'zakereen_farzando.php', 'text' => 'Zakereen Farzando', 'icon' => 'bi bi-circle'],
                 ['page' => 'individual_tafheem', 'link' => 'individual_tafheem.php', 'text' => 'Individual Tafheem', 'icon' => 'bi bi-circle'],
                 ['page' => 'training_sessions', 'link' => 'training_sessions.php', 'text' => 'Training Sessions', 'icon' => 'bi bi-circle'],
+                ['page' => 'challenges_solutions', 'link' => 'challenges_solutions.php', 'text' => 'Challenges / Solutions', 'icon' => 'bi bi-circle'],
+                ['page' => 'noteworthy_experiences', 'link' => 'noteworthy_experiences.php', 'text' => 'Noteworthy Experiences', 'icon' => 'bi bi-circle'],
+                ['page' => 'khidmat_preparations', 'link' => 'khidmat_preparations.php', 'text' => 'Khidmat Preparations', 'icon' => 'bi bi-circle'],
             ],
             'bqi1447'
         );
