@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init:*)",
+      "Bash(git -C C:xampphtdocsmamureen status -s)",
+      "Bash(git -C C:xampphtdocsmamureen status)",
+      "Bash(git -C C:xampphtdocsmamureen ls-files)",
+      "Bash(git -C C:xampphtdocsmamureen status -u)",
+      "Bash(git config:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}
