@@ -6,6 +6,19 @@
 */
 
 /*--------------------------------------------------------------
+# Kanz al-Marjaan Font (Lisan al-Dawat)
+--------------------------------------------------------------*/
+@font-face {
+  font-family: 'kanz';
+  src: url('../fonts/Kanz-al-Marjaan.ttf') format('truetype');
+}
+
+textarea[dir="auto"],
+.kanz-ld {
+  font-family: 'kanz', 'Open Sans', Arial, sans-serif;
+}
+
+/*--------------------------------------------------------------
 # General
 --------------------------------------------------------------*/
 :root {

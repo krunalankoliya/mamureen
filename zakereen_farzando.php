@@ -128,7 +128,7 @@
     }
 
     // Fetch parties for dropdown
-    $query   = "SELECT * FROM `bqi_zakereen_parties` ORDER BY `party_name` ASC";
+    $query   = "SELECT * FROM `bqi_zakereen_parties` WHERE `is_active` = 1 ORDER BY `party_name` ASC";
     $result  = mysqli_query($mysqli, $query);
     $parties = $result->fetch_all(MYSQLI_ASSOC);
 
