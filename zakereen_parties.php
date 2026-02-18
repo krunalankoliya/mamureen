@@ -17,7 +17,7 @@
             mysqli_query($mysqli, $query);
             $message    = ['text' => 'Party added successfully.', 'tag' => 'success'];
             $show_popup = true;
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
         }
     }
@@ -31,7 +31,7 @@
     try {
         mysqli_query($mysqli, $query);
         $message = ['text' => 'Party status updated.', 'tag' => 'success'];
-    } catch (Exception $e) {
+    } catch (\Exception $e) {
         $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
     }
     }

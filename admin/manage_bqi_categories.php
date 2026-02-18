@@ -12,9 +12,9 @@
 
     // Handle Add
     if (isset($_POST['add_category'])) {
-    $category_type    = mysqli_real_escape_string($mysqli, $_POST['category_type']);
-    $category_name    = trim(mysqli_real_escape_string($mysqli, $_POST['category_name']));
-    $sort_order       = (int) ($_POST['sort_order'] ?? 0);
+    $category_type = mysqli_real_escape_string($mysqli, $_POST['category_type']);
+    $category_name = trim(mysqli_real_escape_string($mysqli, $_POST['category_name']));
+    $sort_order    = (int) ($_POST['sort_order'] ?? 0);
 
     if (empty($category_name) || ! array_key_exists($category_type, $category_types)) {
         $message = ['text' => 'Category name and valid type are required.', 'tag' => 'danger'];
@@ -24,7 +24,7 @@
         try {
             mysqli_query($mysqli, $query);
             $message = ['text' => "Category '$category_name' added successfully.", 'tag' => 'success'];
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
         }
     }
@@ -32,10 +32,10 @@
 
     // Handle Edit
     if (isset($_POST['update_category'])) {
-    $edit_id          = (int) $_POST['edit_id'];
-    $category_type    = mysqli_real_escape_string($mysqli, $_POST['category_type']);
-    $category_name    = trim(mysqli_real_escape_string($mysqli, $_POST['category_name']));
-    $sort_order       = (int) ($_POST['sort_order'] ?? 0);
+    $edit_id       = (int) $_POST['edit_id'];
+    $category_type = mysqli_real_escape_string($mysqli, $_POST['category_type']);
+    $category_name = trim(mysqli_real_escape_string($mysqli, $_POST['category_name']));
+    $sort_order    = (int) ($_POST['sort_order'] ?? 0);
 
     if (empty($category_name) || ! array_key_exists($category_type, $category_types)) {
         $message = ['text' => 'Category name and valid type are required.', 'tag' => 'danger'];
@@ -45,7 +45,7 @@
         try {
             mysqli_query($mysqli, $query);
             $message = ['text' => 'Category updated successfully.', 'tag' => 'success'];
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
         }
     }
@@ -59,7 +59,7 @@
     try {
         mysqli_query($mysqli, $query);
         $message = ['text' => 'Category status updated.', 'tag' => 'success'];
-    } catch (Exception $e) {
+    } catch (\Exception $e) {
         $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
     }
     }
@@ -87,7 +87,7 @@
         try {
             mysqli_query($mysqli, $query);
             $message = ['text' => 'Category deleted successfully.', 'tag' => 'success'];
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
         }
     }
