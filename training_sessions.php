@@ -87,7 +87,7 @@ $result = mysqli_query($mysqli, $query);
 $reports = $result->fetch_all(MYSQLI_ASSOC);
 ?>
 
-<main id="main" class="main">
+<main id="main" class="main bqi-1447">
     <section class="section dashboard">
         <div class="row">
             <?php require_once(__DIR__ . '/inc/messages.php'); ?>

@@ -177,13 +177,15 @@
         }
         fclose($file);
 
-        $msg = "Bulk upload complete: $success_count added successfully.";
-        if ($fail_count > 0) {
-            $msg .= " $fail_count failed: " . implode(', ', $fail_ids);
-        }
-        $message = ['text' => $msg, 'tag' => $fail_count > 0 ? 'warning' : 'success'];
+        $bulk_result = [
+            'success_count' => $success_count,
+            'fail_count'    => $fail_count,
+            'fail_ids'      => $fail_ids,
+            'total'         => $success_count + $fail_count,
+        ];
     }
     }
+
 
     // Fetch parties for dropdown
     $query   = "SELECT * FROM `bqi_zakereen_parties` WHERE `is_active` = 1 ORDER BY `party_name` ASC";
@@ -198,7 +200,7 @@
     $farzando_list = $result->fetch_all(MYSQLI_ASSOC);
 ?>
 
-<main id="main" class="main">
+<main id="main" class="main bqi-1447">
     <section class="section dashboard">
         <div class="row">
             <?php require_once __DIR__ . '/inc/messages.php'; ?>
@@ -292,7 +294,10 @@
                             <div class="card">
                                 <div class="card-body">
                                     <h5 class="card-title">Bulk Upload (CSV)</h5>
-                                    <p class="text-muted">Upload a CSV file with ITS IDs (one per row, first column).</p>
+                                    <p class="text-muted">
+                                        Upload a CSV file with ITS IDs (one per row, first column).
+                                        <a href="<?php echo MODULE_PATH ?>samples/sample_farzando_bulk_upload.csv" download class="btn btn-info btn-sm text-white ms-2"><i class="bi bi-file-earmark-arrow-down"></i> Download Sample CSV</a>
+                                    </p>
                                     <form method="post" enctype="multipart/form-data">
                                         <div class="row mb-3">
                                             <label class="col-sm-4 col-form-label">Select Party<span class="required_star">*</span></label>
@@ -315,6 +320,46 @@
                                             <button type="submit" name="bulk_upload" class="btn btn-success">Upload CSV</button>
                                         </div>
                                     </form>
+
+                                    <?php if (!empty($bulk_result)): ?>
+                                        <div class="mt-3">
+                                            <h6 class="fw-bold">Upload Result</h6>
+                                            <div class="row text-center mb-2">
+                                                <div class="col-4">
+                                                    <div class="card bg-light">
+                                                        <div class="card-body py-2">
+                                                            <h4 class="mb-0"><?php echo $bulk_result['total'] ?></h4>
+                                                            <small class="text-muted">Total</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <div class="card bg-success text-white">
+                                                        <div class="card-body py-2">
+                                                            <h4 class="mb-0"><?php echo $bulk_result['success_count'] ?></h4>
+                                                            <small>Successful</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <div class="card bg-danger text-white">
+                                                        <div class="card-body py-2">
+                                                            <h4 class="mb-0"><?php echo $bulk_result['fail_count'] ?></h4>
+                                                            <small>Failed</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <?php if (!empty($bulk_result['fail_ids'])): ?>
+                                                <div class="alert alert-danger py-2 mb-0" style="max-height: 150px; overflow-y: auto;">
+                                                    <strong>Failed ITS IDs:</strong><br>
+                                                    <?php foreach ($bulk_result['fail_ids'] as $fid): ?>
+                                                        <span class="badge bg-danger me-1 mb-1"><?php echo htmlspecialchars($fid) ?></span>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         </div>
