@@ -1,193 +1,262 @@
 <?php
-
 $current_page = 'dashboard';
 require_once(__DIR__ . '/inc/header.php');
 
-$query = "SELECT `its_id` FROM `users_admin`";
-$result = mysqli_query($mysqli, $query);
-$admin_list = $result->fetch_all(MYSQLI_ASSOC);
-$admin = array_column($admin_list, 'its_id');
-
-if (in_array($user_its, $admin)) { ?>
-  <script>
-    // window.location = '/test_mamureen/admin_dashboard.php';
-  </script>
-<?php
-}
-
 function getCounts($query, $mysqli)
 {
-
-  $result = mysqli_query($mysqli, $query);
-  $res = $result->fetch_assoc();
-
-  return ($res && $res['count']) ? (int) $res['count'] : 0;
+    $result = mysqli_query($mysqli, $query);
+    $res = $result->fetch_assoc();
+    return ($res && $res['count']) ? (int) $res['count'] : 0;
 }
 
+// Section 1: Zakereen
+$parties_count = getCounts("SELECT COUNT(*) `count` FROM `bqi_zakereen_parties` WHERE `is_active` = 1", $mysqli);
+$farzando_count = getCounts("SELECT COUNT(*) `count` FROM `bqi_zakereen_farzando`", $mysqli);
+$training_farzando_count = getCounts("SELECT COUNT(*) `count` FROM `meeting_and_photo_reports` WHERE `jamaat` = '$mauze' AND `category` LIKE 'Zakereen Farzando Training%'", $mysqli);
 
+// Section 2: Social Media
+$social_media_count = getCounts("SELECT COUNT(*) `count` FROM `meeting_and_photo_reports` WHERE `jamaat` = '$mauze' AND `category` LIKE 'Social Media Awareness%'", $mysqli);
+$one_on_one_count = getCounts("SELECT COUNT(*) `count` FROM `bqi_individual_tafheem` WHERE `added_its` = '$user_its'", $mysqli);
 
-$ld_count = getCounts("SELECT COUNT(*) `count` FROM `manage_ld` WHERE `jamaat` = '$mauze' ", $mysqli);
-$hifz_nasaih_count = getCounts("SELECT COUNT(*) `count` FROM `hifz_nasaih` WHERE `added_its` = '$user_its' ", $mysqli);
-$bqi_17_session_attendees_count = getCounts("SELECT COUNT(*) `count` FROM `bqi_17_session_attendees` WHERE `added_its` = '$user_its' ", $mysqli);
+// Section 3: Shaadi Umoor
+$shaadi_baramij_count = getCounts("SELECT COUNT(*) `count` FROM `meeting_and_photo_reports` WHERE `jamaat` = '$mauze' AND `category` LIKE 'Shaadi Tafheem%'", $mysqli);
+$individual_tafheem_count = getCounts("SELECT COUNT(*) `count` FROM `bqi_individual_tafheem` WHERE `added_its` = '$user_its'", $mysqli);
 
+// Section 4
+$challenges_count = getCounts("SELECT COUNT(*) `count` FROM `bqi_challenges_solutions` WHERE `added_its` = '$user_its'", $mysqli);
+$noteworthy_count = getCounts("SELECT COUNT(*) `count` FROM `bqi_noteworthy_experiences` WHERE `added_its` = '$user_its'", $mysqli);
+$khidmat_count = getCounts("SELECT COUNT(*) `count` FROM `bqi_khidmat_preparations` WHERE `added_its` = '$user_its'", $mysqli);
 ?>
-<div style="display:none"><?= $city ?></div>
-<main id="main" class="main">
 
-  <div class="pagetitle">
-    <h1>Dashboard</h1>
-    <nav>
-      <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="index.html">Home</a></li>
-        <li class="breadcrumb-item active">Dashboard</li>
-      </ol>
-    </nav>
-  </div><!-- End Page Title -->
+<main id="main" class="main bqi-1447">
+    <div class="pagetitle">
+        <h1>Dashboard</h1>
+    </div>
 
-  <section class="section dashboard">
-    <div class="row">
+    <section class="section dashboard">
+        <div class="row">
 
-      <!-- Left side columns -->
-      <div class="col-lg-8">
-        <div class="card info-card sales-card pt-4 pb-0">
-          <div class="card-body">
-            <div class="row">
-              <div class="col-xxl-6 col-md-6">
-                <a href="<?= MODULE_PATH ?>manage_ld.php">
-                  <div class="card info-card sales-card pb-0">
-                    <div class="card-body">
-                      <h5 class="card-title">Lisan al Dawat</h5>
-                      <div class="d-flex align-items-center">
-                        <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
-                          <i class="bx bx-chat"></i>
+            <!-- Left side columns -->
+            <div class="col-lg-8">
+
+                <!-- SECTION 1: ZAKEREEN -->
+                <div class="card mb-3">
+                    <div class="card-body pb-0">
+                        <h5 class="card-title pb-0 mb-2"><i class="bi bi-people-fill text-primary"></i> Zakereen</h5>
+                        <div class="row align-items-stretch">
+                            <div class="col-md-4 mb-3">
+                                <a href="<?= MODULE_PATH ?>zakereen_parties.php" class="text-decoration-none d-block h-100">
+                                    <div class="d-flex align-items-center p-3 rounded h-100" style="background: linear-gradient(135deg, #e8f0fe 0%, #d2e3fc 100%); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: #4154f1; flex-shrink: 0;">
+                                            <i class="bi bi-flag-fill text-white" style="font-size: 20px;"></i>
+                                        </div>
+                                        <div class="ps-3">
+                                            <h6 class="mb-0 text-dark" style="font-size: 22px; font-weight: 700;"><?= $parties_count ?></h6>
+                                            <small class="text-muted">Zakereen Parties</small>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <a href="<?= MODULE_PATH ?>zakereen_farzando.php" class="text-decoration-none d-block h-100">
+                                    <div class="d-flex align-items-center p-3 rounded h-100" style="background: linear-gradient(135deg, #e8f0fe 0%, #d2e3fc 100%); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: #4154f1; flex-shrink: 0;">
+                                            <i class="bi bi-person-lines-fill text-white" style="font-size: 20px;"></i>
+                                        </div>
+                                        <div class="ps-3">
+                                            <h6 class="mb-0 text-dark" style="font-size: 22px; font-weight: 700;"><?= $farzando_count ?></h6>
+                                            <small class="text-muted">Zakereen Farzando</small>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <a href="<?= MODULE_PATH ?>training_sessions.php" class="text-decoration-none d-block h-100">
+                                    <div class="d-flex align-items-center p-3 rounded h-100" style="background: linear-gradient(135deg, #e8f0fe 0%, #d2e3fc 100%); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: #4154f1; flex-shrink: 0;">
+                                            <i class="bi bi-mortarboard-fill text-white" style="font-size: 20px;"></i>
+                                        </div>
+                                        <div class="ps-3">
+                                            <h6 class="mb-0 text-dark" style="font-size: 22px; font-weight: 700;"><?= $training_farzando_count ?></h6>
+                                            <small class="text-muted">Training Sessions</small>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
                         </div>
-                        <div class="ps-3">
-                           <h6><?= $ld_count ?></h6>
-                        </div>
-                      </div>
                     </div>
-                    
-                  </div>
-                </a>
-              </div>
+                </div>
 
-              <div class="col-xxl-6 col-md-6">
-                <a href="<?= MODULE_PATH ?>hifz_nasaih.php">
-                  <div class="card info-card sales-card pb-0">
-                    <div class="card-body">
-                      <h5 class="card-title">Hifz al Nasaeh</h5>
-                      <div class="d-flex align-items-center">
-                        <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
-                          <i class="bx bxs-book"></i>
+                <!-- SECTION 2: SOCIAL MEDIA -->
+                <div class="card mb-3">
+                    <div class="card-body pb-0">
+                        <h5 class="card-title pb-0 mb-2"><i class="bi bi-phone-fill text-success"></i> Social Media</h5>
+                        <div class="row align-items-stretch">
+                            <div class="col-md-4 mb-3">
+                                <a href="<?= MODULE_PATH ?>training_sessions.php" class="text-decoration-none d-block h-100">
+                                    <div class="d-flex align-items-center p-3 rounded h-100" style="background: linear-gradient(135deg, #e6f4ea 0%, #ceead6 100%); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: #2eca6a; flex-shrink: 0;">
+                                            <i class="bi bi-broadcast text-white" style="font-size: 20px;"></i>
+                                        </div>
+                                        <div class="ps-3">
+                                            <h6 class="mb-0 text-dark" style="font-size: 22px; font-weight: 700;"><?= $social_media_count ?></h6>
+                                            <small class="text-muted">Social Media Baramij</small>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <a href="<?= MODULE_PATH ?>individual_tafheem.php" class="text-decoration-none d-block h-100">
+                                    <div class="d-flex align-items-center p-3 rounded h-100" style="background: linear-gradient(135deg, #e6f4ea 0%, #ceead6 100%); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: #2eca6a; flex-shrink: 0;">
+                                            <i class="bi bi-chat-dots-fill text-white" style="font-size: 20px;"></i>
+                                        </div>
+                                        <div class="ps-3">
+                                            <h6 class="mb-0 text-dark" style="font-size: 22px; font-weight: 700;"><?= $one_on_one_count ?></h6>
+                                            <small class="text-muted">One on One Counseling</small>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <a href="<?= MODULE_PATH ?>maaraz.php" class="text-decoration-none d-block h-100">
+                                    <div class="d-flex align-items-center p-3 rounded h-100" style="background: linear-gradient(135deg, #e6f4ea 0%, #ceead6 100%); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: #2eca6a; flex-shrink: 0;">
+                                            <i class="bi bi-hourglass-split text-white" style="font-size: 20px;"></i>
+                                        </div>
+                                        <div class="ps-3">
+                                            <span class="badge bg-warning text-dark" style="font-size: 13px;">Pending</span>
+                                            <br><small class="text-muted">Ma'araz</small>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
                         </div>
-                        <div class="ps-3">
-                          <h6><?= $hifz_nasaih_count ?></h6>
-                        </div>
-                      </div>
                     </div>
-                   
-                  </div>
-                </a>
-              </div>
-              
-              <div class="col-xxl-6 col-md-6">
-                <a href="<?= MODULE_PATH ?>bqi_17_session_attendees.php">
-                  <div class="card info-card sales-card pb-0">
-                    <div class="card-body">
-                      <h5 class="card-title">BQI 17 Session Attendees</h5>
-                      <div class="d-flex align-items-center">
-                        <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
-                          <i class="bi bi-person-check-fill"></i>
-                        </div>
-                        <div class="ps-3">
-                          <h6><?= $bqi_17_session_attendees_count ?></h6>
-                        </div>
-                      </div>
-                    </div>
-                   
-                  </div>
-                </a>
-              </div>
+                </div>
 
-              <div class="col-xxl-6 col-md-6">
-                <a href="#">
-                  <div class="card info-card revenue-card  pb-0">
-                    <div class="card-body">
-                      <h5 class="card-title">Rivayaat covered </h5>
-                      <div class="d-flex align-items-center">
-                        <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
-                          <i class="bx bx-checkbox-checked"></i>
+                <!-- SECTION 3: SHAADI UMOOR -->
+                <div class="card mb-3">
+                    <div class="card-body pb-0">
+                        <h5 class="card-title pb-0 mb-2"><i class="bi bi-heart-fill text-danger"></i> Shaadi Umoor</h5>
+                        <div class="row align-items-stretch">
+                            <div class="col-md-6 mb-3">
+                                <a href="<?= MODULE_PATH ?>training_sessions.php" class="text-decoration-none d-block h-100">
+                                    <div class="d-flex align-items-center p-3 rounded h-100" style="background: linear-gradient(135deg, #fce8e6 0%, #f8d0cc 100%); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: #ff6384; flex-shrink: 0;">
+                                            <i class="bi bi-calendar-event-fill text-white" style="font-size: 20px;"></i>
+                                        </div>
+                                        <div class="ps-3">
+                                            <h6 class="mb-0 text-dark" style="font-size: 22px; font-weight: 700;"><?= $shaadi_baramij_count ?></h6>
+                                            <small class="text-muted">Shaadi Layak Farzando Baramij</small>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <a href="<?= MODULE_PATH ?>individual_tafheem.php" class="text-decoration-none d-block h-100">
+                                    <div class="d-flex align-items-center p-3 rounded h-100" style="background: linear-gradient(135deg, #fce8e6 0%, #f8d0cc 100%); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: #ff6384; flex-shrink: 0;">
+                                            <i class="bi bi-person-check-fill text-white" style="font-size: 20px;"></i>
+                                        </div>
+                                        <div class="ps-3">
+                                            <h6 class="mb-0 text-dark" style="font-size: 22px; font-weight: 700;"><?= $individual_tafheem_count ?></h6>
+                                            <small class="text-muted">Individual Tafheem</small>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
                         </div>
-                        <div class="ps-3">
-                           <h6><?php echo' will be live soon'; ?></h6>
-                        </div>
-                      </div>
                     </div>
-                  </div>
-                </a>
-              </div>
-                
-            </div>
-          </div>
+                </div>
+
+                <!-- SECTION 4: REPORTS -->
+                <div class="card mb-3">
+                    <div class="card-body pb-0">
+                        <h5 class="card-title pb-0 mb-2"><i class="bi bi-clipboard-data-fill text-warning"></i> Reports</h5>
+                        <div class="row align-items-stretch">
+                            <div class="col-md-4 mb-3">
+                                <a href="<?= MODULE_PATH ?>challenges_solutions.php" class="text-decoration-none d-block h-100">
+                                    <div class="d-flex align-items-center p-3 rounded h-100" style="background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: #ff9f43; flex-shrink: 0;">
+                                            <i class="bi bi-exclamation-triangle-fill text-white" style="font-size: 20px;"></i>
+                                        </div>
+                                        <div class="ps-3">
+                                            <h6 class="mb-0 text-dark" style="font-size: 22px; font-weight: 700;"><?= $challenges_count ?></h6>
+                                            <small class="text-muted">Challenges</small>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <a href="<?= MODULE_PATH ?>noteworthy_experiences.php" class="text-decoration-none d-block h-100">
+                                    <div class="d-flex align-items-center p-3 rounded h-100" style="background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: #ff9f43; flex-shrink: 0;">
+                                            <i class="bi bi-star-fill text-white" style="font-size: 20px;"></i>
+                                        </div>
+                                        <div class="ps-3">
+                                            <h6 class="mb-0 text-dark" style="font-size: 22px; font-weight: 700;"><?= $noteworthy_count ?></h6>
+                                            <small class="text-muted">Noteworthy</small>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <a href="<?= MODULE_PATH ?>khidmat_preparations.php" class="text-decoration-none d-block h-100">
+                                    <div class="d-flex align-items-center p-3 rounded h-100" style="background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: #ff9f43; flex-shrink: 0;">
+                                            <i class="bi bi-tools text-white" style="font-size: 20px;"></i>
+                                        </div>
+                                        <div class="ps-3">
+                                            <h6 class="mb-0 text-dark" style="font-size: 22px; font-weight: 700;"><?= $khidmat_count ?></h6>
+                                            <small class="text-muted">Khidmat Preps</small>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div><!-- End Left side columns -->
+
+            <!-- Right side columns -->
+            <div class="col-lg-4">
+
+                <?php require_once(__DIR__ . '/inc/downloads.php'); ?>
+
+                <?php
+                $mauze = $rowdata['miqaat_mauze'];
+                $query = "SELECT `u`.`full_name_en`,`j`.`primary_email`,`j`.`aamil_masool_its_id` FROM `its_jamaat_master` `j`
+                      LEFT JOIN user `u` ON `j`.`aamil_masool_its_id` = `u`.`its_id`
+                      WHERE `j`.`jamaat` = '$mauze'";
+                $result = mysqli_query($coremysqli, $query);
+                $row = $result->fetch_all(MYSQLI_ASSOC);
+                ?>
+                <!-- Aamil Saheb Info card -->
+                <div class="card">
+                    <div class="card-header">Aamil Saheb Info</div>
+                    <div class="card-body text-center">
+                        <h5 class="card-title"><?= $row[0]['full_name_en'] ?></h5>
+                        <?php
+                        $imagePath = "https://www.talabulilm.com/mumin_images/" . $row[0]['aamil_masool_its_id'] . ".png";
+                        if (@getimagesize($imagePath)) {
+                            echo '<img src="' . $imagePath . '" style="width:80px" />';
+                        } else {
+                            echo '<img src="https://www.talabulilm.com/placeholder_image/placeholder.png" style="width:80px" />';
+                        }
+                        ?>
+                    </div>
+                    <div class="card-footer">
+                        <p>Email: <a href="mailto:<?= $row[0]['primary_email'] ?>"><?= $row[0]['primary_email'] ?></a></p>
+                    </div>
+                </div><!-- End Aamil Saheb Info card -->
+
+            </div><!-- End Right side columns -->
 
         </div>
-       
+    </section>
+</main>
 
-      </div><!-- End Left side columns -->
-
-      <!-- Right side columns -->
-      <div class="col-lg-4">
-
-        <?php
-        require_once(__DIR__ . '/inc/downloads.php')
-        ?>
-
-        <?php
-        $mauze = $rowdata['miqaat_mauze'];
-        // var_dump($rowdata[0]['miqaat_mauze']);exit();
-        $query = "SELECT `u`.`full_name_en`,`j`.`primary_email`,`j`.`aamil_masool_its_id` FROM `its_jamaat_master` `j`
-              LEFT JOIN user `u` ON `j`.`aamil_masool_its_id` = `u`.`its_id`
-              WHERE `j`.`jamaat` = '$mauze'";
-        $result = mysqli_query($coremysqli, $query);
-        $row = $result->fetch_all(MYSQLI_ASSOC);
-        ?>
-        <!-- Aamil Saheb Info card -->
-        <div class="card">
-          <div class="card-header">Aamil Saheb Info</div>
-          <div class="card-body text-center">
-            <h5 class="card-title"><?= $row[0]['full_name_en'] ?></h5>
-            <!-- <img src="https://www.talabulilm.com/mumin_images/<?= $row[0]['aamil_masool_its_id'] ?>.png" /> -->
-            <?php
-            $imagePath = "https://www.talabulilm.com/mumin_images/" . $row[0]['aamil_masool_its_id'] . ".png";
-
-            if (@getimagesize($imagePath)) {
-              echo '<img src="' . $imagePath . '" style="width:80px" />';
-            } else {
-              echo '<img src="https://www.talabulilm.com/placeholder_image/placeholder.png" style="width:80px" />';
-            }
-            ?>
-
-          </div>
-          <div class="card-footer">
-            <!-- <p>Mobile: <a href="tel:+91 9876543210">+91 9876543210</a></p> -->
-            <p>Email: <a href="mailto:<?= $row[0]['primary_email'] ?>"><?= $row[0]['primary_email'] ?></a></p>
-            <!--<p>mobile: <a href="mailto:aamil@alvazarat.org"><?= $row[0]['primary_email'] ?></a></p>-->
-            <!--<p><a href="zone_details.php">List of BQI Khidmat Guzaars</a></p>-->
-            <!--<p><a href="umoor-talimiyah-members.php">List of Umoor Taalimiyah Members</a></p>-->
-          </div>
-        </div><!-- End Aamil Saheb Info card -->
-
-      </div><!-- End Right side columns -->
-
-    </div>
-  </section>
-
-</main><!-- End #main -->
-
-<?php
-require_once(__DIR__ . '/inc/footer.php');
-?>
-
-<?php
-require_once(__DIR__ . '/inc/js-block.php');
-?>
+<?php require_once(__DIR__ . '/inc/footer.php'); ?>
+<?php require_once(__DIR__ . '/inc/js-block.php'); ?>

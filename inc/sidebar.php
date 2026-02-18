@@ -108,17 +108,6 @@
         <!-- Dashboard -->
         <?php generateSidebarItem('dashboard', $current_page, 'bi bi-grid', 'Dashboard', 'index.php'); ?>
 
-
-        <!-- Resources & Downloads -->
-        <?php generateSidebarItem('resources', $current_page, 'bx bxs-folder-open', 'Resources & Downloads', 'resources.php'); ?>
-        <?php // generateSidebarItem('google_form_list', $current_page, 'bx  bxs-report', 'Daily Feedback Forms', 'google_form_list.php'); ?>
-        <?php //generateSidebarItem('hifz_nasaih', $current_page, 'bx  bx-chat', 'Hifz al-Nasa’ih', 'hifz_nasaih.php'); ?>
-        <?php //generateSidebarItem('bqi_17_session_attendees', $current_page, 'bi bi-person-check-fill', 'BQI 17 Session Attendees', 'bqi_17_session_attendees.php'); ?>
-        <?php //generateSidebarItem('manage_ld', $current_page, 'bx  bxs-book', 'Data Entry - LD', 'manage_ld.php'); ?>
-        <?php //generateSidebarItem('meeting_and_photo_reports', $current_page, 'bx bxs-vector', 'Meetings & Photo - Reports', 'meeting_and_photo_report.php'); ?>
-        <?php //generateSidebarItem('journal', $current_page, 'bi bi-journal-album', 'Journal', 'journal.php'); ?>
-        <?php //generateSidebarItem('Closure_Report', $current_page, 'bx bx-bookmark', 'Closure Report', 'closure-report.php'); ?>
-
         <!-- BQI 1447 Pages -->
         <?php generateSidebarItem('zakereen_parties', $current_page, 'bi bi-clipboard-data', 'Zakereen Parties', 'zakereen_parties.php'); ?>
         <?php generateSidebarItem('zakereen_farzando', $current_page, 'bi bi-clipboard-data', 'Zakereen Farzando', 'zakereen_farzando.php'); ?>
@@ -127,6 +116,7 @@
         <?php generateSidebarItem('challenges_solutions', $current_page, 'bi bi-clipboard-data', 'Challenges / Solutions', 'challenges_solutions.php'); ?>
         <?php generateSidebarItem('noteworthy_experiences', $current_page, 'bi bi-clipboard-data', 'Noteworthy Experiences', 'noteworthy_experiences.php'); ?>
         <?php generateSidebarItem('khidmat_preparations', $current_page, 'bi bi-clipboard-data', 'Khidmat Preparations', 'khidmat_preparations.php'); ?>
+        <?php generateSidebarItem('maaraz', $current_page, 'bi bi-clipboard-data', "Ma'araz", 'maaraz.php'); ?>
 
         <!-- Admin Section -->
         <?php generateAdminSection($user_its, $admin_its, $current_page); ?>
