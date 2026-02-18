@@ -13,9 +13,19 @@
   src: url('../fonts/Kanz-al-Marjaan.ttf') format('truetype');
 }
 
+@font-face {
+  font-family: 'kanz-arabic';
+  src: url('../fonts/Kanz-al-Marjaan.ttf') format('truetype');
+  unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF, U+0E01-0E7F;
+}
+
 textarea[dir="auto"],
 .kanz-ld {
   font-family: 'kanz', 'Open Sans', Arial, sans-serif;
+}
+
+.bqi-1447 {
+  font-family: 'kanz-arabic', 'Open Sans', Arial, sans-serif;
 }
 
 /*--------------------------------------------------------------
