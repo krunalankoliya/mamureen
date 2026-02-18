@@ -130,7 +130,7 @@ if (isset($_POST['update_tafheem'])) {
 }
 
 // Fetch Tafheem Reasons
-$query = "SELECT *, CASE WHEN reason_name_ld IS NOT NULL AND reason_name_ld != '' THEN CONCAT(reason_name, ' / ', reason_name_ld) ELSE reason_name END AS display_name FROM `bqi_tafheem_reasons` WHERE `is_active` = 1 ORDER BY `sort_order`, `reason_name`";
+$query = "SELECT * FROM `bqi_tafheem_reasons` WHERE `is_active` = 1 ORDER BY `sort_order`, `reason_name`";
 $result = mysqli_query($mysqli, $query);
 $reasons = $result->fetch_all(MYSQLI_ASSOC);
 
@@ -189,7 +189,7 @@ $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
                                                     <select name="reason_id" class="form-select" required>
                                                         <option value="" disabled selected>Select Reason...</option>
                                                         <?php foreach ($reasons as $r) : ?>
-                                                            <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['display_name'] ?? $r['reason_name']) ?></option>
+                                                            <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['reason_name']) ?></option>
                                                         <?php endforeach; ?>
                                                     </select>
                                                 </div>
@@ -301,7 +301,7 @@ $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
                         <label class="form-label">Reason</label>
                         <select name="reason_id" id="edit_reason" class="form-select" required>
                             <?php foreach ($reasons as $r) : ?>
-                                <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['display_name'] ?? $r['reason_name']) ?></option>
+                                <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['reason_name']) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>

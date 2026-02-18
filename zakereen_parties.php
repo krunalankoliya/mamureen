@@ -1,51 +1,51 @@
 <?php
-require_once(__DIR__ . '/session.php');
-$current_page = 'zakereen_parties';
+    require_once __DIR__ . '/session.php';
+    $current_page = 'zakereen_parties';
 
-require_once(__DIR__ . '/inc/header.php');
+    require_once __DIR__ . '/inc/header.php';
 
-// Handle Add Party
-if (isset($_POST['add_party'])) {
+    // Handle Add Party
+    if (isset($_POST['add_party'])) {
     $party_name = trim(mysqli_real_escape_string($mysqli, $_POST['party_name']));
 
     if (empty($party_name)) {
         $message = ['text' => 'Party name cannot be blank.', 'tag' => 'danger'];
     } else {
         $query = "INSERT INTO `bqi_zakereen_parties` (`party_name`, `is_active`, `added_its`)
-                  VALUES ('$party_name', 0, '$user_its')";
+                  VALUES ('$party_name', 1, '$user_its')";
         try {
             mysqli_query($mysqli, $query);
-            $message = ['text' => 'Party added successfully.', 'tag' => 'success'];
+            $message    = ['text' => 'Party added successfully.', 'tag' => 'success'];
             $show_popup = true;
         } catch (Exception $e) {
             $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
         }
     }
-}
+    }
 
-// Handle Toggle Active
-if (isset($_POST['toggle_active'])) {
-    $party_id = (int)$_POST['party_id'];
-    $new_status = (int)$_POST['new_status'];
-    $query = "UPDATE `bqi_zakereen_parties` SET `is_active` = '$new_status', `update_its` = '$user_its', `update_ts` = NOW() WHERE `id` = '$party_id'";
+    // Handle Toggle Active
+    if (isset($_POST['toggle_active'])) {
+    $party_id   = (int) $_POST['party_id'];
+    $new_status = (int) $_POST['new_status'];
+    $query      = "UPDATE `bqi_zakereen_parties` SET `is_active` = '$new_status', `update_its` = '$user_its', `update_ts` = NOW() WHERE `id` = '$party_id'";
     try {
         mysqli_query($mysqli, $query);
         $message = ['text' => 'Party status updated.', 'tag' => 'success'];
     } catch (Exception $e) {
         $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
     }
-}
+    }
 
-// Fetch parties
-$query = "SELECT * FROM `bqi_zakereen_parties` ORDER BY `added_ts` DESC";
-$result = mysqli_query($mysqli, $query);
-$parties = $result->fetch_all(MYSQLI_ASSOC);
+    // Fetch parties
+    $query   = "SELECT * FROM `bqi_zakereen_parties` ORDER BY `added_ts` DESC";
+    $result  = mysqli_query($mysqli, $query);
+    $parties = $result->fetch_all(MYSQLI_ASSOC);
 ?>
 
 <main id="main" class="main">
     <section class="section dashboard">
         <div class="row">
-            <?php require_once(__DIR__ . '/inc/messages.php'); ?>
+            <?php require_once __DIR__ . '/inc/messages.php'; ?>
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">Zakereen Party Registration</h5>
@@ -87,28 +87,28 @@ $parties = $result->fetch_all(MYSQLI_ASSOC);
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($parties as $key => $party) : ?>
+                                    <?php foreach ($parties as $key => $party): ?>
                                         <tr>
-                                            <td><?= $key + 1 ?></td>
-                                            <td><?= htmlspecialchars($party['party_name']) ?></td>
+                                            <td><?php echo $key + 1 ?></td>
+                                            <td><?php echo htmlspecialchars($party['party_name']) ?></td>
                                             <td>
-                                                <?php if ($party['is_active'] == 1) : ?>
+                                                <?php if ($party['is_active'] == 1): ?>
                                                     <span class="badge bg-success">Active</span>
-                                                <?php else : ?>
+                                                <?php else: ?>
                                                     <span class="badge bg-secondary">Inactive</span>
                                                 <?php endif; ?>
                                             </td>
-                                            <td><?= $party['added_its'] ?></td>
-                                            <td><?= date('d-M-Y H:i', strtotime($party['added_ts'])) ?></td>
+                                            <td><?php echo $party['added_its'] ?></td>
+                                            <td><?php echo date('d-M-Y H:i', strtotime($party['added_ts'])) ?></td>
                                             <td>
                                                 <form method="post" style="display:inline;">
-                                                    <input type="hidden" name="party_id" value="<?= $party['id'] ?>">
-                                                    <?php if ($party['is_active'] == 1) : ?>
+                                                    <input type="hidden" name="party_id" value="<?php echo $party['id'] ?>">
+                                                    <?php if ($party['is_active'] == 1): ?>
                                                         <input type="hidden" name="new_status" value="0">
                                                         <button type="submit" name="toggle_active" class="btn btn-sm btn-outline-warning" title="Deactivate">
                                                             <i class="bi bi-toggle-on"></i>
                                                         </button>
-                                                    <?php else : ?>
+                                                    <?php else: ?>
                                                         <input type="hidden" name="new_status" value="1">
                                                         <button type="submit" name="toggle_active" class="btn btn-sm btn-outline-success" title="Activate">
                                                             <i class="bi bi-toggle-off"></i>
@@ -129,9 +129,9 @@ $parties = $result->fetch_all(MYSQLI_ASSOC);
     </section>
 </main>
 
-<?php require_once(__DIR__ . '/inc/footer.php'); ?>
+<?php require_once __DIR__ . '/inc/footer.php'; ?>
 <script>
-<?php if (!empty($show_popup)) : ?>
+<?php if (! empty($show_popup)): ?>
     alert('Party added successfully!');
 <?php endif; ?>
 

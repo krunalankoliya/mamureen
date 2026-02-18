@@ -71,6 +71,7 @@
             // ['page' => 'manage_mamureen_suggestions', 'link' => 'admin/manage_mamureen_suggestions.php', 'text' => 'Manage Mamureen Suggestions', 'icon' => 'bi bi-circle'],
             // ['page' => 'manage_journal', 'link' => 'admin/manage_journal.php', 'text' => 'Manage Journal', 'icon' => 'bi bi-circle'],
             ['page' => 'manage_bqi_categories', 'link' => 'admin/manage_bqi_categories.php', 'text' => 'BQI 1447 Categories', 'icon' => 'bi bi-circle'],
+            ['page' => 'manage_tafheem_reasons', 'link' => 'admin/manage_tafheem_reasons.php', 'text' => 'Tafheem Reasons', 'icon' => 'bi bi-circle'],
             // ['page' => 'list_closure_reports', 'link' => 'admin/list_closure_reports.php', 'text' => 'Closure Reports Master', 'icon' => 'bi bi-circle'],
             // ['page' => 'zone_master', 'link' => 'admin/zone_master.php', 'text' => 'Zone Master Counts', 'icon' => 'bi bi-circle'],
         ];
@@ -88,6 +89,7 @@
                 // 'manage_bqi_17_session_attendees',
                 // 'manage_journal',
                 'manage_bqi_categories',
+                'manage_tafheem_reasons',
                 // 'list_closure_reports',
             ],
             $current_page,
