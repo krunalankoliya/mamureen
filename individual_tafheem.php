@@ -4,6 +4,63 @@ $current_page = 'individual_tafheem';
 
 require_once(__DIR__ . '/inc/header.php');
 
+// Initialize variables
+$verified_user = null;
+
+// Function to fetch user data from API (server-side)
+function fetchUserDataByITS_tafheem($its_id)
+{
+    if (empty($its_id)) {
+        return null;
+    }
+
+    $user_its = $_COOKIE['user_its'] ?? '';
+    $ver      = $_COOKIE['ver'] ?? '';
+
+    if (empty($user_its) || empty($ver)) {
+        return null;
+    }
+
+    $api_url = "https://www.talabulilm.com/api2022/core/user/getUserDetailsByItsID/" . urlencode($its_id);
+    $auth    = base64_encode("$user_its:$ver");
+    $headers = ["Authorization: Basic $auth"];
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_RESOLVE, ['www.talabulilm.com:443:66.85.132.227']);
+    curl_setopt($ch, CURLOPT_URL, $api_url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+    $response = curl_exec($ch);
+    $error    = curl_error($ch);
+    curl_close($ch);
+
+    if ($error || empty($response)) {
+        return null;
+    }
+
+    $data = json_decode($response, true);
+    if (empty($data) || !isset($data['its_id'])) {
+        return null;
+    }
+
+    return $data;
+}
+
+// Handle Verify ITS (server-side)
+if (isset($_POST['verify_its'])) {
+    $verify_its_id = (int) $_POST['verify_its_id'];
+
+    if ($verify_its_id <= 0 || strlen((string)$verify_its_id) < 8) {
+        $message = ['text' => 'Please enter a valid 8-digit ITS ID.', 'tag' => 'danger'];
+    } else {
+        $verified_user = fetchUserDataByITS_tafheem($verify_its_id);
+        if (!$verified_user) {
+            $message = ['text' => "ITS ID $verify_its_id not found. Please check and try again.", 'tag' => 'danger'];
+        }
+    }
+}
+
 // Handle Submit
 if (isset($_POST['submit_tafheem'])) {
     $target_its_id = (int)$_POST['target_its_id'];
@@ -99,78 +156,83 @@ $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
                             <div class="card">
                                 <div class="card-body">
                                     <h5 class="card-title">Submit New Report</h5>
-                                    <form method="post" enctype="multipart/form-data" id="tafheemForm">
 
-                                        <!-- ITS Verification -->
+                                    <?php if ($verified_user): ?>
+                                        <!-- ITS Verified - Show details and report form -->
+                                        <div class="alert alert-success py-2">
+                                            <strong>ITS Verified Successfully</strong>
+                                        </div>
                                         <div class="row mb-3">
-                                            <label class="col-sm-4 col-form-label">Target ITS ID<span class="required_star">*</span></label>
-                                            <div class="col-sm-5">
-                                                <input type="number" id="its_id_input" class="form-control" placeholder="Enter ITS ID" required>
+                                            <div class="col-md-3 text-center">
+                                                <img src="https://www.talabulilm.com/mumin_images/<?php echo htmlspecialchars($verified_user['its_id']) ?>.png"
+                                                     class="rounded-circle" width="80" height="80"
+                                                     alt="<?php echo htmlspecialchars($verified_user['full_name_en']) ?>">
                                             </div>
-                                            <div class="col-sm-3">
-                                                <button type="button" id="verifyBtn" class="btn btn-info btn-sm">Verify</button>
-                                            </div>
-                                        </div>
-
-                                        <!-- Verified Info -->
-                                        <div id="verifiedInfo" class="d-none mb-3">
-                                            <div class="row">
-                                                <div class="col-md-3 text-center">
-                                                    <img id="itsPhoto" src="" class="rounded-circle" width="60" height="60" alt="Photo">
-                                                </div>
-                                                <div class="col-md-9">
-                                                    <strong id="itsName"></strong><br>
-                                                    <small id="itsDetails" class="text-muted"></small>
-                                                </div>
+                                            <div class="col-md-9">
+                                                <table class="table table-sm table-borderless mb-0">
+                                                    <tr><td><strong>ITS ID:</strong></td><td><?php echo htmlspecialchars($verified_user['its_id']) ?></td></tr>
+                                                    <tr><td><strong>Name:</strong></td><td><?php echo htmlspecialchars($verified_user['full_name_en']) ?></td></tr>
+                                                    <tr><td><strong>Gender:</strong></td><td><?php echo htmlspecialchars($verified_user['gender'] ?? '') ?></td></tr>
+                                                    <tr><td><strong>Jamaat:</strong></td><td><?php echo htmlspecialchars($verified_user['jamaat'] ?? '') ?></td></tr>
+                                                </table>
                                             </div>
                                         </div>
 
-                                        <input type="hidden" name="target_its_id" id="hid_target_its">
-                                        <input type="hidden" name="target_name" id="hid_target_name">
+                                        <form method="post" enctype="multipart/form-data">
+                                            <input type="hidden" name="target_its_id" value="<?php echo htmlspecialchars($verified_user['its_id']) ?>">
+                                            <input type="hidden" name="target_name" value="<?php echo htmlspecialchars($verified_user['full_name_en']) ?>">
 
-                                        <!-- Reason Dropdown -->
-                                        <div class="row mb-3">
-                                            <label class="col-sm-4 col-form-label">Reason<span class="required_star">*</span></label>
-                                            <div class="col-sm-8">
-                                                <select name="reason_id" class="form-select" required>
-                                                    <option value="" disabled selected>Select Reason...</option>
-                                                    <?php foreach ($reasons as $r) : ?>
-                                                        <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['display_name'] ?? $r['reason_name']) ?></option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                            </div>
-                                        </div>
-
-                                        <!-- Report Details -->
-                                        <div class="row mb-3">
-                                            <label class="col-sm-4 col-form-label">Report Details<span class="required_star">*</span></label>
-                                            <div class="col-sm-8">
-                                                <textarea name="report_details" class="form-control" style="height: 120px;" dir="auto" required></textarea>
-                                            </div>
-                                        </div>
-
-                                        <!-- File Attachments -->
-                                        <div class="row mb-3">
-                                            <label class="col-sm-4 col-form-label">Attachments</label>
-                                            <div class="col-sm-8">
-                                                <input type="file" name="attachments[]" class="form-control" accept="image/*" multiple>
-                                                <small class="text-muted">Optional. JPG/PNG, max 4MB each.</small>
-                                            </div>
-                                        </div>
-
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="d-grid gap-2">
-                                                    <input type="reset" value="Reset" class="btn btn-outline-secondary">
+                                            <!-- Reason Dropdown -->
+                                            <div class="row mb-3">
+                                                <label class="col-sm-4 col-form-label">Reason<span class="required_star">*</span></label>
+                                                <div class="col-sm-8">
+                                                    <select name="reason_id" class="form-select" required>
+                                                        <option value="" disabled selected>Select Reason...</option>
+                                                        <?php foreach ($reasons as $r) : ?>
+                                                            <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['display_name'] ?? $r['reason_name']) ?></option>
+                                                        <?php endforeach; ?>
+                                                    </select>
                                                 </div>
                                             </div>
-                                            <div class="col-md-6">
-                                                <div class="d-grid gap-2">
-                                                    <button type="submit" name="submit_tafheem" id="submitBtn" class="btn btn-primary" disabled>Submit Report</button>
+
+                                            <!-- Report Details -->
+                                            <div class="row mb-3">
+                                                <label class="col-sm-4 col-form-label">Report Details<span class="required_star">*</span></label>
+                                                <div class="col-sm-8">
+                                                    <textarea name="report_details" class="form-control" style="height: 120px;" dir="auto" required></textarea>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </form>
+
+                                            <!-- File Attachments -->
+                                            <div class="row mb-3">
+                                                <label class="col-sm-4 col-form-label">Attachments</label>
+                                                <div class="col-sm-8">
+                                                    <input type="file" name="attachments[]" class="form-control" accept="image/*" multiple>
+                                                    <small class="text-muted">Optional. JPG/PNG, max 4MB each.</small>
+                                                </div>
+                                            </div>
+
+                                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                                <a href="<?php echo htmlspecialchars($_SERVER['PHP_SELF']) ?>" class="btn btn-secondary">Cancel</a>
+                                                <button type="submit" name="submit_tafheem" class="btn btn-primary">Submit Report</button>
+                                            </div>
+                                        </form>
+
+                                    <?php else: ?>
+                                        <!-- Step 1: Enter ITS ID and Verify -->
+                                        <form method="post">
+                                            <div class="row mb-3">
+                                                <label class="col-sm-4 col-form-label">Target ITS ID<span class="required_star">*</span></label>
+                                                <div class="col-sm-5">
+                                                    <input type="number" name="verify_its_id" class="form-control" placeholder="Enter ITS ID" required>
+                                                </div>
+                                                <div class="col-sm-3">
+                                                    <button type="submit" name="verify_its" class="btn btn-info btn-sm">Verify</button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    <?php endif; ?>
+
                                 </div>
                             </div>
                         </div>
@@ -263,56 +325,15 @@ $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
     alert('Tafheem report submitted successfully!');
 <?php endif; ?>
 
-// ITS Verification
-$('#verifyBtn').click(function() {
-    var its_id = $('#its_id_input').val();
-    if (!its_id || its_id.length < 8) {
-        alert('Please enter a valid ITS ID');
-        return;
-    }
-
-    $(this).prop('disabled', true).text('Verifying...');
-
-    $.ajax({
-        url: '<?= MODULE_PATH ?>ajax_its_verify.php',
-        type: 'POST',
-        data: { its_id: its_id },
-        dataType: 'json',
-        success: function(res) {
-            if (res.success) {
-                $('#itsPhoto').attr('src', res.photo_url);
-                $('#itsName').text(res.full_name);
-                $('#itsDetails').text(res.jamaat + ' | ' + res.gender);
-                $('#verifiedInfo').removeClass('d-none');
-
-                $('#hid_target_its').val(res.its_id);
-                $('#hid_target_name').val(res.full_name);
-
-                $('#submitBtn').prop('disabled', false);
-            } else {
-                alert(res.message || 'ITS ID not found');
-                $('#verifiedInfo').addClass('d-none');
-                $('#submitBtn').prop('disabled', true);
-            }
-        },
-        error: function() {
-            alert('Error verifying ITS ID. Please try again.');
-        },
-        complete: function() {
-            $('#verifyBtn').prop('disabled', false).text('Verify');
-        }
-    });
-});
-
-// Edit Modal populate
-$('.view-btn').click(function() {
-    $('#edit_id').val($(this).data('id'));
-    $('#edit_target_info').text($(this).data('name') + ' (' + $(this).data('its') + ')');
-    $('#edit_reason').val($(this).data('reason'));
-    $('#edit_details').val($(this).data('details'));
-});
-
 $(document).ready(function () {
+    // Edit Modal populate
+    $('.view-btn').click(function() {
+        $('#edit_id').val($(this).data('id'));
+        $('#edit_target_info').text($(this).data('name') + ' (' + $(this).data('its') + ')');
+        $('#edit_reason').val($(this).data('reason'));
+        $('#edit_details').val($(this).data('details'));
+    });
+
     $('#datatable').DataTable({
         dom: 'Bfrtip',
         pageLength: 10,

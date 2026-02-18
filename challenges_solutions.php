@@ -73,7 +73,7 @@ if (isset($_POST['update_challenge'])) {
 }
 
 // Fetch categories
-$query = "SELECT *, CASE WHEN category_name_ld IS NOT NULL AND category_name_ld != '' THEN CONCAT(category_name, ' / ', category_name_ld) ELSE category_name END AS display_name FROM `bqi_categories` WHERE `category_type` = 'challenge' AND `is_active` = 1 ORDER BY `sort_order`, `category_name`";
+$query = "SELECT * FROM `bqi_categories` WHERE `category_type` = 'challenge' AND `is_active` = 1 ORDER BY `sort_order`, `category_name`";
 $result = mysqli_query($mysqli, $query);
 $categories = $result->fetch_all(MYSQLI_ASSOC);
 
@@ -107,7 +107,7 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                                                 <select name="category_id" class="form-select" required>
                                                     <option value="" disabled selected>Select Category...</option>
                                                     <?php foreach ($categories as $c) : ?>
-                                                        <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['display_name'] ?? $c['category_name']) ?></option>
+                                                        <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['category_name']) ?></option>
                                                     <?php endforeach; ?>
                                                 </select>
                                             </div>
@@ -211,7 +211,7 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                         <label class="form-label">Category</label>
                         <select name="category_id" id="edit_category" class="form-select" required>
                             <?php foreach ($categories as $c) : ?>
-                                <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['display_name'] ?? $c['category_name']) ?></option>
+                                <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['category_name']) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>

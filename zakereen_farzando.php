@@ -4,6 +4,64 @@
 
     require_once __DIR__ . '/inc/header.php';
 
+    // Initialize variables
+    $verified_user = null;
+
+    // Function to fetch user data from API (server-side, like add_certificate.php)
+    function fetchUserDataByITS($its_id)
+    {
+        if (empty($its_id)) {
+            return null;
+        }
+
+        $user_its = $_COOKIE['user_its'] ?? '';
+        $ver      = $_COOKIE['ver'] ?? '';
+
+        if (empty($user_its) || empty($ver)) {
+            return null;
+        }
+
+        $api_url = "https://www.talabulilm.com/api2022/core/user/getUserDetailsByItsID/" . urlencode($its_id);
+        $auth    = base64_encode("$user_its:$ver");
+        $headers = ["Authorization: Basic $auth"];
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_RESOLVE, ['www.talabulilm.com:443:66.85.132.227']);
+        curl_setopt($ch, CURLOPT_URL, $api_url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+        $response = curl_exec($ch);
+        $error    = curl_error($ch);
+        curl_close($ch);
+
+        if ($error || empty($response)) {
+            return null;
+        }
+
+        $data = json_decode($response, true);
+        if (empty($data) || !isset($data['its_id'])) {
+            return null;
+        }
+
+        return $data;
+    }
+
+    // Handle Verify ITS (server-side)
+    if (isset($_POST['verify_its'])) {
+        $verify_its_id = (int) $_POST['verify_its_id'];
+        $selected_party = (int) ($_POST['party_id'] ?? 0);
+
+        if ($verify_its_id <= 0 || strlen((string)$verify_its_id) < 8) {
+            $message = ['text' => 'Please enter a valid 8-digit ITS ID.', 'tag' => 'danger'];
+        } else {
+            $verified_user = fetchUserDataByITS($verify_its_id);
+            if (!$verified_user) {
+                $message = ['text' => "ITS ID $verify_its_id not found. Please check and try again.", 'tag' => 'danger'];
+            }
+        }
+    }
+
     // Handle Quick-Add Party (from modal)
     if (isset($_POST['quick_add_party'])) {
     $party_name = trim(mysqli_real_escape_string($mysqli, $_POST['party_name']));
@@ -18,7 +76,7 @@
     }
     }
 
-    // Handle Individual Add
+    // Handle Individual Add (Save Farzand)
     if (isset($_POST['add_farzand'])) {
     $party_id   = (int) $_POST['party_id'];
     $its_id     = (int) $_POST['its_id'];
@@ -154,61 +212,77 @@
                             <div class="card">
                                 <div class="card-body">
                                     <h5 class="card-title">Add Individual Farzand</h5>
-                                    <form method="post" id="addFarzandForm">
+
+                                    <?php if ($verified_user): ?>
+                                        <!-- Step 2: ITS Verified - Show details and Save form -->
+                                        <div class="alert alert-success py-2">
+                                            <strong>ITS Verified Successfully</strong>
+                                        </div>
                                         <div class="row mb-3">
-                                            <label class="col-sm-4 col-form-label">Select Party<span class="required_star">*</span></label>
-                                            <div class="col-sm-7">
-                                                <select name="party_id" id="party_id" class="form-select" required>
-                                                    <option value="" disabled selected>Select Party...</option>
-                                                    <?php foreach ($parties as $p): ?>
-                                                        <option value="<?php echo $p['id'] ?>"><?php echo htmlspecialchars($p['party_name']) ?></option>
-                                                    <?php endforeach; ?>
-                                                </select>
+                                            <div class="col-md-3 text-center">
+                                                <img src="https://www.talabulilm.com/mumin_images/<?php echo htmlspecialchars($verified_user['its_id']) ?>.png"
+                                                     class="rounded-circle" width="80" height="80"
+                                                     alt="<?php echo htmlspecialchars($verified_user['full_name_en']) ?>">
                                             </div>
-                                            <div class="col-sm-1">
-                                                <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addPartyModal" title="Quick Add Party">
-                                                    <i class="bi bi-plus-lg"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        <div class="row mb-3">
-                                            <label class="col-sm-4 col-form-label">ITS ID<span class="required_star">*</span></label>
-                                            <div class="col-sm-5">
-                                                <input type="number" id="its_id_input" class="form-control" placeholder="Enter ITS ID" required>
-                                            </div>
-                                            <div class="col-sm-3">
-                                                <button type="button" id="verifyBtn" class="btn btn-info btn-sm">Verify ITS</button>
+                                            <div class="col-md-9">
+                                                <table class="table table-sm table-borderless mb-0">
+                                                    <tr><td><strong>ITS ID:</strong></td><td><?php echo htmlspecialchars($verified_user['its_id']) ?></td></tr>
+                                                    <tr><td><strong>Name:</strong></td><td><?php echo htmlspecialchars($verified_user['full_name_en']) ?></td></tr>
+                                                    <tr><td><strong>Gender:</strong></td><td><?php echo htmlspecialchars($verified_user['gender'] ?? '') ?></td></tr>
+                                                    <tr><td><strong>Jamaat:</strong></td><td><?php echo htmlspecialchars($verified_user['jamaat'] ?? '') ?></td></tr>
+                                                </table>
                                             </div>
                                         </div>
 
-                                        <!-- Verified Info Display -->
-                                        <div id="verifiedInfo" class="d-none mb-3">
-                                            <div class="row mb-2">
-                                                <div class="col-md-3 text-center">
-                                                    <img id="itsPhoto" src="" class="rounded-circle" width="60" height="60" alt="Photo">
+                                        <form method="post">
+                                            <div class="row mb-3">
+                                                <label class="col-sm-4 col-form-label">Select Party<span class="required_star">*</span></label>
+                                                <div class="col-sm-7">
+                                                    <select name="party_id" class="form-select" required>
+                                                        <option value="" disabled <?php echo empty($selected_party) ? 'selected' : '' ?>>Select Party...</option>
+                                                        <?php foreach ($parties as $p): ?>
+                                                            <option value="<?php echo $p['id'] ?>" <?php echo ($selected_party == $p['id']) ? 'selected' : '' ?>><?php echo htmlspecialchars($p['party_name']) ?></option>
+                                                        <?php endforeach; ?>
+                                                    </select>
                                                 </div>
-                                                <div class="col-md-9">
-                                                    <strong id="itsName"></strong><br>
-                                                    <small id="itsDetails" class="text-muted"></small>
+                                                <div class="col-sm-1">
+                                                    <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addPartyModal" title="Quick Add Party">
+                                                        <i class="bi bi-plus-lg"></i>
+                                                    </button>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        <!-- Hidden fields populated by AJAX -->
-                                        <input type="hidden" name="its_id" id="hid_its_id">
-                                        <input type="hidden" name="full_name" id="hid_full_name">
-                                        <input type="hidden" name="gender" id="hid_gender">
-                                        <input type="hidden" name="dob" id="hid_dob">
-                                        <input type="hidden" name="jamaat_val" id="hid_jamaat">
-                                        <input type="hidden" name="jamiat_val" id="hid_jamiat">
-                                        <input type="hidden" name="mobile" id="hid_mobile">
-                                        <input type="hidden" name="email" id="hid_email">
+                                            <!-- Hidden fields from verified data -->
+                                            <input type="hidden" name="its_id" value="<?php echo htmlspecialchars($verified_user['its_id']) ?>">
+                                            <input type="hidden" name="full_name" value="<?php echo htmlspecialchars($verified_user['full_name_en']) ?>">
+                                            <input type="hidden" name="gender" value="<?php echo htmlspecialchars($verified_user['gender'] ?? '') ?>">
+                                            <input type="hidden" name="dob" value="<?php echo htmlspecialchars($verified_user['dob'] ?? '') ?>">
+                                            <input type="hidden" name="jamaat_val" value="<?php echo htmlspecialchars($verified_user['jamaat'] ?? '') ?>">
+                                            <input type="hidden" name="jamiat_val" value="<?php echo htmlspecialchars($verified_user['jamiat'] ?? '') ?>">
+                                            <input type="hidden" name="mobile" value="<?php echo htmlspecialchars($verified_user['mobile'] ?? '') ?>">
+                                            <input type="hidden" name="email" value="<?php echo htmlspecialchars($verified_user['email'] ?? '') ?>">
 
-                                        <div class="d-grid gap-2">
-                                            <button type="submit" name="add_farzand" id="saveFarzandBtn" class="btn btn-primary" disabled>Save Farzand</button>
-                                        </div>
-                                    </form>
+                                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                                <a href="<?php echo htmlspecialchars($_SERVER['PHP_SELF']) ?>" class="btn btn-secondary">Cancel</a>
+                                                <button type="submit" name="add_farzand" class="btn btn-primary">Save Farzand</button>
+                                            </div>
+                                        </form>
+
+                                    <?php else: ?>
+                                        <!-- Step 1: Enter ITS ID and Verify -->
+                                        <form method="post">
+                                            <div class="row mb-3">
+                                                <label class="col-sm-4 col-form-label">ITS ID<span class="required_star">*</span></label>
+                                                <div class="col-sm-5">
+                                                    <input type="number" name="verify_its_id" class="form-control" placeholder="Enter ITS ID" required>
+                                                </div>
+                                                <div class="col-sm-3">
+                                                    <button type="submit" name="verify_its" class="btn btn-info btn-sm">Verify ITS</button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    <?php endif; ?>
+
                                 </div>
                             </div>
                         </div>
@@ -316,54 +390,6 @@
 <?php if (!empty($show_popup)) : ?>
     alert('Farzand added successfully!');
 <?php endif; ?>
-
-// ITS Verification
-$('#verifyBtn').click(function() {
-    var its_id = $('#its_id_input').val();
-    if (!its_id || its_id.length < 8) {
-        alert('Please enter a valid ITS ID');
-        return;
-    }
-
-    $(this).prop('disabled', true).text('Verifying...');
-
-    $.ajax({
-        url: '<?php echo MODULE_PATH ?>ajax_its_verify.php',
-        type: 'POST',
-        data: { its_id: its_id },
-        dataType: 'json',
-        success: function(res) {
-            if (res.success) {
-                $('#itsPhoto').attr('src', res.photo_url);
-                $('#itsName').text(res.full_name);
-                $('#itsDetails').text(res.jamaat + ' | ' + res.gender);
-                $('#verifiedInfo').removeClass('d-none');
-
-                // Populate hidden fields
-                $('#hid_its_id').val(res.its_id);
-                $('#hid_full_name').val(res.full_name);
-                $('#hid_gender').val(res.gender);
-                $('#hid_dob').val(res.dob);
-                $('#hid_jamaat').val(res.jamaat);
-                $('#hid_jamiat').val(res.jamiat);
-                $('#hid_mobile').val(res.mobile);
-                $('#hid_email').val(res.email);
-
-                $('#saveFarzandBtn').prop('disabled', false);
-            } else {
-                alert(res.message || 'ITS ID not found');
-                $('#verifiedInfo').addClass('d-none');
-                $('#saveFarzandBtn').prop('disabled', true);
-            }
-        },
-        error: function() {
-            alert('Error verifying ITS ID. Please try again.');
-        },
-        complete: function() {
-            $('#verifyBtn').prop('disabled', false).text('Verify ITS');
-        }
-    });
-});
 
 $(document).ready(function () {
     $('#datatable').DataTable({
