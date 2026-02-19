@@ -17,7 +17,17 @@
       "Bash(\"C:\\\\xampp\\\\php\\\\php.exe\" -r \"\n$conn = new mysqli\\(''localhost'', ''root'', '''', ''talabulilm_mamureen''\\);\nif \\($conn->connect_error\\) die\\(''Connection failed: '' . $conn->connect_error\\);\n$result = $conn->query\\(''SHOW TABLES''\\);\nwhile \\($row = $result->fetch_row\\(\\)\\) echo $row[0] . PHP_EOL;\n$conn->close\\(\\);\n\")",
       "Bash(dir:*)",
       "Bash(git add:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(gh auth status:*)",
+      "Bash(git remote add:*)",
+      "Bash(C:\\\\xampp\\\\php\\\\php.exe:*)",
+      "Bash(findstr:*)",
+      "Bash(cmd /c \"dir C:\\\\xampp\\\\apache\\\\logs /b\")",
+      "Bash(cmd /c \"if exist C:\\\\xampp\\\\php\\\\logs\\\\php_error_log \\(findstr /i hifz_nasaih C:\\\\xampp\\\\php\\\\logs\\\\php_error_log\\) else \\(echo No PHP error log found\\)\")",
+      "Bash(cmd /c \"if exist C:\\\\xampp\\\\htdocs\\\\mamureen\\\\nul del C:\\\\xampp\\\\htdocs\\\\mamureen\\\\nul\")",
+      "Bash(cmd /c \"dir C:\\\\xampp\\\\htdocs\\\\mamureen\\\\nul 2>&1\")",
+      "Bash(ls:*)",
+      "Bash(git push:*)"
     ]
   }
 }
