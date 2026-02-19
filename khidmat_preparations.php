@@ -97,7 +97,7 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                             <div class="card">
                                 <div class="card-body">
                                     <h5 class="card-title">Submit New Preparation</h5>
-                                    <form method="post" enctype="multipart/form-data">
+                                    <form method="post" enctype="multipart/form-data" id="uploadForm">
 
                                         <div class="row mb-3">
                                             <label class="col-sm-4 col-form-label">Category<span class="required_star">*</span></label>
@@ -126,6 +126,12 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                                                     <small><strong>Allowed:</strong> Images, PPT, PDF, Word, Videos, Audio<br>
                                                     <strong>Max file size: 20 MB per file</strong></small>
                                                 </div>
+                                                <div id="progressContainer" class="mt-2 d-none">
+                                                    <div class="progress">
+                                                        <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                                                    </div>
+                                                    <div id="uploadMessage" class="mt-2 text-center fw-bold d-none"></div>
+                                                </div>
                                             </div>
                                         </div>
 
@@ -137,7 +143,7 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="d-grid gap-2">
-                                                    <button type="submit" name="submit_preparation" class="btn btn-primary">Submit</button>
+                                                    <button type="submit" name="submit_preparation" id="submitBtn" class="btn btn-primary">Submit</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -221,39 +227,9 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
 </div>
 
 <?php require_once(__DIR__ . '/inc/footer.php'); ?>
-<script>
-<?php if (!empty($show_popup)) : ?>
-    alert('Khidmat preparation submitted successfully!');
-<?php endif; ?>
-
-$('.edit-btn').click(function() {
-    $('#edit_id').val($(this).data('id'));
-    $('#edit_category').val($(this).data('category'));
-    $('#edit_description').val($(this).data('description'));
-});
-
-// File size validation (20MB)
-$('form').on('submit', function(e) {
-    var maxSize = 20 * 1024 * 1024;
-    var files = $('input[name="attachments[]"]')[0].files;
-    for (var i = 0; i < files.length; i++) {
-        if (files[i].size > maxSize) {
-            alert('File "' + files[i].name + '" exceeds the 20 MB limit.');
-            e.preventDefault();
-            return false;
-        }
-    }
-});
-
-$(document).ready(function () {
-    $('#datatable').DataTable({
-        dom: 'Bfrtip',
-        pageLength: 10,
-        buttons: [
-            { extend: 'copy', filename: function(){ return 'khidmat_preparations-' + Date.now(); } },
-            { extend: 'csv', filename: function(){ return 'khidmat_preparations-' + Date.now(); } },
-            { extend: 'excel', filename: function(){ return 'khidmat_preparations-' + Date.now(); } }
-        ]
-    });
-});
-</script>
+<style>
+.progress     { height: 25px; }
+.progress-bar { line-height: 25px; font-weight: bold; }
+#uploadMessage { font-size: 14px; }
+</style>
+<script src="assets/js/khidmat_preparations.js"></script>

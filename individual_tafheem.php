@@ -178,7 +178,7 @@ $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
                                             </div>
                                         </div>
 
-                                        <form method="post" enctype="multipart/form-data">
+                                        <form method="post" enctype="multipart/form-data" id="uploadForm">
                                             <input type="hidden" name="target_its_id" value="<?php echo htmlspecialchars($verified_user['its_id']) ?>">
                                             <input type="hidden" name="target_name" value="<?php echo htmlspecialchars($verified_user['full_name_en']) ?>">
 
@@ -209,12 +209,18 @@ $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
                                                 <div class="col-sm-8">
                                                     <input type="file" name="attachments[]" class="form-control" accept="image/*" multiple>
                                                     <small class="text-muted">Optional. JPG/PNG, max 4MB each.</small>
+                                                    <div id="progressContainer" class="mt-2 d-none">
+                                                        <div class="progress">
+                                                            <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                                                        </div>
+                                                        <div id="uploadMessage" class="mt-2 text-center fw-bold d-none"></div>
+                                                    </div>
                                                 </div>
                                             </div>
 
                                             <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                                                 <a href="<?php echo htmlspecialchars($_SERVER['PHP_SELF']) ?>" class="btn btn-secondary">Cancel</a>
-                                                <button type="submit" name="submit_tafheem" class="btn btn-primary">Submit Report</button>
+                                                <button type="submit" name="submit_tafheem" id="submitBtn" class="btn btn-primary">Submit Report</button>
                                             </div>
                                         </form>
 
@@ -320,28 +326,9 @@ $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
 </div>
 
 <?php require_once(__DIR__ . '/inc/footer.php'); ?>
-<script>
-<?php if (!empty($show_popup)) : ?>
-    alert('Tafheem report submitted successfully!');
-<?php endif; ?>
-
-$(document).ready(function () {
-    // Edit Modal populate
-    $('.view-btn').click(function() {
-        $('#edit_id').val($(this).data('id'));
-        $('#edit_target_info').text($(this).data('name') + ' (' + $(this).data('its') + ')');
-        $('#edit_reason').val($(this).data('reason'));
-        $('#edit_details').val($(this).data('details'));
-    });
-
-    $('#datatable').DataTable({
-        dom: 'Bfrtip',
-        pageLength: 10,
-        buttons: [
-            { extend: 'copy', filename: function(){ return 'individual_tafheem-' + Date.now(); } },
-            { extend: 'csv', filename: function(){ return 'individual_tafheem-' + Date.now(); } },
-            { extend: 'excel', filename: function(){ return 'individual_tafheem-' + Date.now(); } }
-        ]
-    });
-});
-</script>
+<style>
+.progress     { height: 25px; }
+.progress-bar { line-height: 25px; font-weight: bold; }
+#uploadMessage { font-size: 14px; }
+</style>
+<script src="assets/js/individual_tafheem.js"></script>

@@ -99,7 +99,7 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                             <div class="card">
                                 <div class="card-body">
                                     <h5 class="card-title">Submit New Report</h5>
-                                    <form method="post" enctype="multipart/form-data">
+                                    <form method="post" enctype="multipart/form-data" id="uploadForm">
 
                                         <div class="row mb-3">
                                             <label class="col-sm-4 col-form-label">Category<span class="required_star">*</span></label>
@@ -132,6 +132,12 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                                             <div class="col-sm-8">
                                                 <input type="file" name="attachments[]" class="form-control" accept="image/*" multiple>
                                                 <small class="text-muted">Optional. JPG/PNG, max 4MB each.</small>
+                                                <div id="progressContainer" class="mt-2 d-none">
+                                                    <div class="progress">
+                                                        <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                                                    </div>
+                                                    <div id="uploadMessage" class="mt-2 text-center fw-bold d-none"></div>
+                                                </div>
                                             </div>
                                         </div>
 
@@ -143,7 +149,7 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="d-grid gap-2">
-                                                    <button type="submit" name="submit_challenge" class="btn btn-primary">Submit Report</button>
+                                                    <button type="submit" name="submit_challenge" id="submitBtn" class="btn btn-primary">Submit Report</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -234,27 +240,9 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
 </div>
 
 <?php require_once(__DIR__ . '/inc/footer.php'); ?>
-<script>
-<?php if (!empty($show_popup)) : ?>
-    alert('Challenge & Solution report submitted successfully!');
-<?php endif; ?>
-
-$('.edit-btn').click(function() {
-    $('#edit_id').val($(this).data('id'));
-    $('#edit_category').val($(this).data('category'));
-    $('#edit_challenge').val($(this).data('challenge'));
-    $('#edit_solution').val($(this).data('solution'));
-});
-
-$(document).ready(function () {
-    $('#datatable').DataTable({
-        dom: 'Bfrtip',
-        pageLength: 10,
-        buttons: [
-            { extend: 'copy', filename: function(){ return 'challenges_solutions-' + Date.now(); } },
-            { extend: 'csv', filename: function(){ return 'challenges_solutions-' + Date.now(); } },
-            { extend: 'excel', filename: function(){ return 'challenges_solutions-' + Date.now(); } }
-        ]
-    });
-});
-</script>
+<style>
+.progress     { height: 25px; }
+.progress-bar { line-height: 25px; font-weight: bold; }
+#uploadMessage { font-size: 14px; }
+</style>
+<script src="assets/js/challenges_solutions.js"></script>

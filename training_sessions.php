@@ -129,7 +129,7 @@ if ($result) {
                             <div class="card">
                                 <div class="card-body">
                                     <h5 class="card-title">Submit New Report</h5>
-                                    <form method="post" enctype="multipart/form-data" data-show-popup="<?php echo !empty($show_popup) ? '1' : '0' ?>">
+                                    <form method="post" enctype="multipart/form-data" id="uploadForm" data-show-popup="<?php echo !empty($show_popup) ? '1' : '0' ?>">
 
                                         <div class="row mb-3">
                                             <label class="col-sm-4 col-form-label">Program Type<span class="required_star">*</span></label>
@@ -216,6 +216,13 @@ if ($result) {
                                             </div>
                                         </div>
 
+                                        <div id="progressContainer" class="d-none mb-3">
+                                            <div class="progress">
+                                                <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                                            </div>
+                                            <div id="uploadMessage" class="mt-2 text-center fw-bold d-none"></div>
+                                        </div>
+
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <div class="d-grid gap-2">
@@ -224,7 +231,7 @@ if ($result) {
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="d-grid gap-2">
-                                                    <input type="submit" value="Submit" name="submit" class="btn btn-primary">
+                                                    <input type="submit" value="Submit" name="submit" id="submitBtn" class="btn btn-primary">
                                                 </div>
                                             </div>
                                         </div>
@@ -286,4 +293,9 @@ if ($result) {
 </main>
 
 <?php require_once(__DIR__ . '/inc/footer.php'); ?>
+<style>
+.progress     { height: 25px; }
+.progress-bar { line-height: 25px; font-weight: bold; }
+#uploadMessage { font-size: 14px; }
+</style>
 <script src="assets/js/training_sessions.js"></script>
