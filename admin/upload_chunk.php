@@ -1,8 +1,9 @@
 <?php
 // upload_chunk.php
+ob_start();
 require_once(__DIR__ . '/../session.php');
+ob_clean(); // discard any HTML session.php may have output
 
-// Set appropriate headers for AJAX response
 header('Content-Type: application/json');
 
 // Directory for temporary chunks storage

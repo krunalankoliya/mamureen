@@ -1,40 +1,32 @@
 <?php
 require_once(__DIR__ . '/session.php');
 $current_page = 'training_sessions';
-
 require_once(__DIR__ . '/inc/header.php');
 
 if (isset($_POST['submit'])) {
-    $errors = array();
+    $errors = [];
     $uploaded_file_count = 0;
     $uploadFileName1 = $uploadFileName2 = $uploadFileName3 = '';
 
     function prossesFile($fileTag, $user_its)
     {
         $maxsize    = 4194304;
-        $acceptable = array('jpeg', 'jpg', 'png');
-        $is_error = false;
+        $acceptable = ['jpeg', 'jpg', 'png'];
+        $is_error   = false;
 
-        $fileName = $_FILES[$fileTag]['name'];
-        $tempPath = $_FILES[$fileTag]["tmp_name"];
+        $fileName  = $_FILES[$fileTag]['name'];
+        $tempPath  = $_FILES[$fileTag]['tmp_name'];
         $file_size = $_FILES[$fileTag]['size'];
-        $fileType = pathinfo($fileName, PATHINFO_EXTENSION);
+        $fileType  = pathinfo($fileName, PATHINFO_EXTENSION);
 
-        if (($file_size >= $maxsize)) {
-            $is_error = true;
-        }
-
-        if ((!in_array(strtolower($fileType), $acceptable))) {
+        if ($file_size >= $maxsize || !in_array(strtolower($fileType), $acceptable)) {
             $is_error = true;
         }
 
         if (!$is_error) {
             $fileUploadName = $user_its . $fileTag . date('YmdHis') . '.' . $fileType;
-            $moved_file = move_uploaded_file($tempPath, __DIR__ . "/user_uploads/" . $fileUploadName);
-            if (!$moved_file) {
-                return false;
-            }
-            return $fileUploadName;
+            $moved_file = move_uploaded_file($tempPath, __DIR__ . '/user_uploads/' . $fileUploadName);
+            return $moved_file ? $fileUploadName : false;
         }
         return false;
     }
@@ -43,34 +35,53 @@ if (isset($_POST['submit'])) {
         $uploadFileName1 = prossesFile('upload_photo_1', $user_its);
         if ($uploadFileName1) $uploaded_file_count++;
     }
-
     if (isset($_FILES['upload_photo_2']) && $_FILES['upload_photo_2']['tmp_name'] !== '') {
         $uploadFileName2 = prossesFile('upload_photo_2', $user_its);
         if ($uploadFileName2) $uploaded_file_count++;
     }
-
     if (isset($_FILES['upload_photo_3']) && $_FILES['upload_photo_3']['tmp_name'] !== '') {
         $uploadFileName3 = prossesFile('upload_photo_3', $user_its);
         if ($uploadFileName3) $uploaded_file_count++;
     }
 
+    $selected_title_ids = $_POST['program_title_ids'] ?? [];
+    if (empty($selected_title_ids)) {
+        $errors[] = 'Please select at least one program title.';
+    }
+    if (empty($_POST['session_date'])) {
+        $errors[] = 'Session date is required.';
+    }
+    if (empty($_POST['duration_minutes']) || (int)$_POST['duration_minutes'] < 1) {
+        $errors[] = 'Duration (in minutes) is required and must be at least 1.';
+    }
+    if (empty($_POST['attendee_count']) || (int)$_POST['attendee_count'] < 1) {
+        $errors[] = 'Attendee count is required.';
+    }
+
     if (empty($errors)) {
-        $category = mysqli_real_escape_string($mysqli, $_POST['category']);
-        $program_title = mysqli_real_escape_string($mysqli, $_POST['program_title']);
-        $attendee_count = (int)$_POST['attendee_count'];
+        $program_type      = mysqli_real_escape_string($mysqli, $_POST['program_type']);
+        $attendee_count    = (int)$_POST['attendee_count'];
+        $session_date      = mysqli_real_escape_string($mysqli, $_POST['session_date']);
+        $duration_minutes  = (int)$_POST['duration_minutes'];
+        $program_title_ids = implode(',', array_map('intval', $selected_title_ids));
+        $upload_photo_1    = mysqli_real_escape_string($mysqli, $uploadFileName1);
+        $upload_photo_2    = mysqli_real_escape_string($mysqli, $uploadFileName2);
+        $upload_photo_3    = mysqli_real_escape_string($mysqli, $uploadFileName3);
 
-        $upload_photo_1 = $uploadFileName1;
-        $upload_photo_2 = $uploadFileName2;
-        $upload_photo_3 = $uploadFileName3;
-
-        $query = "INSERT INTO `meeting_and_photo_reports` (`user_its`, `category`, `jamaat`, `upload_photo_1`, `upload_photo_2`, `upload_photo_3`, `uploaded_file_count`)
-        VALUES ('$user_its', '$category - $program_title (Attendees: $attendee_count)', '$mauze', '$upload_photo_1', '$upload_photo_2', '$upload_photo_3', '$uploaded_file_count')";
+        $query = "INSERT INTO `bqi_training_sessions`
+                    (`user_its`, `jamaat`, `program_type`, `program_title_ids`,
+                     `session_date`, `duration_minutes`, `attendee_count`,
+                     `upload_photo_1`, `upload_photo_2`, `upload_photo_3`, `uploaded_file_count`)
+                  VALUES
+                    ('$user_its', '$mauze', '$program_type', '$program_title_ids',
+                     '$session_date', '$duration_minutes', '$attendee_count',
+                     '$upload_photo_1', '$upload_photo_2', '$upload_photo_3', '$uploaded_file_count')";
 
         try {
-            $result = mysqli_query($mysqli, $query);
-            $message = ['text' => 'Training session report submitted successfully.', 'tag' => 'success'];
+            mysqli_query($mysqli, $query);
+            $message    = ['text' => 'Training session report submitted successfully.', 'tag' => 'success'];
             $show_popup = true;
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
         }
     } else {
@@ -78,15 +89,26 @@ if (isset($_POST['submit'])) {
     }
 }
 
-// Fetch existing training session reports
-$training_categories = "'Zakereen Farzando Training%','Social Media Awareness%','Shaadi Tafheem%'";
-$query = "SELECT * FROM `meeting_and_photo_reports` WHERE `jamaat` = '$mauze'
-          AND (`category` LIKE 'Zakereen Farzando Training%' OR `category` LIKE 'Social Media Awareness%' OR `category` LIKE 'Shaadi Tafheem%')
-          ORDER BY `id` DESC";
-$result = mysqli_query($mysqli, $query);
-$reports = $result->fetch_all(MYSQLI_ASSOC);
+// Fetch distinct active program types for the dropdown
+$types_result  = mysqli_query($mysqli, "SELECT DISTINCT `program_type` FROM `bqi_program_titles` WHERE `is_active` = 1 AND `program_type` != '' ORDER BY `program_type`");
+$program_types = $types_result->fetch_all(MYSQLI_ASSOC);
+
+// Lookup map: id => title_name for display in reports table
+$titles_map        = [];
+$all_titles_result = mysqli_query($mysqli, "SELECT `id`, `title_name` FROM `bqi_program_titles` ORDER BY `id`");
+while ($row = $all_titles_result->fetch_assoc()) {
+    $titles_map[$row['id']] = $row['title_name'];
+}
+
+// Fetch this jamaat's training sessions
+$reports = [];
+$result  = mysqli_query($mysqli, "SELECT * FROM `bqi_training_sessions` WHERE `jamaat` = '$mauze' ORDER BY `id` DESC");
+if ($result) {
+    $reports = $result->fetch_all(MYSQLI_ASSOC);
+}
 ?>
 
+<link rel="stylesheet" href="assets/css/training_sessions.css">
 <main id="main" class="main bqi-1447">
     <section class="section dashboard">
         <div class="row">
@@ -99,6 +121,7 @@ $reports = $result->fetch_all(MYSQLI_ASSOC);
                         <li>Photos with extension .jpg, .jpeg or .png can only be uploaded</li>
                         <li>Maximum allowed photo size is 4 MB</li>
                         <li>All fields marked with <span class="required_star">*</span> are required.</li>
+                        <li>You can select multiple program titles by holding <kbd>Ctrl</kbd> (Windows) or <kbd>Cmd</kbd> (Mac).</li>
                     </ul>
 
                     <div class="row">
@@ -106,24 +129,62 @@ $reports = $result->fetch_all(MYSQLI_ASSOC);
                             <div class="card">
                                 <div class="card-body">
                                     <h5 class="card-title">Submit New Report</h5>
-                                    <form method="post" enctype="multipart/form-data">
+                                    <form method="post" enctype="multipart/form-data" data-show-popup="<?php echo !empty($show_popup) ? '1' : '0' ?>">
 
                                         <div class="row mb-3">
                                             <label class="col-sm-4 col-form-label">Program Type<span class="required_star">*</span></label>
                                             <div class="col-sm-8">
-                                                <select name="category" class="form-select" required>
+                                                <select name="program_type" id="program_type_select" class="form-select" required>
                                                     <option value="" disabled selected>Select Program Type...</option>
-                                                    <option value="Zakereen Farzando Training">Zakereen Farzando Training</option>
-                                                    <option value="Social Media Awareness">Social Media Awareness</option>
-                                                    <option value="Shaadi Tafheem">Shaadi Tafheem</option>
+                                                    <?php foreach ($program_types as $pt): ?>
+                                                        <option value="<?php echo htmlspecialchars($pt['program_type']) ?>"><?php echo htmlspecialchars($pt['program_type']) ?></option>
+                                                    <?php endforeach; ?>
                                                 </select>
                                             </div>
                                         </div>
 
                                         <div class="row mb-3">
-                                            <label class="col-sm-4 col-form-label">Program Title<span class="required_star">*</span></label>
+                                            <label class="col-sm-4 col-form-label">Program Title(s)<span class="required_star">*</span></label>
                                             <div class="col-sm-8">
-                                                <input type="text" name="program_title" class="form-control" placeholder="Enter Program Title" required>
+                                                <!-- Excel-style filter -->
+                                                <div class="ts-filter-wrap" id="ts_filter_wrap">
+                                                    <!-- Hidden inputs injected here by JS on checkbox change -->
+                                                    <div id="ts_hidden_inputs"></div>
+                                                    <!-- Trigger button -->
+                                                    <button type="button" class="ts-filter-btn" id="ts_filter_btn">
+                                                        <span id="ts_filter_label" class="text-muted">Select a Program Type first</span>
+                                                        <i class="bi bi-caret-down-fill ts-caret"></i>
+                                                    </button>
+                                                    <!-- Dropdown panel -->
+                                                    <div class="ts-filter-panel" id="ts_filter_panel">
+                                                        <div class="ts-filter-search">
+                                                            <input type="text" id="ts_search_input" placeholder="Search titles..." autocomplete="off">
+                                                        </div>
+                                                        <div class="ts-filter-actions">
+                                                            <a href="#" id="ts_select_all">Select All</a>
+                                                            <span class="ts-sep">|</span>
+                                                            <a href="#" id="ts_clear_all">Clear</a>
+                                                        </div>
+                                                        <div class="ts-filter-list" id="ts_filter_list">
+                                                            <div class="ts-placeholder">Select a Program Type first</div>
+                                                        </div>
+                                                    </div>
+                                                    <div id="no_titles_msg" class="text-warning mt-1 small" style="display:none;">No titles found for this program type.</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row mb-3">
+                                            <label class="col-sm-4 col-form-label">Session Date<span class="required_star">*</span></label>
+                                            <div class="col-sm-8">
+                                                <input type="date" name="session_date" class="form-control" required>
+                                            </div>
+                                        </div>
+
+                                        <div class="row mb-3">
+                                            <label class="col-sm-4 col-form-label">Duration (minutes)<span class="required_star">*</span></label>
+                                            <div class="col-sm-8">
+                                                <input type="number" name="duration_minutes" class="form-control" placeholder="e.g. 60" min="1" required>
                                             </div>
                                         </div>
 
@@ -178,16 +239,37 @@ $reports = $result->fetch_all(MYSQLI_ASSOC);
                                 <thead>
                                     <tr>
                                         <th>#</th>
-                                        <th>Program Details</th>
+                                        <th>Program Type</th>
+                                        <th>Program Title(s)</th>
+                                        <th>Session Date</th>
+                                        <th>Duration (min)</th>
+                                        <th>Attendees</th>
                                         <th>Uploads</th>
-                                        <th>Date</th>
+                                        <th>Submitted</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($reports as $key => $data) : ?>
+                                    <?php foreach ($reports as $key => $data): ?>
                                         <tr>
                                             <td><?= $key + 1 ?></td>
-                                            <td><?= htmlspecialchars($data['category']) ?></td>
+                                            <td><?= htmlspecialchars($data['program_type']) ?></td>
+                                            <td>
+                                                <?php
+                                                if (!empty($data['program_title_ids'])) {
+                                                    $ids   = explode(',', $data['program_title_ids']);
+                                                    $names = [];
+                                                    foreach ($ids as $id) {
+                                                        $names[] = htmlspecialchars($titles_map[(int)$id] ?? '#' . $id);
+                                                    }
+                                                    echo implode(', ', $names);
+                                                } else {
+                                                    echo '-';
+                                                }
+                                                ?>
+                                            </td>
+                                            <td><?= date('d-M-Y', strtotime($data['session_date'])) ?></td>
+                                            <td><?= $data['duration_minutes'] ?></td>
+                                            <td><?= $data['attendee_count'] ?></td>
                                             <td><?= $data['uploaded_file_count'] ?></td>
                                             <td><?= date('d-M-Y', strtotime($data['added_ts'])) ?></td>
                                         </tr>
@@ -204,38 +286,4 @@ $reports = $result->fetch_all(MYSQLI_ASSOC);
 </main>
 
 <?php require_once(__DIR__ . '/inc/footer.php'); ?>
-<script>
-<?php if (!empty($show_popup)) : ?>
-    alert('Training session report submitted successfully!');
-<?php endif; ?>
-
-function validateFileSize() {
-    var fileInputs = document.querySelectorAll('input[type="file"]');
-    var maxSize = 4 * 1024 * 1024;
-    for (var i = 0; i < fileInputs.length; i++) {
-        if (fileInputs[i].files.length > 0 && fileInputs[i].files[0].size > maxSize) {
-            alert('File "' + fileInputs[i].getAttribute('name') + '" must be less than 4 MB.');
-            return false;
-        }
-    }
-    return true;
-}
-
-document.querySelector('form').addEventListener('submit', function(event) {
-    if (!validateFileSize()) {
-        event.preventDefault();
-    }
-});
-
-$(document).ready(function () {
-    $('#datatable').DataTable({
-        dom: 'Bfrtip',
-        pageLength: 10,
-        buttons: [
-            { extend: 'copy', filename: function(){ return 'training_sessions-' + Date.now(); } },
-            { extend: 'csv', filename: function(){ return 'training_sessions-' + Date.now(); } },
-            { extend: 'excel', filename: function(){ return 'training_sessions-' + Date.now(); } }
-        ]
-    });
-});
-</script>
+<script src="assets/js/training_sessions.js"></script>
