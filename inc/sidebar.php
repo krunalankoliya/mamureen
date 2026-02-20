@@ -119,7 +119,7 @@
         <?php generateSidebarItem('noteworthy_experiences', $current_page, 'bi bi-clipboard-data', 'Noteworthy Experiences', 'noteworthy_experiences.php'); ?>
         <?php generateSidebarItem('khidmat_preparations', $current_page, 'bi bi-clipboard-data', 'Khidmat Preparations', 'khidmat_preparations.php'); ?>
         <?php generateSidebarItem('maaraz', $current_page, 'bi bi-clipboard-data', "Ma'araz", 'maaraz.php'); ?>
-        <?php generateSidebarItem('google_form_list', $current_page, 'bi bi-clipboard-data', 'Feedback Forms', 'google_form_list.php'); ?>
+        <?php generateSidebarItem('google_form_list', $current_page, 'bi bi-clipboard-data', 'Daily Reports', 'google_form_list.php'); ?>
         <!-- Admin Section -->
         <?php generateAdminSection($user_its, $admin_its, $current_page); ?>
     </ul>

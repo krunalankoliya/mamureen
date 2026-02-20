@@ -1,27 +1,27 @@
 <?php
-require_once( __DIR__. '/session.php');
-$current_page = 'google_form_list';
-require_once( __DIR__. '/inc/header.php');
+    require_once __DIR__ . '/session.php';
+    $current_page = 'google_form_list';
+    require_once __DIR__ . '/inc/header.php';
 
-$mauze = $rowdata['miqaat_mauze'];
-$name = $rowdata['fullname'];
-$user_its = (int) $_SESSION[USER_ITS];
+    $mauze    = $rowdata['miqaat_mauze'];
+    $name     = $rowdata['fullname'];
+    $user_its = (int) $_SESSION[USER_ITS];
 
-// Get all available forms
-$query = "SELECT * FROM `google_forms` ORDER BY upload_date DESC";
-$result = mysqli_query($mysqli, $query);
-$forms = $result->fetch_all(MYSQLI_ASSOC);
+    // Get all available forms
+    $query  = "SELECT * FROM `google_forms` ORDER BY upload_date DESC";
+    $result = mysqli_query($mysqli, $query);
+    $forms  = $result->fetch_all(MYSQLI_ASSOC);
 
-// Handle form view request
-$selectedForm = null;
-if (isset($_GET['id']) && !empty($_GET['id'])) {
-    $id = intval($_GET['id']);
-    $formQuery = "SELECT * FROM `google_forms` WHERE id = $id";
+    // Handle form view request
+    $selectedForm = null;
+    if (isset($_GET['id']) && ! empty($_GET['id'])) {
+    $id         = intval($_GET['id']);
+    $formQuery  = "SELECT * FROM `google_forms` WHERE id = $id";
     $formResult = mysqli_query($mysqli, $formQuery);
     if ($formResult && mysqli_num_rows($formResult) > 0) {
         $selectedForm = mysqli_fetch_assoc($formResult);
     }
-}
+    }
 ?>
 
 <main id="main" class="main">
@@ -30,8 +30,8 @@ if (isset($_GET['id']) && !empty($_GET['id'])) {
             <div class="col-lg-12">
                 <div class="card">
                     <div class="card-body">
-                        <h5 class="card-title">Daily Feedback Forms</h5>
-                        
+                        <h5 class="card-title">Daily Reports Forms</h5>
+
                         <?php if (empty($forms)): ?>
                             <div class="alert alert-info">
                                 No forms are available at this time.
@@ -42,11 +42,11 @@ if (isset($_GET['id']) && !empty($_GET['id'])) {
                                 <div class="col-md-4">
                                     <div class="list-group">
                                         <?php foreach ($forms as $form): ?>
-                                            <a href="google_form_list.php?id=<?= $form['id'] ?>" class="list-group-item list-group-item-action <?= (isset($_GET['id']) && $_GET['id'] == $form['id']) ? 'active' : '' ?>">
+                                            <a href="google_form_list.php?id=<?php echo $form['id'] ?>" class="list-group-item list-group-item-action <?php echo (isset($_GET['id']) && $_GET['id'] == $form['id']) ? 'active' : '' ?>">
                                                 <div class="d-flex w-100 justify-content-between">
-                                                    <h5 class="mb-1"><?= htmlspecialchars($form['form_title']) ?></h5>
+                                                    <h5 class="mb-1"><?php echo htmlspecialchars($form['form_title']) ?></h5>
                                                 </div>
-                                                <small>Added: <?= date('M d, Y', strtotime($form['upload_date'])) ?></small>
+                                                <small>Added: <?php echo date('M d, Y', strtotime($form['upload_date'])) ?></small>
                                             </a>
                                         <?php endforeach; ?>
                                     </div>
@@ -56,42 +56,42 @@ if (isset($_GET['id']) && !empty($_GET['id'])) {
                                     <?php if ($selectedForm): ?>
                                         <div class="card">
                                             <div class="card-header">
-                                                <h5><?= htmlspecialchars($selectedForm['form_title']) ?></h5>
+                                                <h5><?php echo htmlspecialchars($selectedForm['form_title']) ?></h5>
                                             </div>
                                             <div class="card-body">
                                                 <div class="embed-responsive">
                                                     <?php
-                                                    // Get the form link
-                                                    $formLink = $selectedForm['form_link'];
+                                                        // Get the form link
+                                                        $formLink = $selectedForm['form_link'];
 
-                                                    // Replace ITS_ID with user_its and MAUZE with mauze
-                                                    $formLink = str_replace('ITS_ID', $user_its, $formLink);
-                                                    $formLink = str_replace('MAUZE', $mauze, $formLink);
-                                                    $formLink = str_replace('NAME', $name, $formLink);
+                                                        // Replace ITS_ID with user_its and MAUZE with mauze
+                                                        $formLink = str_replace('ITS_ID', $user_its, $formLink);
+                                                        $formLink = str_replace('MAUZE', $mauze, $formLink);
+                                                        $formLink = str_replace('NAME', $name, $formLink);
 
-                                                    // Expand forms.gle short URLs to full docs.google.com URLs
-                                                    // (forms.gle is not in the server CSP frame-src; docs.google.com is)
-                                                    if (strpos($formLink, 'forms.gle') !== false) {
-                                                        $ch = curl_init($formLink);
-                                                        curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
-                                                        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
-                                                        curl_setopt($ch, CURLOPT_NOBODY, true);
-                                                        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-                                                        curl_exec($ch);
-                                                        $expandedUrl = curl_getinfo($ch, CURLINFO_REDIRECT_URL);
-                                                        curl_close($ch);
-                                                        if (!empty($expandedUrl)) {
-                                                            $formLink = $expandedUrl;
+                                                        // Expand forms.gle short URLs to full docs.google.com URLs
+                                                        // (forms.gle is not in the server CSP frame-src; docs.google.com is)
+                                                        if (strpos($formLink, 'forms.gle') !== false) {
+                                                            $ch = curl_init($formLink);
+                                                            curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
+                                                            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+                                                            curl_setopt($ch, CURLOPT_NOBODY, true);
+                                                            curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+                                                            curl_exec($ch);
+                                                            $expandedUrl = curl_getinfo($ch, CURLINFO_REDIRECT_URL);
+                                                            curl_close($ch);
+                                                            if (! empty($expandedUrl)) {
+                                                                $formLink = $expandedUrl;
+                                                            }
                                                         }
-                                                    }
 
-                                                    // Check if it's already an embed link, if not convert it
-                                                    if (strpos($formLink, 'viewform') !== false && strpos($formLink, 'embedded=true') === false) {
-                                                        // Convert regular form link to embedded version
-                                                        $formLink = str_replace('viewform', 'viewform?embedded=true', $formLink);
-                                                    }
+                                                        // Check if it's already an embed link, if not convert it
+                                                        if (strpos($formLink, 'viewform') !== false && strpos($formLink, 'embedded=true') === false) {
+                                                            // Convert regular form link to embedded version
+                                                            $formLink = str_replace('viewform', 'viewform?embedded=true', $formLink);
+                                                        }
                                                     ?>
-                                                    <iframe src="<?= htmlspecialchars($formLink) ?>" width="100%" height="700px" frameborder="0" marginheight="0" marginwidth="0">Loading…</iframe>
+                                                    <iframe src="<?php echo htmlspecialchars($formLink) ?>" width="100%" height="700px" frameborder="0" marginheight="0" marginwidth="0">Loading…</iframe>
                                                 </div>
                                             </div>
                                         </div>
@@ -114,5 +114,5 @@ if (isset($_GET['id']) && !empty($_GET['id'])) {
 </main><!-- End #main -->
 
 <?php
-require_once( __DIR__. '/inc/footer.php');
+require_once __DIR__ . '/inc/footer.php';
 ?>
