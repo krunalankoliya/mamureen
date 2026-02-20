@@ -8,7 +8,7 @@
     $user_its = (int) $_SESSION[USER_ITS];
 
     // Get all available forms
-    $query  = "SELECT * FROM `google_forms` ORDER BY upload_date DESC";
+    $query  = "SELECT * FROM `google_forms` ORDER BY id DESC";
     $result = mysqli_query($mysqli, $query);
     $forms  = $result->fetch_all(MYSQLI_ASSOC);
 
@@ -42,7 +42,7 @@
                                 <div class="col-md-4">
                                     <div class="list-group">
                                         <?php foreach ($forms as $form): ?>
-                                            <a href="google_form_list.php?id=<?php echo $form['id'] ?>" class="list-group-item list-group-item-action <?php echo (isset($_GET['id']) && $_GET['id'] == $form['id']) ? 'active' : '' ?>">
+                                            <a href="google_form_list.php?id=<?php echo $form['id'] ?>" class="list-group-item list-group-item-action <?php echo(isset($_GET['id']) && $_GET['id'] == $form['id']) ? 'active' : '' ?>">
                                                 <div class="d-flex w-100 justify-content-between">
                                                     <h5 class="mb-1"><?php echo htmlspecialchars($form['form_title']) ?></h5>
                                                 </div>

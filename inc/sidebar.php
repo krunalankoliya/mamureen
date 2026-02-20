@@ -111,6 +111,8 @@
         <?php generateSidebarItem('dashboard', $current_page, 'bi bi-grid', 'Dashboard', 'index.php'); ?>
 
         <!-- BQI 1447 Pages -->
+
+        <?php generateSidebarItem('resources', $current_page, 'bi bi-download', 'Resources & Downloads', 'resources.php'); ?>
         <?php generateSidebarItem('zakereen_parties', $current_page, 'bi bi-clipboard-data', 'Zakereen Parties', 'zakereen_parties.php'); ?>
         <?php generateSidebarItem('zakereen_farzando', $current_page, 'bi bi-clipboard-data', 'Zakereen Farzando', 'zakereen_farzando.php'); ?>
         <?php generateSidebarItem('individual_tafheem', $current_page, 'bi bi-clipboard-data', 'Individual Tafheem', 'individual_tafheem.php'); ?>

@@ -112,7 +112,7 @@
 
     // Fetch this jamaat's training sessions
     $reports = [];
-    $result  = mysqli_query($mysqli, "SELECT * FROM `bqi_training_sessions` WHERE `jamaat` = '$mauze' ORDER BY `id` DESC");
+    $result  = mysqli_query($mysqli, "SELECT * FROM `bqi_training_sessions` WHERE `user_its` = '$user_its' ORDER BY `id` DESC");
     if ($result) {
     $reports = $result->fetch_all(MYSQLI_ASSOC);
     }

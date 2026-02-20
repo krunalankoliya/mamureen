@@ -10,56 +10,56 @@
     // Function to fetch user data from API (server-side, like add_certificate.php)
     function fetchUserDataByITS($its_id)
     {
-        if (empty($its_id)) {
-            return null;
-        }
+    if (empty($its_id)) {
+        return null;
+    }
 
-        $user_its = $_COOKIE['user_its'] ?? '';
-        $ver      = $_COOKIE['ver'] ?? '';
+    $user_its = $_COOKIE['user_its'] ?? '';
+    $ver      = $_COOKIE['ver'] ?? '';
 
-        if (empty($user_its) || empty($ver)) {
-            return null;
-        }
+    if (empty($user_its) || empty($ver)) {
+        return null;
+    }
 
-        $api_url = "https://www.talabulilm.com/api2022/core/user/getUserDetailsByItsID/" . urlencode($its_id);
-        $auth    = base64_encode("$user_its:$ver");
-        $headers = ["Authorization: Basic $auth"];
+    $api_url = "https://www.talabulilm.com/api2022/core/user/getUserDetailsByItsID/" . urlencode($its_id);
+    $auth    = base64_encode("$user_its:$ver");
+    $headers = ["Authorization: Basic $auth"];
 
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_RESOLVE, ['www.talabulilm.com:443:66.85.132.227']);
-        curl_setopt($ch, CURLOPT_URL, $api_url);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_RESOLVE, ['www.talabulilm.com:443:66.85.132.227']);
+    curl_setopt($ch, CURLOPT_URL, $api_url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
-        $response = curl_exec($ch);
-        $error    = curl_error($ch);
-        curl_close($ch);
+    $response = curl_exec($ch);
+    $error    = curl_error($ch);
+    curl_close($ch);
 
-        if ($error || empty($response)) {
-            return null;
-        }
+    if ($error || empty($response)) {
+        return null;
+    }
 
-        $data = json_decode($response, true);
-        if (empty($data) || !isset($data['its_id'])) {
-            return null;
-        }
+    $data = json_decode($response, true);
+    if (empty($data) || ! isset($data['its_id'])) {
+        return null;
+    }
 
-        return $data;
+    return $data;
     }
 
     // Handle Verify ITS (server-side)
     if (isset($_POST['verify_its'])) {
-        $verify_its_id = (int) $_POST['verify_its_id'];
-        $selected_party = (int) ($_POST['party_id'] ?? 0);
+    $verify_its_id  = (int) $_POST['verify_its_id'];
+    $selected_party = (int) ($_POST['party_id'] ?? 0);
 
-        if ($verify_its_id <= 0 || strlen((string)$verify_its_id) < 8) {
-            $message = ['text' => 'Please enter a valid 8-digit ITS ID.', 'tag' => 'danger'];
-        } else {
-            $verified_user = fetchUserDataByITS($verify_its_id);
-            if (!$verified_user) {
-                $message = ['text' => "ITS ID $verify_its_id not found. Please check and try again.", 'tag' => 'danger'];
-            }
+    if ($verify_its_id <= 0 || strlen((string) $verify_its_id) < 8) {
+        $message = ['text' => 'Please enter a valid 8-digit ITS ID.', 'tag' => 'danger'];
+    } else {
+        $verified_user = fetchUserDataByITS($verify_its_id);
+        if (! $verified_user) {
+            $message = ['text' => "ITS ID $verify_its_id not found. Please check and try again.", 'tag' => 'danger'];
         }
+    }
     }
 
     // Handle Quick-Add Party (from modal)
@@ -100,7 +100,7 @@
                       VALUES ('$party_id', '$its_id', '$full_name', '$gender', '$dob', '$jamaat_val', '$jamiat_val', '$mobile', '$email', 0, '$user_its')";
             try {
                 mysqli_query($mysqli, $query);
-                $message = ['text' => "Farzand $full_name ($its_id) added successfully.", 'tag' => 'success'];
+                $message    = ['text' => "Farzand $full_name ($its_id) added successfully.", 'tag' => 'success'];
                 $show_popup = true;
             } catch (Exception $e) {
                 $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
@@ -186,15 +186,15 @@
     }
     }
 
-
     // Fetch parties for dropdown
-    $query   = "SELECT * FROM `bqi_zakereen_parties` WHERE `is_active` = 1 ORDER BY `party_name` ASC";
+    $query   = "SELECT * FROM `bqi_zakereen_parties` WHERE `is_active` = 1 AND `added_its` = '$user_its' ORDER BY `party_name` ASC";
     $result  = mysqli_query($mysqli, $query);
     $parties = $result->fetch_all(MYSQLI_ASSOC);
 
     // Fetch farzando records
     $query = "SELECT f.*, p.party_name FROM `bqi_zakereen_farzando` f
           LEFT JOIN `bqi_zakereen_parties` p ON f.party_id = p.id
+          WHERE f.added_its = '$user_its'
           ORDER BY f.added_ts DESC";
     $result        = mysqli_query($mysqli, $query);
     $farzando_list = $result->fetch_all(MYSQLI_ASSOC);
@@ -243,7 +243,7 @@
                                                     <select name="party_id" class="form-select" required>
                                                         <option value="" disabled <?php echo empty($selected_party) ? 'selected' : '' ?>>Select Party...</option>
                                                         <?php foreach ($parties as $p): ?>
-                                                            <option value="<?php echo $p['id'] ?>" <?php echo ($selected_party == $p['id']) ? 'selected' : '' ?>><?php echo htmlspecialchars($p['party_name']) ?></option>
+                                                            <option value="<?php echo $p['id'] ?>" <?php echo($selected_party == $p['id']) ? 'selected' : '' ?>><?php echo htmlspecialchars($p['party_name']) ?></option>
                                                         <?php endforeach; ?>
                                                     </select>
                                                 </div>
@@ -321,7 +321,7 @@
                                         </div>
                                     </form>
 
-                                    <?php if (!empty($bulk_result)): ?>
+                                    <?php if (! empty($bulk_result)): ?>
                                         <div class="mt-3">
                                             <h6 class="fw-bold">Upload Result</h6>
                                             <div class="row text-center mb-2">
@@ -350,7 +350,7 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            <?php if (!empty($bulk_result['fail_ids'])): ?>
+                                            <?php if (! empty($bulk_result['fail_ids'])): ?>
                                                 <div class="alert alert-danger py-2 mb-0" style="max-height: 150px; overflow-y: auto;">
                                                     <strong>Failed ITS IDs:</strong><br>
                                                     <?php foreach ($bulk_result['fail_ids'] as $fid): ?>
@@ -432,7 +432,7 @@
 
 <?php require_once __DIR__ . '/inc/footer.php'; ?>
 <script>
-<?php if (!empty($show_popup)) : ?>
+<?php if (! empty($show_popup)): ?>
     alert('Farzand added successfully!');
 <?php endif; ?>
 

@@ -37,7 +37,7 @@
     }
 
     // Fetch parties
-    $query   = "SELECT * FROM `bqi_zakereen_parties` ORDER BY `added_ts` DESC";
+    $query   = "SELECT * FROM `bqi_zakereen_parties` WHERE `added_its` = '$user_its' ORDER BY `added_ts` DESC";
     $result  = mysqli_query($mysqli, $query);
     $parties = $result->fetch_all(MYSQLI_ASSOC);
 ?>
