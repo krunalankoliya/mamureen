@@ -120,6 +120,7 @@
         <?php generateSidebarItem('khidmat_preparations', $current_page, 'bi bi-clipboard-data', 'Khidmat Preparations', 'khidmat_preparations.php'); ?>
         <?php generateSidebarItem('maaraz', $current_page, 'bi bi-clipboard-data', "Ma'araz", 'maaraz.php'); ?>
         <?php generateSidebarItem('google_form_list', $current_page, 'bi bi-clipboard-data', 'Daily Reports', 'google_form_list.php'); ?>
+        <?php generateSidebarItem('important_contacts', $current_page, 'bi bi-telephone-fill', 'Important Contacts', 'important_contacts.php'); ?>
         <!-- Admin Section -->
         <?php generateAdminSection($user_its, $admin_its, $current_page); ?>
     </ul>

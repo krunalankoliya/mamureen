@@ -4,9 +4,147 @@ $(document).ready(function () {
     $('.view-btn').on('click', function () {
         $('#edit_id').val($(this).data('id'));
         $('#edit_target_info').text($(this).data('name') + ' (' + $(this).data('its') + ')');
-        $('#edit_reason').val($(this).data('reason'));
+        $('#edit_type').val($(this).data('type'));
+
+        // Pre-select reasons from comma-separated string
+        var reasonIds = $(this).data('reason').toString().split(',').map(function (id) { return id.trim(); });
+        $('#edit_reason').val(reasonIds);
+
         $('#edit_details').val($(this).data('details'));
     });
+
+    // ── Excel-style Reason filter ──────────────────────────────────────
+    var $typeSelect   = $('#tf_type_select');
+    var $filterBtn    = $('#tf_filter_btn');
+    var $filterPanel  = $('#tf_filter_panel');
+    var $filterLabel  = $('#tf_filter_label');
+    var $filterList   = $('#tf_filter_list');
+    var $searchInput  = $('#tf_search_input');
+    var $hiddenInputs = $('#tf_hidden_inputs');
+
+    // Toggle panel open / close
+    $filterBtn.on('click', function (e) {
+        e.stopPropagation();
+        var opening = !$filterPanel.is(':visible');
+        $filterPanel.toggle(opening);
+        $filterBtn.toggleClass('open', opening);
+        if (opening) { $searchInput.focus(); }
+    });
+
+    // Close panel on outside click
+    $(document).on('click', function (e) {
+        if (!$(e.target).closest('#tf_filter_wrap').length) {
+            $filterPanel.hide();
+            $filterBtn.removeClass('open');
+        }
+    });
+
+    // Live search inside checkbox list
+    $searchInput.on('input', function () {
+        var q = $(this).val().trim().toLowerCase();
+        $filterList.find('.ts-item').each(function () {
+            var text = $(this).find('label').text().toLowerCase();
+            $(this).toggleClass('hidden', q !== '' && text.indexOf(q) === -1);
+        });
+    });
+
+    // Select All
+    $('#tf_select_all').on('click', function (e) {
+        e.preventDefault();
+        $filterList.find('.ts-item:not(.hidden) input[type="checkbox"]').prop('checked', true);
+        syncHiddenInputs();
+        updateLabel();
+    });
+
+    // Clear All
+    $('#tf_clear_all').on('click', function (e) {
+        e.preventDefault();
+        $filterList.find('input[type="checkbox"]').prop('checked', false);
+        syncHiddenInputs();
+        updateLabel();
+    });
+
+    // Load reasons via AJAX when type changes
+    $typeSelect.on('change', function () {
+        var selectedType = $(this).val();
+
+        // Reset state
+        $filterList.html('<div class="ts-placeholder">Loading...</div>');
+        $hiddenInputs.empty();
+        $filterLabel.removeClass('text-dark').addClass('text-muted').text('Loading reasons...');
+        $filterPanel.hide();
+        $filterBtn.removeClass('open');
+        $searchInput.val('');
+
+        if (!selectedType) {
+            $filterList.html('<div class="ts-placeholder">Select a Type first</div>');
+            $filterLabel.text('Select a Type first');
+            return;
+        }
+
+        $.ajax({
+            url: 'get_tafheem_reasons.php',
+            type: 'GET',
+            dataType: 'json',
+            data: { type: selectedType },
+            success: function (reasons) {
+                $filterList.empty();
+
+                if (!reasons || reasons.length === 0) {
+                    $filterList.html('<div class="ts-placeholder">No reasons found for this type</div>');
+                    $filterLabel.text('No reasons available');
+                    return;
+                }
+
+                $.each(reasons, function (i, r) {
+                    var cbId = 'tf_cb_' + r.id;
+                    var $row = $('<div class="ts-item">').append(
+                        $('<input type="checkbox">').attr({ id: cbId, value: r.id })
+                            .on('change', function () {
+                                syncHiddenInputs();
+                                updateLabel();
+                            }),
+                        $('<label>').attr('for', cbId).text(r.reason_name)
+                    );
+                    $filterList.append($row);
+                });
+
+                $filterLabel.removeClass('text-muted').addClass('text-dark').text('Select reasons...');
+            },
+            error: function (xhr) {
+                $filterList.html('<div class="ts-placeholder text-danger">Error ' + xhr.status + ': could not load reasons</div>');
+                $filterLabel.text('Error loading reasons');
+            }
+        });
+    });
+
+    // Sync hidden inputs from checked checkboxes
+    function syncHiddenInputs() {
+        $hiddenInputs.empty();
+        $filterList.find('input[type="checkbox"]:checked').each(function () {
+            $hiddenInputs.append(
+                $('<input>').attr({ type: 'hidden', name: 'reason_ids[]', value: $(this).val() })
+            );
+        });
+    }
+
+    // Update button label with selection summary
+    function updateLabel() {
+        var $checked = $filterList.find('input[type="checkbox"]:checked');
+        var count    = $checked.length;
+
+        if (count === 0) {
+            $filterLabel.html('Select reasons...');
+        } else if (count === 1) {
+            var name = $checked.first().closest('.ts-item').find('label').text();
+            $filterLabel.html(
+                $('<span>').text(name)[0].outerHTML +
+                ' <span class="ts-badge">1</span>'
+            );
+        } else {
+            $filterLabel.html(count + ' reasons selected <span class="ts-badge">' + count + '</span>');
+        }
+    }
 
     // ── Progress bar / XHR submit ──────────────────────────────────────
     var form             = document.getElementById('uploadForm');
@@ -22,6 +160,14 @@ $(document).ready(function () {
 
         if (!form.checkValidity()) {
             form.reportValidity();
+            return;
+        }
+
+        // Validate at least one reason selected
+        if ($hiddenInputs.find('input').length === 0) {
+            alert('Please select at least one reason.');
+            $filterBtn.addClass('open');
+            $filterPanel.show();
             return;
         }
 

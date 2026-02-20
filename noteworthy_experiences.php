@@ -29,7 +29,7 @@ if (isset($_POST['submit_experience'])) {
                         $fileType = pathinfo($fileName, PATHINFO_EXTENSION);
                         $acceptable = ['jpeg', 'jpg', 'png', 'pdf', 'mp4', 'mov', 'avi', 'mp3', 'wav', 'ogg'];
 
-                        if ($fileSize > 20971520) continue; // 20MB limit
+                        if ($fileSize > 5242880) continue; // 5MB limit
                         if (!in_array(strtolower($fileType), $acceptable)) continue;
 
                         $uploadName = $user_its . '_experience_' . date('YmdHis') . '_' . $i . '.' . $fileType;
@@ -124,7 +124,7 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                                                 <input type="file" name="attachments[]" class="form-control" accept="image/*,video/*,audio/*,.pdf" multiple>
                                                 <div class="alert alert-info mt-2 py-1 px-2 mb-0">
                                                     <small><strong>Allowed:</strong> Images (JPG, PNG), Videos (MP4, MOV, AVI), Audio (MP3, WAV, OGG), PDF<br>
-                                                    <strong>Max file size: 20 MB per file</strong></small>
+                                                    <strong>Max file size: 5 MB per file</strong></small>
                                                 </div>
                                                 <div id="progressContainer" class="mt-2 d-none">
                                                     <div class="progress">

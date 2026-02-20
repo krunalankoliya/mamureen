@@ -23,13 +23,13 @@ $(document).ready(function () {
             return;
         }
 
-        // File size validation (4 MB per file)
+        // File size validation (5 MB per file)
         var fileInput = form.querySelector('[name="attachments[]"]');
         if (fileInput && fileInput.files.length > 0) {
-            var maxSize = 4 * 1024 * 1024;
+            var maxSize = 5 * 1024 * 1024;
             for (var i = 0; i < fileInput.files.length; i++) {
                 if (fileInput.files[i].size > maxSize) {
-                    alert('File "' + fileInput.files[i].name + '" exceeds the 4 MB limit.');
+                    alert('File "' + fileInput.files[i].name + '" exceeds the 5 MB limit.');
                     return;
                 }
             }

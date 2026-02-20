@@ -4,6 +4,12 @@ $current_page = 'individual_tafheem';
 
 require_once(__DIR__ . '/inc/header.php');
 
+$program_type_options = [
+    'Zakereen Farzando Training',
+    'Social Media Awareness',
+    'Shaadi Tafheem',
+];
+
 // Initialize variables
 $verified_user = null;
 
@@ -63,16 +69,18 @@ if (isset($_POST['verify_its'])) {
 
 // Handle Submit
 if (isset($_POST['submit_tafheem'])) {
-    $target_its_id = (int)$_POST['target_its_id'];
-    $target_name = mysqli_real_escape_string($mysqli, $_POST['target_name']);
-    $reason_id = (int)$_POST['reason_id'];
-    $report_details = mysqli_real_escape_string($mysqli, $_POST['report_details']);
+    $target_its_id       = (int)$_POST['target_its_id'];
+    $target_name         = mysqli_real_escape_string($mysqli, $_POST['target_name']);
+    $type                = mysqli_real_escape_string($mysqli, $_POST['type'] ?? '');
+    $selected_reason_ids = $_POST['reason_ids'] ?? [];
+    $reason_ids_str      = implode(',', array_map('intval', $selected_reason_ids));
+    $report_details      = mysqli_real_escape_string($mysqli, $_POST['report_details']);
 
-    if ($target_its_id <= 0 || empty($target_name) || $reason_id <= 0 || empty($report_details)) {
+    if ($target_its_id <= 0 || empty($target_name) || empty($type) || empty($selected_reason_ids) || empty($report_details)) {
         $message = ['text' => 'All required fields must be filled.', 'tag' => 'danger'];
     } else {
-        $query = "INSERT INTO `bqi_individual_tafheem` (`target_its_id`, `target_name`, `reason_id`, `report_details`, `user_its`, `jamaat`, `added_its`)
-                  VALUES ('$target_its_id', '$target_name', '$reason_id', '$report_details', '$user_its', '$mauze', '$user_its')";
+        $query = "INSERT INTO `bqi_individual_tafheem` (`target_its_id`, `target_name`, `type`, `reason_id`, `report_details`, `user_its`, `jamaat`, `added_its`)
+                  VALUES ('$target_its_id', '$target_name', '$type', '$reason_ids_str', '$report_details', '$user_its', '$mauze', '$user_its')";
         try {
             mysqli_query($mysqli, $query);
             $record_id = mysqli_insert_id($mysqli);
@@ -115,11 +123,13 @@ if (isset($_POST['submit_tafheem'])) {
 
 // Handle Edit
 if (isset($_POST['update_tafheem'])) {
-    $edit_id = (int)$_POST['edit_id'];
-    $reason_id = (int)$_POST['reason_id'];
-    $report_details = mysqli_real_escape_string($mysqli, $_POST['report_details']);
+    $edit_id             = (int)$_POST['edit_id'];
+    $type                = mysqli_real_escape_string($mysqli, $_POST['type'] ?? '');
+    $selected_reason_ids = $_POST['reason_ids'] ?? [];
+    $reason_ids_str      = implode(',', array_map('intval', $selected_reason_ids));
+    $report_details      = mysqli_real_escape_string($mysqli, $_POST['report_details']);
 
-    $query = "UPDATE `bqi_individual_tafheem` SET `reason_id` = '$reason_id', `report_details` = '$report_details',
+    $query = "UPDATE `bqi_individual_tafheem` SET `type` = '$type', `reason_id` = '$reason_ids_str', `report_details` = '$report_details',
               `update_its` = '$user_its', `update_ts` = NOW() WHERE `id` = '$edit_id' AND `added_its` = '$user_its'";
     try {
         mysqli_query($mysqli, $query);
@@ -129,20 +139,21 @@ if (isset($_POST['update_tafheem'])) {
     }
 }
 
-// Fetch Tafheem Reasons
-$query = "SELECT * FROM `bqi_tafheem_reasons` WHERE `is_active` = 1 ORDER BY `sort_order`, `reason_name`";
-$result = mysqli_query($mysqli, $query);
+// Fetch all active Tafheem Reasons (for edit modal multi-select)
+$query   = "SELECT * FROM `bqi_tafheem_reasons` WHERE `is_active` = 1 ORDER BY `sort_order`, `reason_name`";
+$result  = mysqli_query($mysqli, $query);
 $reasons = $result->fetch_all(MYSQLI_ASSOC);
 
+// Build reasons map for display (id => reason_name)
+$reasons_map = array_column($reasons, 'reason_name', 'id');
+
 // Fetch user's submitted records
-$query = "SELECT t.*, r.reason_name FROM `bqi_individual_tafheem` t
-          LEFT JOIN `bqi_tafheem_reasons` r ON t.reason_id = r.id
-          WHERE t.added_its = '$user_its'
-          ORDER BY t.added_ts DESC";
+$query = "SELECT * FROM `bqi_individual_tafheem` WHERE `added_its` = '$user_its' ORDER BY `added_ts` DESC";
 $result = mysqli_query($mysqli, $query);
 $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
 ?>
 
+<link rel="stylesheet" href="assets/css/training_sessions.css">
 <main id="main" class="main bqi-1447">
     <section class="section dashboard">
         <div class="row">
@@ -182,16 +193,43 @@ $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
                                             <input type="hidden" name="target_its_id" value="<?php echo htmlspecialchars($verified_user['its_id']) ?>">
                                             <input type="hidden" name="target_name" value="<?php echo htmlspecialchars($verified_user['full_name_en']) ?>">
 
-                                            <!-- Reason Dropdown -->
+                                            <!-- Type Dropdown -->
                                             <div class="row mb-3">
-                                                <label class="col-sm-4 col-form-label">Reason<span class="required_star">*</span></label>
+                                                <label class="col-sm-4 col-form-label">Type<span class="required_star">*</span></label>
                                                 <div class="col-sm-8">
-                                                    <select name="reason_id" class="form-select" required>
-                                                        <option value="" disabled selected>Select Reason...</option>
-                                                        <?php foreach ($reasons as $r) : ?>
-                                                            <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['reason_name']) ?></option>
+                                                    <select name="type" id="tf_type_select" class="form-select" required>
+                                                        <option value="" disabled selected>Select Type...</option>
+                                                        <?php foreach ($program_type_options as $opt): ?>
+                                                            <option value="<?= htmlspecialchars($opt) ?>"><?= htmlspecialchars($opt) ?></option>
                                                         <?php endforeach; ?>
                                                     </select>
+                                                </div>
+                                            </div>
+
+                                            <!-- Reason Multiselect (Excel-style) -->
+                                            <div class="row mb-3">
+                                                <label class="col-sm-4 col-form-label">Reason(s)<span class="required_star">*</span></label>
+                                                <div class="col-sm-8">
+                                                    <div class="ts-filter-wrap" id="tf_filter_wrap">
+                                                        <div id="tf_hidden_inputs"></div>
+                                                        <button type="button" class="ts-filter-btn" id="tf_filter_btn">
+                                                            <span id="tf_filter_label" class="text-muted">Select a Type first</span>
+                                                            <i class="bi bi-caret-down-fill ts-caret"></i>
+                                                        </button>
+                                                        <div class="ts-filter-panel" id="tf_filter_panel">
+                                                            <div class="ts-filter-search">
+                                                                <input type="text" id="tf_search_input" placeholder="Search reasons..." autocomplete="off">
+                                                            </div>
+                                                            <div class="ts-filter-actions">
+                                                                <a href="#" id="tf_select_all">Select All</a>
+                                                                <span class="ts-sep">|</span>
+                                                                <a href="#" id="tf_clear_all">Clear</a>
+                                                            </div>
+                                                            <div class="ts-filter-list" id="tf_filter_list">
+                                                                <div class="ts-placeholder">Select a Type first</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -252,7 +290,8 @@ $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
                                         <th>#</th>
                                         <th>Target ITS</th>
                                         <th>Target Name</th>
-                                        <th>Reason</th>
+                                        <th>Type</th>
+                                        <th>Reason(s)</th>
                                         <th>Date</th>
                                         <th>Action</th>
                                     </tr>
@@ -263,14 +302,25 @@ $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
                                             <td><?= $key + 1 ?></td>
                                             <td><?= $t['target_its_id'] ?></td>
                                             <td><?= htmlspecialchars($t['target_name']) ?></td>
-                                            <td><?= htmlspecialchars($t['reason_name'] ?? 'N/A') ?></td>
+                                            <td><?= htmlspecialchars($t['type'] ?? '') ?></td>
+                                            <td>
+                                                <?php
+                                                    $ids   = array_filter(array_map('intval', explode(',', $t['reason_id'])));
+                                                    $names = [];
+                                                    foreach ($ids as $rid) {
+                                                        $names[] = htmlspecialchars($reasons_map[$rid] ?? '#' . $rid);
+                                                    }
+                                                    echo $names ? implode(', ', $names) : 'N/A';
+                                                ?>
+                                            </td>
                                             <td><?= date('d-M-Y', strtotime($t['added_ts'])) ?></td>
                                             <td>
                                                 <button type="button" class="btn btn-sm btn-outline-info view-btn"
                                                     data-id="<?= $t['id'] ?>"
                                                     data-its="<?= $t['target_its_id'] ?>"
                                                     data-name="<?= htmlspecialchars($t['target_name']) ?>"
-                                                    data-reason="<?= $t['reason_id'] ?>"
+                                                    data-type="<?= htmlspecialchars($t['type'] ?? '') ?>"
+                                                    data-reason="<?= htmlspecialchars($t['reason_id']) ?>"
                                                     data-details="<?= htmlspecialchars($t['report_details']) ?>"
                                                     data-bs-toggle="modal" data-bs-target="#editModal">
                                                     <i class="bi bi-pencil-square"></i>
@@ -304,12 +354,22 @@ $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
                         <label class="form-label"><strong>Target:</strong> <span id="edit_target_info"></span></label>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Reason</label>
-                        <select name="reason_id" id="edit_reason" class="form-select" required>
-                            <?php foreach ($reasons as $r) : ?>
+                        <label class="form-label">Type</label>
+                        <select name="type" id="edit_type" class="form-select" required>
+                            <option value="" disabled>Select Type...</option>
+                            <?php foreach ($program_type_options as $opt): ?>
+                                <option value="<?= htmlspecialchars($opt) ?>"><?= htmlspecialchars($opt) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Reason(s)</label>
+                        <select name="reason_ids[]" id="edit_reason" class="form-select" multiple required style="height: 160px;">
+                            <?php foreach ($reasons as $r): ?>
                                 <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['reason_name']) ?></option>
                             <?php endforeach; ?>
                         </select>
+                        <small class="text-muted">Hold Ctrl / Cmd to select multiple.</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Report Details</label>

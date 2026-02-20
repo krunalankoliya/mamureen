@@ -28,9 +28,9 @@ if (isset($_POST['submit_challenge'])) {
                         $tempPath = $_FILES['attachments']['tmp_name'][$i];
                         $fileSize = $_FILES['attachments']['size'][$i];
                         $fileType = pathinfo($fileName, PATHINFO_EXTENSION);
-                        $acceptable = ['jpeg', 'jpg', 'png'];
+                        $acceptable = ['jpeg', 'jpg', 'png', 'mp4', 'mov', 'avi', 'mp3', 'wav', 'ogg', 'pdf'];
 
-                        if ($fileSize > 4194304) continue;
+                        if ($fileSize > 5242880) continue;
                         if (!in_array(strtolower($fileType), $acceptable)) continue;
 
                         $uploadName = $user_its . '_challenge_' . date('YmdHis') . '_' . $i . '.' . $fileType;
@@ -130,8 +130,11 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                                         <div class="row mb-3">
                                             <label class="col-sm-4 col-form-label">Attachments</label>
                                             <div class="col-sm-8">
-                                                <input type="file" name="attachments[]" class="form-control" accept="image/*" multiple>
-                                                <small class="text-muted">Optional. JPG/PNG, max 4MB each.</small>
+                                                <input type="file" name="attachments[]" class="form-control" accept="image/*,video/*,audio/*,.pdf" multiple>
+                                                <div class="alert alert-info mt-2 py-1 px-2 mb-0">
+                                                    <small><strong>Allowed:</strong> Images (JPG, PNG), Videos (MP4, MOV, AVI), Audio (MP3, WAV, OGG), PDF<br>
+                                                    <strong>Max file size: 5 MB per file</strong></small>
+                                                </div>
                                                 <div id="progressContainer" class="mt-2 d-none">
                                                     <div class="progress">
                                                         <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>

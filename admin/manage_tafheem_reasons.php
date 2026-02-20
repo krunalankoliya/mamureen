@@ -3,16 +3,23 @@
     $current_page = 'manage_tafheem_reasons';
     require_once __DIR__ . '/../inc/header.php';
 
+    $program_type_options = [
+        'Zakereen Farzando Training',
+        'Social Media Awareness',
+        'Shaadi Tafheem',
+    ];
+
     // Handle Add
     if (isset($_POST['add_reason'])) {
         $reason_name    = trim(mysqli_real_escape_string($mysqli, $_POST['reason_name']));
+        $type           = mysqli_real_escape_string($mysqli, $_POST['type'] ?? '');
         $sort_order     = (int) ($_POST['sort_order'] ?? 0);
 
-        if (empty($reason_name)) {
-            $message = ['text' => 'Reason name is required.', 'tag' => 'danger'];
+        if (empty($reason_name) || empty($type)) {
+            $message = ['text' => 'Reason name and type are required.', 'tag' => 'danger'];
         } else {
-            $query = "INSERT INTO `bqi_tafheem_reasons` (`reason_name`, `is_active`, `sort_order`)
-                      VALUES ('$reason_name', 1, '$sort_order')";
+            $query = "INSERT INTO `bqi_tafheem_reasons` (`type`, `reason_name`, `is_active`, `sort_order`)
+                      VALUES ('$type', '$reason_name', 1, '$sort_order')";
             try {
                 mysqli_query($mysqli, $query);
                 $message = ['text' => "Reason '$reason_name' added successfully.", 'tag' => 'success'];
@@ -26,12 +33,13 @@
     if (isset($_POST['update_reason'])) {
         $edit_id        = (int) $_POST['edit_id'];
         $reason_name    = trim(mysqli_real_escape_string($mysqli, $_POST['reason_name']));
+        $type           = mysqli_real_escape_string($mysqli, $_POST['type'] ?? '');
         $sort_order     = (int) ($_POST['sort_order'] ?? 0);
 
-        if (empty($reason_name)) {
-            $message = ['text' => 'Reason name is required.', 'tag' => 'danger'];
+        if (empty($reason_name) || empty($type)) {
+            $message = ['text' => 'Reason name and type are required.', 'tag' => 'danger'];
         } else {
-            $query = "UPDATE `bqi_tafheem_reasons` SET `reason_name` = '$reason_name',
+            $query = "UPDATE `bqi_tafheem_reasons` SET `type` = '$type', `reason_name` = '$reason_name',
                       `sort_order` = '$sort_order' WHERE `id` = '$edit_id'";
             try {
                 mysqli_query($mysqli, $query);
@@ -60,7 +68,7 @@
         $delete_id = (int) $_POST['delete_id'];
 
         // Check if reason is in use
-        $check  = mysqli_query($mysqli, "SELECT COUNT(*) as cnt FROM `bqi_individual_tafheem` WHERE `reason_id` = '$delete_id'");
+        $check  = mysqli_query($mysqli, "SELECT COUNT(*) as cnt FROM `bqi_individual_tafheem` WHERE FIND_IN_SET('$delete_id', `reason_id`) > 0");
         $row    = $check->fetch_assoc();
 
         if ($row['cnt'] > 0) {
@@ -98,7 +106,16 @@
                                     <h5 class="card-title">Add New Reason</h5>
                                     <form method="post">
                                         <div class="row g-2 align-items-end">
-                                            <div class="col-md-7">
+                                            <div class="col-md-3">
+                                                <label for="add_type" class="form-label">Type</label>
+                                                <select id="add_type" name="type" class="form-select" required>
+                                                    <option value="" disabled selected>Select Type...</option>
+                                                    <?php foreach ($program_type_options as $opt): ?>
+                                                        <option value="<?= htmlspecialchars($opt) ?>"><?= htmlspecialchars($opt) ?></option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-5">
                                                 <label for="add_reason_name" class="form-label">Reason Name</label>
                                                 <input id="add_reason_name" type="text" name="reason_name" class="form-control" dir="auto" placeholder="e.g., Academic Counseling / تعلیمی مشاورت" required>
                                             </div>
@@ -106,7 +123,7 @@
                                                 <label for="add_sort_order" class="form-label">Order</label>
                                                 <input id="add_sort_order" type="number" name="sort_order" class="form-control" value="0" min="0">
                                             </div>
-                                            <div class="col-md-2">
+                                            <div class="col-md-3">
                                                 <button class="btn btn-primary w-100" name="add_reason" type="submit">Add Reason</button>
                                             </div>
                                         </div>
@@ -122,6 +139,7 @@
                                     <tr>
                                         <th>#</th>
                                         <th>Reason Name</th>
+                                        <th>Type</th>
                                         <th>Sort Order</th>
                                         <th>Status</th>
                                         <th>Actions</th>
@@ -132,6 +150,7 @@
                                         <tr>
                                             <td><?php echo $key + 1 ?></td>
                                             <td dir="auto"><?php echo htmlspecialchars($r['reason_name']) ?></td>
+                                            <td><?php echo htmlspecialchars($r['type']) ?></td>
                                             <td><?php echo $r['sort_order'] ?></td>
                                             <td>
                                                 <form method="post" style="display:inline;">
@@ -146,6 +165,7 @@
                                                 <button type="button" class="btn btn-sm btn-outline-info edit-btn"
                                                     data-id="<?php echo $r['id'] ?>"
                                                     data-name="<?php echo htmlspecialchars($r['reason_name']) ?>"
+                                                    data-type="<?php echo htmlspecialchars($r['type']) ?>"
                                                     data-sort="<?php echo $r['sort_order'] ?>"
                                                     data-bs-toggle="modal" data-bs-target="#editModal">
                                                     <i class="bi bi-pencil-square"></i>
@@ -185,6 +205,15 @@
                         <input type="text" name="reason_name" id="edit_name" class="form-control" dir="auto" required>
                     </div>
                     <div class="mb-3">
+                        <label class="form-label">Type</label>
+                        <select name="type" id="edit_type" class="form-select" required>
+                            <option value="" disabled>Select Type...</option>
+                            <?php foreach ($program_type_options as $opt): ?>
+                                <option value="<?= htmlspecialchars($opt) ?>"><?= htmlspecialchars($opt) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="mb-3">
                         <label class="form-label">Sort Order</label>
                         <input type="number" name="sort_order" id="edit_sort" class="form-control" min="0">
                     </div>
@@ -206,6 +235,7 @@ $(document).ready(function () {
     $('.edit-btn').click(function() {
         $('#edit_id').val($(this).data('id'));
         $('#edit_name').val($(this).data('name'));
+        $('#edit_type').val($(this).data('type'));
         $('#edit_sort').val($(this).data('sort'));
     });
 
