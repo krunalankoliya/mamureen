@@ -58,7 +58,7 @@
             ['page' => 'Manage_Resources', 'link' => 'admin/manage-download.php', 'text' => 'Manage Resources', 'icon' => 'bi bi-circle'],
             ['page' => 'Manage_link', 'link' => 'admin/manage-link.php', 'text' => 'Manage Links', 'icon' => 'bi bi-circle'],
             // ['page' => 'list_download_reports', 'link' => 'admin/list_download_reports.php', 'text' => 'Downloads Report', 'icon' => 'bi bi-circle'],
-            // ['page' => 'manage_google_forms', 'link' => 'admin/manage_google_forms.php', 'text' => 'Manage Feddback Forms', 'icon' => 'bi bi-circle'],
+            ['page' => 'manage_google_forms', 'link' => 'admin/manage_google_forms.php', 'text' => 'Manage Feddback Forms', 'icon' => 'bi bi-circle'],
             // ['page' => 'manage_hifz_nasaih', 'link' => 'admin/manage_hifz_nasaih.php', 'text' => 'Hifz al-Nasa’ih Data', 'icon' => 'bi bi-circle'],
             // ['page' => 'manage_listan-al-dawat', 'link' => 'admin/manage_ld.php', 'text' => 'Data Entry - LD', 'icon' => 'bi bi-circle'],
             // ['page' => 'manage_bqi_17_session_attendees', 'link' => 'admin/manage_bqi_17_session_attendees.php', 'text' => 'BQI 17 Session Attendees', 'icon' => 'bi bi-circle'],
@@ -84,7 +84,7 @@
                 'Manage_Resources',
                 'Manage_link',
                 // 'list_download_reports',
-                // 'manage_google_forms',
+                'manage_google_forms',
                 // 'manage_hifz_nasaih',
                 // 'manage_listan-al-dawat',
                 // 'manage_bqi_17_session_attendees',
@@ -119,7 +119,7 @@
         <?php generateSidebarItem('noteworthy_experiences', $current_page, 'bi bi-clipboard-data', 'Noteworthy Experiences', 'noteworthy_experiences.php'); ?>
         <?php generateSidebarItem('khidmat_preparations', $current_page, 'bi bi-clipboard-data', 'Khidmat Preparations', 'khidmat_preparations.php'); ?>
         <?php generateSidebarItem('maaraz', $current_page, 'bi bi-clipboard-data', "Ma'araz", 'maaraz.php'); ?>
-
+        <?php generateSidebarItem('google_form_list', $current_page, 'bi bi-clipboard-data', 'Feedback Forms', 'google_form_list.php'); ?>
         <!-- Admin Section -->
         <?php generateAdminSection($user_its, $admin_its, $current_page); ?>
     </ul>

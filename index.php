@@ -138,7 +138,7 @@ $khidmat_count = getCounts("SELECT COUNT(*) `count` FROM `bqi_khidmat_preparatio
                 <!-- SECTION 3: SHAADI UMOOR -->
                 <div class="card mb-3">
                     <div class="card-body pb-0">
-                        <h5 class="card-title pb-0 mb-2"><i class="bi bi-heart-fill text-danger"></i> Shaadi Umoor</h5>
+                        <h5 class="card-title pb-0 mb-2">Shaadi Umoor</h5>
                         <div class="row align-items-stretch">
                             <div class="col-md-6 mb-3">
                                 <a href="<?= MODULE_PATH ?>training_sessions.php" class="text-decoration-none d-block h-100">

@@ -63,12 +63,28 @@ if (isset($_GET['id']) && !empty($_GET['id'])) {
                                                     <?php
                                                     // Get the form link
                                                     $formLink = $selectedForm['form_link'];
-                                                    
+
                                                     // Replace ITS_ID with user_its and MAUZE with mauze
                                                     $formLink = str_replace('ITS_ID', $user_its, $formLink);
                                                     $formLink = str_replace('MAUZE', $mauze, $formLink);
                                                     $formLink = str_replace('NAME', $name, $formLink);
-                                                    
+
+                                                    // Expand forms.gle short URLs to full docs.google.com URLs
+                                                    // (forms.gle is not in the server CSP frame-src; docs.google.com is)
+                                                    if (strpos($formLink, 'forms.gle') !== false) {
+                                                        $ch = curl_init($formLink);
+                                                        curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
+                                                        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+                                                        curl_setopt($ch, CURLOPT_NOBODY, true);
+                                                        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+                                                        curl_exec($ch);
+                                                        $expandedUrl = curl_getinfo($ch, CURLINFO_REDIRECT_URL);
+                                                        curl_close($ch);
+                                                        if (!empty($expandedUrl)) {
+                                                            $formLink = $expandedUrl;
+                                                        }
+                                                    }
+
                                                     // Check if it's already an embed link, if not convert it
                                                     if (strpos($formLink, 'viewform') !== false && strpos($formLink, 'embedded=true') === false) {
                                                         // Convert regular form link to embedded version

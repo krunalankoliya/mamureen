@@ -83,10 +83,10 @@ $row = $result->fetch_all(MYSQLI_ASSOC);
 
 $select = '<select id="inputState" class="form-select" name="dot_color" required>
                 <option value="" disabled selected hidden>Select...</option>
-                <option value="text-danger">Text Danger</option>
-                <option value="text-success">Text Success</option>
-                <option value="text-warning">Text Warning</option>
-                <option value="text-info">Text Info</option>
+                <option value="text-danger">Red</option>
+                <option value="text-success">Green</option>
+                <option value="text-warning">Yellow</option>
+                <option value="text-info">Blue</option>
             </select>';
 ?>
 
