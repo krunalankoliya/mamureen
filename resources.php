@@ -67,7 +67,7 @@ $linkData = $linkResult->fetch_all(MYSQLI_ASSOC);
                                         <div class="activite-label"><?= $upload_date ?></div>
                                         <i class='bi bi-circle-fill activity-badge <?= $resource['dot_color'] ?> align-self-start'></i>
                                         <div class="activity-content">
-                                            <a href="download_log.php?id=<?= $resource['id'] ?>" class="<?= $title_class ?>" download>
+                                            <a href="download_log.php?id=<?= $resource['id'] ?>" class="<?= $title_class ?>">
                                                 <?= $resource['title'] ?> <?= $download_text ?>
                                             </a>
                                         </div>
