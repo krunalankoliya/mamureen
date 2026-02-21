@@ -1,7 +1,7 @@
 <?php
     require_once __DIR__ . '/../session.php';
 
-    $query   = "SELECT its_id,miqaat_mauze,miqaat_jamiat,`zone`,fullname FROM users_mamureen WHERE its_id = $user_its UNION SELECT its_id,miqaat_mauze,miqaat_jamiat,`zone`,fullname FROM users_admin WHERE its_id = $user_its";
+    $query   = "SELECT its_id,miqaat_mauze,miqaat_jamiat,`zone`,fullname FROM users_mamureen WHERE its_id = $user_its UNION SELECT its_id,miqaat_mauze,miqaat_jamiat,`zone`,fullname FROM users_admin WHERE its_id = $user_its UNION SELECT its_id,miqaat_mauze,miqaat_jamiat,`zone`,fullname FROM users_sub_admin WHERE its_id = $user_its";
     $result  = mysqli_query($mysqli, $query);
     $rowdata = $result->fetch_assoc();
 

@@ -1,5 +1,10 @@
 <?php
     $current_page = 'dashboard';
+    require_once __DIR__ . '/session.php';
+    if ($is_sub_admin) {
+    header('Location: ' . MODULE_PATH . 'admin/bqi_dashboard.php');
+    exit();
+    }
     require_once __DIR__ . '/inc/header.php';
 
     function getCounts($query, $mysqli)
