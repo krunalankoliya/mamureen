@@ -121,6 +121,17 @@ if (isset($_POST['submit_tafheem'])) {
     }
 }
 
+// Handle Delete
+if (isset($_POST['delete_tafheem'])) {
+    $delete_id = (int)$_POST['delete_id'];
+    $result = mysqli_query($mysqli, "DELETE FROM `bqi_individual_tafheem` WHERE `id` = '$delete_id' AND `added_its` = '$user_its'");
+    if ($result) {
+        $message = ['text' => 'Report deleted successfully.', 'tag' => 'success'];
+    } else {
+        $message = ['text' => 'Failed to delete: ' . mysqli_error($mysqli), 'tag' => 'danger'];
+    }
+}
+
 // Handle Edit
 if (isset($_POST['update_tafheem'])) {
     $edit_id             = (int)$_POST['edit_id'];
@@ -325,6 +336,12 @@ $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
                                                     data-bs-toggle="modal" data-bs-target="#editModal">
                                                     <i class="bi bi-pencil-square"></i>
                                                 </button>
+                                                <form method="post" class="d-inline">
+                                                    <input type="hidden" name="delete_id" value="<?= $t['id'] ?>">
+                                                    <button type="submit" name="delete_tafheem" class="btn btn-sm btn-outline-danger delete-btn">
+                                                        <i class="bi bi-trash-fill"></i>
+                                                    </button>
+                                                </form>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>

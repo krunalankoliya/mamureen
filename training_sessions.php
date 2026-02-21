@@ -3,6 +3,32 @@
     $current_page = 'training_sessions';
     require_once __DIR__ . '/inc/header.php';
 
+    // Handle Delete
+    if (isset($_POST['delete_training'])) {
+    $delete_id = (int) $_POST['delete_id'];
+    $result    = mysqli_query($mysqli, "DELETE FROM `bqi_training_sessions` WHERE `id` = '$delete_id' AND `user_its` = '$user_its'");
+    if ($result) {
+        $message = ['text' => 'Record deleted successfully.', 'tag' => 'success'];
+    } else {
+        $message = ['text' => 'Failed to delete: ' . mysqli_error($mysqli), 'tag' => 'danger'];
+    }
+    }
+
+    // Handle Update
+    if (isset($_POST['update_training'])) {
+    $edit_id          = (int) $_POST['edit_id'];
+    $description      = mysqli_real_escape_string($mysqli, $_POST['description'] ?? '');
+    $session_date     = mysqli_real_escape_string($mysqli, $_POST['session_date']);
+    $duration_minutes = (int) $_POST['duration_minutes'];
+    $attendee_count   = (int) $_POST['attendee_count'];
+    $result           = mysqli_query($mysqli, "UPDATE `bqi_training_sessions` SET `description` = '$description', `session_date` = '$session_date', `duration_minutes` = '$duration_minutes', `attendee_count` = '$attendee_count' WHERE `id` = '$edit_id' AND `user_its` = '$user_its'");
+    if ($result) {
+        $message = ['text' => 'Record updated successfully.', 'tag' => 'success'];
+    } else {
+        $message = ['text' => 'Failed to update: ' . mysqli_error($mysqli), 'tag' => 'danger'];
+    }
+    }
+
     if (isset($_POST['submit'])) {
     $errors              = [];
     $uploaded_file_count = 0;
@@ -269,6 +295,7 @@
                                         <th>Attendees</th>
                                         <th>Uploads</th>
                                         <th>Submitted</th>
+                                        <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -296,6 +323,23 @@
                                             <td><?php echo $data['attendee_count'] ?></td>
                                             <td><?php echo $data['uploaded_file_count'] ?></td>
                                             <td><?php echo date('d-M-Y', strtotime($data['added_ts'])) ?></td>
+                                            <td>
+                                                <button type="button" class="btn btn-sm btn-outline-info edit-session-btn"
+                                                    data-id="<?php echo $data['id'] ?>"
+                                                    data-desc="<?php echo htmlspecialchars($data['description']) ?>"
+                                                    data-date="<?php echo htmlspecialchars($data['session_date']) ?>"
+                                                    data-duration="<?php echo $data['duration_minutes'] ?>"
+                                                    data-attendees="<?php echo $data['attendee_count'] ?>"
+                                                    data-bs-toggle="modal" data-bs-target="#editSessionModal">
+                                                    <i class="bi bi-pencil-square"></i>
+                                                </button>
+                                                <form method="post" class="d-inline">
+                                                    <input type="hidden" name="delete_id" value="<?php echo $data['id'] ?>">
+                                                    <button type="submit" name="delete_training" class="btn btn-sm btn-outline-danger delete-btn">
+                                                        <i class="bi bi-trash-fill"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
@@ -308,6 +352,43 @@
         </div>
     </section>
 </main>
+
+<!-- Edit Session Modal -->
+<div class="modal fade" id="editSessionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Training Session</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="edit_id" id="edit_session_id">
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" id="edit_session_desc" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Session Date<span class="required_star">*</span></label>
+                        <input type="date" name="session_date" id="edit_session_date" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Duration (minutes)<span class="required_star">*</span></label>
+                        <input type="number" name="duration_minutes" id="edit_session_duration" class="form-control" min="1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Attendee Count<span class="required_star">*</span></label>
+                        <input type="number" name="attendee_count" id="edit_session_attendees" class="form-control" min="1" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" name="update_training" class="btn btn-primary">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 <?php require_once __DIR__ . '/inc/footer.php'; ?>
 <style>

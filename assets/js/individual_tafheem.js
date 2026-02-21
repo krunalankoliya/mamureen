@@ -1,5 +1,12 @@
 $(document).ready(function () {
 
+    // ── Delete confirm ─────────────────────────────────────────────────
+    $(document).on('click', '.delete-btn', function (e) {
+        if (!confirm('Are you sure you want to delete this record?')) {
+            e.preventDefault();
+        }
+    });
+
     // ── Modal populate ─────────────────────────────────────────────────
     $('.view-btn').on('click', function () {
         $('#edit_id').val($(this).data('id'));

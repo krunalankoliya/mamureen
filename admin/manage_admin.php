@@ -17,12 +17,13 @@
     if (isset($_POST['delete'])) {
     $its_id = (int) $_POST['its_id'];
     $query  = "DELETE FROM `users_admin` WHERE `its_id` = '$its_id'";
-    try {
-        $result          = mysqli_query($mysqli, $query);
+    $result = mysqli_query($mysqli, $query);
+    if ($result) {
         $message['text'] = "Admin Deleted Successfully";
         $message['tag']  = 'success';
-    } catch (Exception $e) {
-        $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
+    } else {
+        $message['text'] = "Failed to delete admin: " . mysqli_error($mysqli);
+        $message['tag']  = 'danger';
     }
     }
 
@@ -51,7 +52,7 @@
     $data = json_decode($response, true);
 
     if ($data) {
-        $nationality          = $data->nationality;
+        $nationality          = $data['nationality'];
         $miqaat_india_foreign = ($nationality === 'Indian') ? 'I' : 'F';
 
         $dob = $data['dob'];
@@ -64,12 +65,13 @@
         $insertQuery = "INSERT INTO `users_admin` (`its_id`, `fullname`, `fullname_ar`, `email_id`, `mobile`, `miqaat_mauze`, `kg_age`, `miqaat_india_foreign`)
         VALUES ('$its_id', '$data[full_name_en]', '$data[full_name_ar]', '$data[email]', '$data[mobile]', '$data[jamaat]', '$age', '$miqaat_india_foreign')";
 
-        try {
-            $result          = mysqli_query($mysqli, $insertQuery);
+        $result = mysqli_query($mysqli, $insertQuery);
+        if ($result) {
             $message['text'] = "Admin Added Successfully";
             $message['tag']  = 'success';
-        } catch (Exception $e) {
-            $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
+        } else {
+            $message['text'] = "Failed to add admin: " . mysqli_error($mysqli);
+            $message['tag']  = 'danger';
         }
     } else {
         $message['text'] = "Invalid ITS ID : $its_id";

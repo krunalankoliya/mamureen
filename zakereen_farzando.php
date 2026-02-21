@@ -62,6 +62,29 @@
     }
     }
 
+    // Handle Delete
+    if (isset($_POST['delete_farzand'])) {
+    $delete_id = (int) $_POST['delete_id'];
+    $result    = mysqli_query($mysqli, "DELETE FROM `bqi_zakereen_farzando` WHERE `id` = '$delete_id' AND `added_its` = '$user_its'");
+    if ($result) {
+        $message = ['text' => 'Farzand deleted successfully.', 'tag' => 'success'];
+    } else {
+        $message = ['text' => 'Failed to delete: ' . mysqli_error($mysqli), 'tag' => 'danger'];
+    }
+    }
+
+    // Handle Update (party reassignment)
+    if (isset($_POST['update_farzand'])) {
+    $edit_id  = (int) $_POST['edit_id'];
+    $party_id = (int) $_POST['edit_party_id'];
+    $result   = mysqli_query($mysqli, "UPDATE `bqi_zakereen_farzando` SET `party_id` = '$party_id' WHERE `id` = '$edit_id' AND `added_its` = '$user_its'");
+    if ($result) {
+        $message = ['text' => 'Farzand updated successfully.', 'tag' => 'success'];
+    } else {
+        $message = ['text' => 'Failed to update: ' . mysqli_error($mysqli), 'tag' => 'danger'];
+    }
+    }
+
     // Handle Quick-Add Party (from modal)
     if (isset($_POST['quick_add_party'])) {
     $party_name = trim(mysqli_real_escape_string($mysqli, $_POST['party_name']));
@@ -380,6 +403,7 @@
                                         <th>Mobile</th>
                                         <th>Source</th>
                                         <th>Added On</th>
+                                        <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -393,6 +417,21 @@
                                             <td><?php echo htmlspecialchars($f['mobile'] ?? '') ?></td>
                                             <td><?php echo $f['is_bulk_upload'] ? '<span class="badge bg-info">CSV</span>' : '<span class="badge bg-primary">Manual</span>' ?></td>
                                             <td><?php echo date('d-M-Y H:i', strtotime($f['added_ts'])) ?></td>
+                                            <td>
+                                                <button type="button" class="btn btn-sm btn-outline-info edit-farzand-btn"
+                                                    data-id="<?php echo $f['id'] ?>"
+                                                    data-name="<?php echo htmlspecialchars($f['full_name']) ?>"
+                                                    data-party-id="<?php echo $f['party_id'] ?>"
+                                                    data-bs-toggle="modal" data-bs-target="#editFarzandModal">
+                                                    <i class="bi bi-pencil-square"></i>
+                                                </button>
+                                                <form method="post" class="d-inline">
+                                                    <input type="hidden" name="delete_id" value="<?php echo $f['id'] ?>">
+                                                    <button type="submit" name="delete_farzand" class="btn btn-sm btn-outline-danger delete-btn">
+                                                        <i class="bi bi-trash-fill"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 </tbody>
@@ -430,21 +469,40 @@
     </div>
 </div>
 
-<?php require_once __DIR__ . '/inc/footer.php'; ?>
-<script>
-<?php if (! empty($show_popup)): ?>
-    alert('Farzand added successfully!');
-<?php endif; ?>
+<!-- Edit Farzand Modal -->
+<div class="modal fade" id="editFarzandModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Farzand</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="edit_id" id="edit_farzand_id">
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Name:</strong> <span id="edit_farzand_name"></span></label>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Reassign Party</label>
+                        <select name="edit_party_id" id="edit_farzand_party" class="form-select" required>
+                            <option value="" disabled>Select Party...</option>
+                            <?php foreach ($parties as $p): ?>
+                                <option value="<?php echo $p['id'] ?>"><?php echo htmlspecialchars($p['party_name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" name="update_farzand" class="btn btn-primary">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
-$(document).ready(function () {
-    $('#datatable').DataTable({
-        dom: 'Bfrtip',
-        pageLength: 10,
-        buttons: [
-            { extend: 'copy', filename: function(){ return 'zakereen_farzando-' + Date.now(); } },
-            { extend: 'csv', filename: function(){ return 'zakereen_farzando-' + Date.now(); } },
-            { extend: 'excel', filename: function(){ return 'zakereen_farzando-' + Date.now(); } }
-        ]
-    });
-});
-</script>
+<div id="page-state" data-show-popup="<?php echo ! empty($show_popup) ? '1' : '0' ?>"></div>
+
+<?php require_once __DIR__ . '/inc/footer.php'; ?>
+<script src="assets/js/zakereen_farzando.js"></script>

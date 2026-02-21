@@ -51,6 +51,7 @@
             // ['page' => 'course_name_correction', 'link' => 'admin/course_name_correction.php', 'text' => 'Course Name Correction', 'icon' => 'bi bi-circle'],
             // ['page' => 'institute_name_name_correction', 'link' => 'admin/institute_name_name_correction.php', 'text' => 'Institute Name Correction', 'icon' => 'bi bi-circle'],
             // ['page' => 'admin_dashboard', 'link' => 'admin_dashboard.php', 'text' => 'Admin Dashboard', 'icon' => 'bi bi-circle'],
+            ['page' => 'bqi_dashboard', 'link' => 'admin/bqi_dashboard.php', 'text' => 'BQI Dashboard', 'icon' => 'bi bi-speedometer2'],
             ['page' => 'manage_admin', 'link' => 'admin/manage_admin.php', 'text' => 'Manage Admin', 'icon' => 'bi bi-circle'],
             ['page' => 'manage_mamureen', 'link' => 'admin/manage_mamureen.php', 'text' => 'Manage Mamureen', 'icon' => 'bi bi-circle'],
             // ['page' => 'meetings_data', 'link' => 'admin/meetings_data.php', 'text' => 'Meetings Data', 'icon' => 'bi bi-circle'],
@@ -78,6 +79,7 @@
         ];
         generateCollapsibleSidebarItem(
             [
+                'bqi_dashboard',
                 'manage_admin',
                 'manage_mamureen',
                 // 'meetings_data',

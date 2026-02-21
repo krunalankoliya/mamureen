@@ -1,5 +1,21 @@
 $(document).ready(function () {
 
+    // ── Delete confirm ─────────────────────────────────────────
+    $(document).on('click', '.delete-btn', function (e) {
+        if (!confirm('Are you sure you want to delete this record?')) {
+            e.preventDefault();
+        }
+    });
+
+    // ── Edit modal populate ────────────────────────────────────
+    $(document).on('click', '.edit-session-btn', function () {
+        $('#edit_session_id').val($(this).data('id'));
+        $('#edit_session_desc').val($(this).data('desc'));
+        $('#edit_session_date').val($(this).data('date'));
+        $('#edit_session_duration').val($(this).data('duration'));
+        $('#edit_session_attendees').val($(this).data('attendees'));
+    });
+
     // ── Success popup ──────────────────────────────────────────
     var form = document.querySelector('form[data-show-popup]');
     if (form && form.getAttribute('data-show-popup') === '1') {
