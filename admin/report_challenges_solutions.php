@@ -14,7 +14,7 @@ while ($row = $ar->fetch_assoc()) {
 $result  = mysqli_query($mysqli, "SELECT cs.*, c.category_name, u.fullname AS submitted_by
     FROM `bqi_challenges_solutions` cs
     LEFT JOIN `bqi_categories` c ON cs.category_id = c.id
-    LEFT JOIN `users_admin` u ON cs.added_its = u.its_id
+    LEFT JOIN `users_mamureen` u ON cs.added_its = u.its_id
     ORDER BY cs.id DESC");
 $records = $result->fetch_all(MYSQLI_ASSOC);
 ?>

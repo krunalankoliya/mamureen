@@ -20,7 +20,7 @@ while ($row = $ar->fetch_assoc()) {
 // Fetch all records
 $result  = mysqli_query($mysqli, "SELECT t.*, u.fullname AS submitted_by
     FROM `bqi_individual_tafheem` t
-    LEFT JOIN `users_admin` u ON t.added_its = u.its_id
+    LEFT JOIN `users_mamureen` u ON t.added_its = u.its_id
     ORDER BY t.id DESC");
 $records = $result->fetch_all(MYSQLI_ASSOC);
 ?>

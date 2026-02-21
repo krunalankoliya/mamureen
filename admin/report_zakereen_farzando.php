@@ -6,7 +6,7 @@ require_once __DIR__ . '/../inc/header.php';
 $result  = mysqli_query($mysqli, "SELECT f.*, p.party_name, u.fullname AS added_by
     FROM `bqi_zakereen_farzando` f
     LEFT JOIN `bqi_zakereen_parties` p ON f.party_id = p.id
-    LEFT JOIN `users_admin` u ON f.added_its = u.its_id
+    LEFT JOIN `users_mamureen` u ON f.added_its = u.its_id
     ORDER BY f.id DESC");
 $records = $result->fetch_all(MYSQLI_ASSOC);
 ?>

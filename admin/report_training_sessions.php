@@ -13,7 +13,7 @@ while ($row = $tr->fetch_assoc()) {
 // Fetch all records
 $result  = mysqli_query($mysqli, "SELECT s.*, u.fullname AS submitted_by
     FROM `bqi_training_sessions` s
-    LEFT JOIN `users_admin` u ON s.user_its = u.its_id
+    LEFT JOIN `users_mamureen` u ON s.user_its = u.its_id
     ORDER BY s.id DESC");
 $records = $result->fetch_all(MYSQLI_ASSOC);
 ?>
