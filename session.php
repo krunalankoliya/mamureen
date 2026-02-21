@@ -31,6 +31,15 @@
     $adminData = $result->fetch_all(MYSQLI_ASSOC);
     $admin_its = array_column($adminData, 'its_id');
 
+    // Sub admin check (graceful — table may not exist yet)
+    $sub_admin_its = [];
+    $is_sub_admin  = false;
+    $saResult = @mysqli_query($mysqli, "SELECT its_id FROM users_sub_admin");
+    if ($saResult) {
+    $sub_admin_its = array_column($saResult->fetch_all(MYSQLI_ASSOC), 'its_id');
+    $is_sub_admin  = in_array((string)$user_its, $sub_admin_its);
+    }
+
     if (in_array($user_its, $admin_its)) {
     $is_admin = true;
     } else {
@@ -42,6 +51,8 @@ FROM (
     SELECT `its_id` FROM `users_mamureen` WHERE `its_id` = '$user_its'
     UNION
     SELECT `its_id` FROM `users_admin` WHERE `its_id` = '$user_its'
+    UNION
+    SELECT `its_id` FROM `users_sub_admin` WHERE `its_id` = '$user_its'
 ) AS combined
 LIMIT 1;";
     $result = mysqli_query($mysqli, $query);

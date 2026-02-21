@@ -77,6 +77,7 @@
             // ['page' => 'admin_dashboard', 'link' => 'admin_dashboard.php', 'text' => 'Admin Dashboard', 'icon' => 'bi bi-circle'],
             ['page' => 'bqi_dashboard', 'link' => 'admin/bqi_dashboard.php', 'text' => 'BQI Dashboard', 'icon' => 'bi bi-speedometer2'],
             ['page' => 'manage_admin', 'link' => 'admin/manage_admin.php', 'text' => 'Manage Admin', 'icon' => 'bi bi-circle'],
+            ['page' => 'manage_sub_admin', 'link' => 'admin/manage_sub_admin.php', 'text' => 'Manage Sub Admin', 'icon' => 'bi bi-circle'],
             ['page' => 'manage_mamureen', 'link' => 'admin/manage_mamureen.php', 'text' => 'Manage Mamureen', 'icon' => 'bi bi-circle'],
             // ['page' => 'meetings_data', 'link' => 'admin/meetings_data.php', 'text' => 'Meetings Data', 'icon' => 'bi bi-circle'],
             // ['page' => 'manage_identified_students', 'link' => 'admin/manage_identified_students.php', 'text' => 'Manage Identified Students', 'icon' => 'bi bi-circle'],
@@ -105,6 +106,7 @@
             [
                 'bqi_dashboard',
                 'manage_admin',
+                'manage_sub_admin',
                 'manage_mamureen',
                 // 'meetings_data',
                 'Manage_Resources',
