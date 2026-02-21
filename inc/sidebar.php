@@ -42,18 +42,18 @@
     </li>";
     }
 
-    // Function to generate BQI Reports section (admin only)
-    function generateBQIReportsSection($user_its, $admin_its, $current_page)
+    // Function to generate BQI Reports section (admin + sub admin)
+    function generateBQIReportsSection($user_its, $admin_its, $current_page, $is_sub_admin = false)
     {
-    if (in_array($user_its, $admin_its)) {
+    if ($is_sub_admin || in_array($user_its, $admin_its)) {
         $reportPages = [
-            ['page' => 'report_zakereen_parties',     'link' => 'admin/report_zakereen_parties.php',     'text' => 'Zakereen Parties',       'icon' => 'bi bi-circle'],
-            ['page' => 'report_zakereen_farzando',    'link' => 'admin/report_zakereen_farzando.php',    'text' => 'Zakereen Farzando',      'icon' => 'bi bi-circle'],
-            ['page' => 'report_individual_tafheem',   'link' => 'admin/report_individual_tafheem.php',   'text' => 'Individual Tafheem',     'icon' => 'bi bi-circle'],
-            ['page' => 'report_training_sessions',    'link' => 'admin/report_training_sessions.php',    'text' => 'Training Sessions',      'icon' => 'bi bi-circle'],
-            ['page' => 'report_challenges_solutions', 'link' => 'admin/report_challenges_solutions.php', 'text' => 'Challenges & Solutions', 'icon' => 'bi bi-circle'],
-            ['page' => 'report_noteworthy_experiences','link'=> 'admin/report_noteworthy_experiences.php','text' => 'Noteworthy Experiences', 'icon' => 'bi bi-circle'],
-            ['page' => 'report_khidmat_preparations', 'link' => 'admin/report_khidmat_preparations.php', 'text' => 'Khidmat Preparations',   'icon' => 'bi bi-circle'],
+            ['page' => 'report_zakereen_parties',      'link' => 'admin/report_zakereen_parties.php',      'text' => 'Zakereen Parties',       'icon' => 'bi bi-circle'],
+            ['page' => 'report_zakereen_farzando',     'link' => 'admin/report_zakereen_farzando.php',     'text' => 'Zakereen Farzando',      'icon' => 'bi bi-circle'],
+            ['page' => 'report_individual_tafheem',    'link' => 'admin/report_individual_tafheem.php',    'text' => 'Individual Tafheem',     'icon' => 'bi bi-circle'],
+            ['page' => 'report_training_sessions',     'link' => 'admin/report_training_sessions.php',     'text' => 'Training Sessions',      'icon' => 'bi bi-circle'],
+            ['page' => 'report_challenges_solutions',  'link' => 'admin/report_challenges_solutions.php',  'text' => 'Challenges & Solutions', 'icon' => 'bi bi-circle'],
+            ['page' => 'report_noteworthy_experiences','link' => 'admin/report_noteworthy_experiences.php','text' => 'Noteworthy Experiences', 'icon' => 'bi bi-circle'],
+            ['page' => 'report_khidmat_preparations',  'link' => 'admin/report_khidmat_preparations.php',  'text' => 'Khidmat Preparations',   'icon' => 'bi bi-circle'],
         ];
         generateCollapsibleSidebarItem(
             array_column($reportPages, 'page'),
@@ -135,23 +135,32 @@
 
 <aside id="sidebar" class="sidebar">
     <ul class="sidebar-nav" id="sidebar-nav">
-        <!-- Dashboard -->
-        <?php generateSidebarItem('dashboard', $current_page, 'bi bi-grid', 'Dashboard', 'index.php'); ?>
 
-        <!-- BQI 1447 Pages -->
+        <?php if ($is_sub_admin): ?>
+            <!-- Sub Admin: BQI Dashboard + BQI Reports only -->
+            <?php generateSidebarItem('bqi_dashboard', $current_page, 'bi bi-speedometer2', 'BQI Dashboard', 'admin/bqi_dashboard.php'); ?>
+            <?php generateBQIReportsSection($user_its, $admin_its, $current_page, true); ?>
 
-        <?php generateSidebarItem('resources', $current_page, 'bi bi-download', 'Resources & Downloads', 'resources.php'); ?>
-        <?php generateSidebarItem('zakereen_parties', $current_page, 'bi bi-clipboard-data', 'Zakereen Parties', 'zakereen_parties.php'); ?>
-        <?php generateSidebarItem('zakereen_farzando', $current_page, 'bi bi-clipboard-data', 'Zakereen Farzando', 'zakereen_farzando.php'); ?>
-        <?php generateSidebarItem('individual_tafheem', $current_page, 'bi bi-clipboard-data', 'Individual Tafheem', 'individual_tafheem.php'); ?>
-        <?php generateSidebarItem('training_sessions', $current_page, 'bi bi-clipboard-data', 'Training Sessions', 'training_sessions.php'); ?>
-        <?php generateSidebarItem('challenges_solutions', $current_page, 'bi bi-clipboard-data', 'Challenges / Solutions', 'challenges_solutions.php'); ?>
-        <?php generateSidebarItem('noteworthy_experiences', $current_page, 'bi bi-clipboard-data', 'Noteworthy Experiences', 'noteworthy_experiences.php'); ?>
-        <?php generateSidebarItem('khidmat_preparations', $current_page, 'bi bi-clipboard-data', 'Khidmat Preparations', 'khidmat_preparations.php'); ?>
-        <?php generateSidebarItem('maaraz', $current_page, 'bi bi-clipboard-data', "Ma'araz", 'maaraz.php'); ?>
-        <?php generateSidebarItem('google_form_list', $current_page, 'bi bi-clipboard-data', 'Daily Reports', 'google_form_list.php'); ?>
-        <?php generateSidebarItem('important_contacts', $current_page, 'bi bi-telephone-fill', 'Important Contacts', 'important_contacts.php'); ?>
-        <!-- Admin Section -->
-        <?php generateAdminSection($user_its, $admin_its, $current_page); ?>
+        <?php else: ?>
+            <!-- Regular mamureen + Admin pages -->
+            <?php generateSidebarItem('dashboard', $current_page, 'bi bi-grid', 'Dashboard', 'index.php'); ?>
+            <?php generateSidebarItem('resources', $current_page, 'bi bi-download', 'Resources & Downloads', 'resources.php'); ?>
+            <?php generateSidebarItem('zakereen_parties', $current_page, 'bi bi-clipboard-data', 'Zakereen Parties', 'zakereen_parties.php'); ?>
+            <?php generateSidebarItem('zakereen_farzando', $current_page, 'bi bi-clipboard-data', 'Zakereen Farzando', 'zakereen_farzando.php'); ?>
+            <?php generateSidebarItem('individual_tafheem', $current_page, 'bi bi-clipboard-data', 'Individual Tafheem', 'individual_tafheem.php'); ?>
+            <?php generateSidebarItem('training_sessions', $current_page, 'bi bi-clipboard-data', 'Training Sessions', 'training_sessions.php'); ?>
+            <?php generateSidebarItem('challenges_solutions', $current_page, 'bi bi-clipboard-data', 'Challenges / Solutions', 'challenges_solutions.php'); ?>
+            <?php generateSidebarItem('noteworthy_experiences', $current_page, 'bi bi-clipboard-data', 'Noteworthy Experiences', 'noteworthy_experiences.php'); ?>
+            <?php generateSidebarItem('khidmat_preparations', $current_page, 'bi bi-clipboard-data', 'Khidmat Preparations', 'khidmat_preparations.php'); ?>
+            <?php generateSidebarItem('maaraz', $current_page, 'bi bi-clipboard-data', "Ma'araz", 'maaraz.php'); ?>
+            <?php generateSidebarItem('google_form_list', $current_page, 'bi bi-clipboard-data', 'Daily Reports', 'google_form_list.php'); ?>
+            <?php generateSidebarItem('important_contacts', $current_page, 'bi bi-telephone-fill', 'Important Contacts', 'important_contacts.php'); ?>
+            <!-- Admin Section -->
+            <?php generateAdminSection($user_its, $admin_its, $current_page); ?>
+            <!-- BQI Reports Section (admin only) -->
+            <?php generateBQIReportsSection($user_its, $admin_its, $current_page, false); ?>
+
+        <?php endif; ?>
+
     </ul>
 </aside><!-- End Sidebar-->
