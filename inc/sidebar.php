@@ -42,6 +42,30 @@
     </li>";
     }
 
+    // Function to generate BQI Reports section (admin only)
+    function generateBQIReportsSection($user_its, $admin_its, $current_page)
+    {
+    if (in_array($user_its, $admin_its)) {
+        $reportPages = [
+            ['page' => 'report_zakereen_parties',     'link' => 'admin/report_zakereen_parties.php',     'text' => 'Zakereen Parties',       'icon' => 'bi bi-circle'],
+            ['page' => 'report_zakereen_farzando',    'link' => 'admin/report_zakereen_farzando.php',    'text' => 'Zakereen Farzando',      'icon' => 'bi bi-circle'],
+            ['page' => 'report_individual_tafheem',   'link' => 'admin/report_individual_tafheem.php',   'text' => 'Individual Tafheem',     'icon' => 'bi bi-circle'],
+            ['page' => 'report_training_sessions',    'link' => 'admin/report_training_sessions.php',    'text' => 'Training Sessions',      'icon' => 'bi bi-circle'],
+            ['page' => 'report_challenges_solutions', 'link' => 'admin/report_challenges_solutions.php', 'text' => 'Challenges & Solutions', 'icon' => 'bi bi-circle'],
+            ['page' => 'report_noteworthy_experiences','link'=> 'admin/report_noteworthy_experiences.php','text' => 'Noteworthy Experiences', 'icon' => 'bi bi-circle'],
+            ['page' => 'report_khidmat_preparations', 'link' => 'admin/report_khidmat_preparations.php', 'text' => 'Khidmat Preparations',   'icon' => 'bi bi-circle'],
+        ];
+        generateCollapsibleSidebarItem(
+            array_column($reportPages, 'page'),
+            $current_page,
+            'bi bi-bar-chart-fill',
+            'BQI Reports',
+            $reportPages,
+            'bqi-reports'
+        );
+    }
+    }
+
     // Function to generate admin section if user is an admin
     function generateAdminSection($user_its, $admin_its, $current_page)
     {
