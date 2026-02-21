@@ -30,24 +30,36 @@ $(document).ready(function () {
         var filesHtml = '';
         if (files.length > 0) {
             filesHtml = '<hr><h6 class="mb-2"><i class="bi bi-paperclip"></i> Attachments (' + files.length + ')</h6>' +
-                        '<div class="d-flex flex-wrap gap-2">';
+                        '<div class="d-flex flex-wrap gap-3">';
             $.each(files, function (i, f) {
                 var url  = BASE_URL + 'user_uploads/' + f.path;
                 var ext  = (f.type || '').toLowerCase();
                 var name = $('<span>').text(f.name || f.path).html();
+                var dlBtn = '<a href="' + url + '" download class="btn btn-sm btn-secondary py-0 px-2" style="font-size:0.75rem" title="Download"><i class="bi bi-download"></i></a>';
 
                 if (imageExts.indexOf(ext) !== -1) {
-                    filesHtml += '<a href="' + url + '" target="_blank">' +
-                        '<img src="' + url + '" style="height:120px;width:120px;object-fit:cover;border-radius:6px;border:1px solid #dee2e6;" title="' + name + '">' +
-                        '</a>';
+                    filesHtml += '<div class="text-center">' +
+                        '<a href="' + url + '" target="_blank">' +
+                        '<img src="' + url + '" style="height:120px;width:120px;object-fit:cover;border-radius:6px;border:1px solid #dee2e6;display:block;" title="' + name + '">' +
+                        '</a>' +
+                        '<div class="mt-1">' + dlBtn + '</div>' +
+                        '</div>';
                 } else if (ext === 'pdf') {
-                    filesHtml += '<a href="' + url + '" target="_blank" class="btn btn-sm btn-outline-danger"><i class="bi bi-file-pdf-fill me-1"></i>' + name + '</a>';
+                    filesHtml += '<div class="d-flex align-items-center gap-1">' +
+                        '<a href="' + url + '" target="_blank" class="btn btn-sm btn-outline-danger"><i class="bi bi-file-pdf-fill me-1"></i>' + name + '</a>' +
+                        dlBtn + '</div>';
                 } else if (videoExts.indexOf(ext) !== -1) {
-                    filesHtml += '<a href="' + url + '" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-camera-video-fill me-1"></i>' + name + '</a>';
+                    filesHtml += '<div class="d-flex align-items-center gap-1">' +
+                        '<a href="' + url + '" target="_blank" class="btn btn-sm btn-outline-primary"><i class="bi bi-camera-video-fill me-1"></i>' + name + '</a>' +
+                        dlBtn + '</div>';
                 } else if (audioExts.indexOf(ext) !== -1) {
-                    filesHtml += '<a href="' + url + '" target="_blank" class="btn btn-sm btn-outline-success"><i class="bi bi-music-note-beamed me-1"></i>' + name + '</a>';
+                    filesHtml += '<div class="d-flex align-items-center gap-1">' +
+                        '<a href="' + url + '" target="_blank" class="btn btn-sm btn-outline-success"><i class="bi bi-music-note-beamed me-1"></i>' + name + '</a>' +
+                        dlBtn + '</div>';
                 } else {
-                    filesHtml += '<a href="' + url + '" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-file-earmark me-1"></i>' + name + '</a>';
+                    filesHtml += '<div class="d-flex align-items-center gap-1">' +
+                        '<a href="' + url + '" target="_blank" class="btn btn-sm btn-outline-secondary"><i class="bi bi-file-earmark me-1"></i>' + name + '</a>' +
+                        dlBtn + '</div>';
                 }
             });
             filesHtml += '</div>';
