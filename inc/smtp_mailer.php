@@ -3,11 +3,9 @@
 // SMTP Mailer — Gmail App Password, port 465 direct SSL
 // ============================================================
 
-define('SUPPORT_SMTP_HOST', 'smtp.gmail.com');
-define('SUPPORT_SMTP_PORT', 465);
-define('SUPPORT_SMTP_USER', 'umoortaleemiyah@alvazarat.org');
-define('SUPPORT_SMTP_PASSWORD', 'jnxk zxff iwtf lqdl');
-define('SUPPORT_FROM_NAME', 'Mamureen Support');
+// Credentials loaded from smtp_config.php (gitignored — never committed).
+// Copy inc/smtp_config.example.php → inc/smtp_config.php to configure.
+require_once __DIR__ . '/smtp_config.php';
 
 // ------------------------------------------------------------
 // sendSupportMail() — returns true on success, false on failure
