@@ -75,10 +75,12 @@ $query = "SELECT * FROM `bqi_categories` WHERE `category_type` = 'preparation' A
 $result = mysqli_query($mysqli, $query);
 $categories = $result->fetch_all(MYSQLI_ASSOC);
 
-// Fetch user's submitted records
-$query = "SELECT kp.*, c.category_name FROM `bqi_khidmat_preparations` kp
+// Fetch mauze's submitted records
+$mauze_its_subquery = "(SELECT `its_id` FROM `users_mamureen` WHERE `miqaat_mauze` = '$mauze')";
+$query = "SELECT kp.*, c.category_name, um.fullname AS submitted_by FROM `bqi_khidmat_preparations` kp
           LEFT JOIN `bqi_categories` c ON kp.category_id = c.id
-          WHERE kp.added_its = '$user_its'
+          LEFT JOIN `users_mamureen` um ON um.its_id = kp.added_its
+          WHERE kp.added_its IN $mauze_its_subquery
           ORDER BY kp.added_ts DESC";
 $result = mysqli_query($mysqli, $query);
 $records = $result->fetch_all(MYSQLI_ASSOC);
@@ -161,6 +163,7 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                                         <th>Category</th>
                                         <th>Description</th>
                                         <th>Date</th>
+                                        <th>Submitted By</th>
                                         <th>Action</th>
                                     </tr>
                                 </thead>
@@ -171,6 +174,7 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                                             <td><?= htmlspecialchars($r['category_name'] ?? 'N/A') ?></td>
                                             <td><?= htmlspecialchars(mb_substr($r['description_text'], 0, 80)) ?>...</td>
                                             <td><?= date('d-M-Y', strtotime($r['added_ts'])) ?></td>
+                                            <td><?= htmlspecialchars($r['submitted_by'] ?? '') ?></td>
                                             <td>
                                                 <button type="button" class="btn btn-sm btn-outline-info edit-btn"
                                                     data-id="<?= $r['id'] ?>"

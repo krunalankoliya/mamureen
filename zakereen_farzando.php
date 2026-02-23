@@ -209,15 +209,17 @@
     }
     }
 
-    // Fetch parties for dropdown
-    $query   = "SELECT * FROM `bqi_zakereen_parties` WHERE `is_active` = 1 AND `added_its` = '$user_its' ORDER BY `party_name` ASC";
+    // Fetch parties for dropdown (mauze-wide)
+    $mauze_its_subquery = "(SELECT `its_id` FROM `users_mamureen` WHERE `miqaat_mauze` = '$mauze')";
+    $query   = "SELECT * FROM `bqi_zakereen_parties` WHERE `is_active` = 1 AND `added_its` IN $mauze_its_subquery ORDER BY `party_name` ASC";
     $result  = mysqli_query($mysqli, $query);
     $parties = $result->fetch_all(MYSQLI_ASSOC);
 
-    // Fetch farzando records
-    $query = "SELECT f.*, p.party_name FROM `bqi_zakereen_farzando` f
+    // Fetch farzando records (mauze-wide)
+    $query = "SELECT f.*, p.party_name, um.fullname AS submitted_by FROM `bqi_zakereen_farzando` f
           LEFT JOIN `bqi_zakereen_parties` p ON f.party_id = p.id
-          WHERE f.added_its = '$user_its'
+          LEFT JOIN `users_mamureen` um ON um.its_id = f.added_its
+          WHERE f.added_its IN $mauze_its_subquery
           ORDER BY f.added_ts DESC";
     $result        = mysqli_query($mysqli, $query);
     $farzando_list = $result->fetch_all(MYSQLI_ASSOC);
@@ -403,6 +405,7 @@
                                         <th>Mobile</th>
                                         <th>Source</th>
                                         <th>Added On</th>
+                                        <th>Submitted By</th>
                                         <th>Action</th>
                                     </tr>
                                 </thead>
@@ -417,6 +420,7 @@
                                             <td><?php echo htmlspecialchars($f['mobile'] ?? '') ?></td>
                                             <td><?php echo $f['is_bulk_upload'] ? '<span class="badge bg-info">CSV</span>' : '<span class="badge bg-primary">Manual</span>' ?></td>
                                             <td><?php echo date('d-M-Y H:i', strtotime($f['added_ts'])) ?></td>
+                                            <td><?php echo htmlspecialchars($f['submitted_by'] ?? '') ?></td>
                                             <td>
                                                 <button type="button" class="btn btn-sm btn-outline-info edit-farzand-btn"
                                                     data-id="<?php echo $f['id'] ?>"

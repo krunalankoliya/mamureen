@@ -36,8 +36,9 @@
     }
     }
 
-    // Fetch parties
-    $query   = "SELECT * FROM `bqi_zakereen_parties` WHERE `added_its` = '$user_its' ORDER BY `added_ts` DESC";
+    // Fetch parties (mauze-wide)
+    $mauze_its_subquery = "(SELECT `its_id` FROM `users_mamureen` WHERE `miqaat_mauze` = '$mauze')";
+    $query   = "SELECT p.*, um.fullname AS submitted_by FROM `bqi_zakereen_parties` p LEFT JOIN `users_mamureen` um ON um.its_id = p.added_its WHERE p.added_its IN $mauze_its_subquery ORDER BY p.added_ts DESC";
     $result  = mysqli_query($mysqli, $query);
     $parties = $result->fetch_all(MYSQLI_ASSOC);
 ?>
@@ -81,7 +82,7 @@
                                         <th>#</th>
                                         <th>Party Name</th>
                                         <th>Status</th>
-                                        <th>Added By</th>
+                                        <th>Submitted By</th>
                                         <th>Added On</th>
                                         <th>Action</th>
                                     </tr>
@@ -98,7 +99,7 @@
                                                     <span class="badge bg-secondary">Inactive</span>
                                                 <?php endif; ?>
                                             </td>
-                                            <td><?php echo $party['added_its'] ?></td>
+                                            <td><?php echo htmlspecialchars($party['submitted_by'] ?? $party['added_its']) ?></td>
                                             <td><?php echo date('d-M-Y H:i', strtotime($party['added_ts'])) ?></td>
                                             <td>
                                                 <form method="post" style="display:inline;">

@@ -136,9 +136,10 @@
     $titles_map[$row['id']] = $row['title_name'];
     }
 
-    // Fetch this jamaat's training sessions
+    // Fetch this mauze's training sessions
+    $mauze_its_subquery = "(SELECT `its_id` FROM `users_mamureen` WHERE `miqaat_mauze` = '$mauze')";
     $reports = [];
-    $result  = mysqli_query($mysqli, "SELECT * FROM `bqi_training_sessions` WHERE `user_its` = '$user_its' ORDER BY `id` DESC");
+    $result  = mysqli_query($mysqli, "SELECT ts.*, um.fullname AS submitted_by FROM `bqi_training_sessions` ts LEFT JOIN `users_mamureen` um ON um.its_id = ts.user_its WHERE ts.user_its IN $mauze_its_subquery ORDER BY ts.id DESC");
     if ($result) {
     $reports = $result->fetch_all(MYSQLI_ASSOC);
     }
@@ -295,6 +296,7 @@
                                         <th>Attendees</th>
                                         <th>Uploads</th>
                                         <th>Submitted</th>
+                                        <th>Submitted By</th>
                                         <th>Action</th>
                                     </tr>
                                 </thead>
@@ -323,6 +325,7 @@
                                             <td><?php echo $data['attendee_count'] ?></td>
                                             <td><?php echo $data['uploaded_file_count'] ?></td>
                                             <td><?php echo date('d-M-Y', strtotime($data['added_ts'])) ?></td>
+                                            <td><?php echo htmlspecialchars($data['submitted_by'] ?? '') ?></td>
                                             <td>
                                                 <button type="button" class="btn btn-sm btn-outline-info edit-session-btn"
                                                     data-id="<?php echo $data['id'] ?>"

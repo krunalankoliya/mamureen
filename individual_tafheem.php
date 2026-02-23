@@ -158,8 +158,9 @@ $reasons = $result->fetch_all(MYSQLI_ASSOC);
 // Build reasons map for display (id => reason_name)
 $reasons_map = array_column($reasons, 'reason_name', 'id');
 
-// Fetch user's submitted records
-$query = "SELECT * FROM `bqi_individual_tafheem` WHERE `added_its` = '$user_its' ORDER BY `added_ts` DESC";
+// Fetch mauze's submitted records
+$mauze_its_subquery = "(SELECT `its_id` FROM `users_mamureen` WHERE `miqaat_mauze` = '$mauze')";
+$query = "SELECT t.*, um.fullname AS submitted_by FROM `bqi_individual_tafheem` t LEFT JOIN `users_mamureen` um ON um.its_id = t.added_its WHERE t.added_its IN $mauze_its_subquery ORDER BY t.added_ts DESC";
 $result = mysqli_query($mysqli, $query);
 $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
 ?>
@@ -304,6 +305,7 @@ $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
                                         <th>Type</th>
                                         <th>Reason(s)</th>
                                         <th>Date</th>
+                                        <th>Submitted By</th>
                                         <th>Action</th>
                                     </tr>
                                 </thead>
@@ -325,6 +327,7 @@ $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
                                                 ?>
                                             </td>
                                             <td><?= date('d-M-Y', strtotime($t['added_ts'])) ?></td>
+                                            <td><?= htmlspecialchars($t['submitted_by'] ?? '') ?></td>
                                             <td>
                                                 <button type="button" class="btn btn-sm btn-outline-info view-btn"
                                                     data-id="<?= $t['id'] ?>"

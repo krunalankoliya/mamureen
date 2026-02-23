@@ -14,24 +14,26 @@
     return ($res && $res['count']) ? (int) $res['count'] : 0;
     }
 
+    $mauze_its_subquery = "(SELECT `its_id` FROM `users_mamureen` WHERE `miqaat_mauze` = '$mauze')";
+
     // Section 1: Zakereen
-    $parties_count           = getCounts("SELECT COUNT(*) `count` FROM `bqi_zakereen_parties` WHERE `is_active` = 1 AND `added_its` = '$user_its'", $mysqli);
-    $farzando_count          = getCounts("SELECT COUNT(*) `count` FROM `bqi_zakereen_farzando` WHERE `added_its` = '$user_its'", $mysqli);
-    $training_farzando_count = getCounts("SELECT COUNT(*) `count` FROM `bqi_training_sessions` WHERE `user_its` = '$user_its' AND `program_type` LIKE '%Zakereen Farzando Training%'", $mysqli);
+    $parties_count           = getCounts("SELECT COUNT(*) `count` FROM `bqi_zakereen_parties` WHERE `is_active` = 1 AND `added_its` IN $mauze_its_subquery", $mysqli);
+    $farzando_count          = getCounts("SELECT COUNT(*) `count` FROM `bqi_zakereen_farzando` WHERE `added_its` IN $mauze_its_subquery", $mysqli);
+    $training_farzando_count = getCounts("SELECT COUNT(*) `count` FROM `bqi_training_sessions` WHERE `user_its` IN $mauze_its_subquery AND `program_type` LIKE '%Zakereen Farzando Training%'", $mysqli);
 
     // Section 2: Social Media
     // $social_media_count = getCounts("SELECT COUNT(*) `count` FROM `meeting_and_photo_reports` WHERE `jamaat` = '$mauze' AND `category` LIKE 'Social Media Awareness%'", $mysqli);
-    $social_media_count = getCounts("SELECT COUNT(*) `count` FROM `bqi_training_sessions` WHERE `user_its` = '$user_its' AND `program_type` LIKE '%Social Media Awareness%'", $mysqli);
-    $one_on_one_count   = getCounts("SELECT COUNT(*) `count` FROM `bqi_individual_tafheem` WHERE `added_its` = '$user_its' AND `type` LIKE '%Social Media Awareness%'", $mysqli);
+    $social_media_count = getCounts("SELECT COUNT(*) `count` FROM `bqi_training_sessions` WHERE `user_its` IN $mauze_its_subquery AND `program_type` LIKE '%Social Media Awareness%'", $mysqli);
+    $one_on_one_count   = getCounts("SELECT COUNT(*) `count` FROM `bqi_individual_tafheem` WHERE `added_its` IN $mauze_its_subquery AND `type` LIKE '%Social Media Awareness%'", $mysqli);
 
     // Section 3: Shaadi Umoor
-    $shaadi_baramij_count     = getCounts("SELECT COUNT(*) `count` FROM `bqi_training_sessions` WHERE `user_its` = '$user_its' AND `program_type` LIKE '%Shaadi Tafheem%'", $mysqli);
-    $individual_tafheem_count = getCounts("SELECT COUNT(*) `count` FROM `bqi_individual_tafheem` WHERE `added_its` = '$user_its' AND `type` LIKE '%Shaadi Tafheem%'", $mysqli);
+    $shaadi_baramij_count     = getCounts("SELECT COUNT(*) `count` FROM `bqi_training_sessions` WHERE `user_its` IN $mauze_its_subquery AND `program_type` LIKE '%Shaadi Tafheem%'", $mysqli);
+    $individual_tafheem_count = getCounts("SELECT COUNT(*) `count` FROM `bqi_individual_tafheem` WHERE `added_its` IN $mauze_its_subquery AND `type` LIKE '%Shaadi Tafheem%'", $mysqli);
 
     // Section 4
-    $challenges_count = getCounts("SELECT COUNT(*) `count` FROM `bqi_challenges_solutions` WHERE `added_its` = '$user_its'", $mysqli);
-    $noteworthy_count = getCounts("SELECT COUNT(*) `count` FROM `bqi_noteworthy_experiences` WHERE `added_its` = '$user_its'", $mysqli);
-    $khidmat_count    = getCounts("SELECT COUNT(*) `count` FROM `bqi_khidmat_preparations` WHERE `added_its` = '$user_its'", $mysqli);
+    $challenges_count = getCounts("SELECT COUNT(*) `count` FROM `bqi_challenges_solutions` WHERE `added_its` IN $mauze_its_subquery", $mysqli);
+    $noteworthy_count = getCounts("SELECT COUNT(*) `count` FROM `bqi_noteworthy_experiences` WHERE `added_its` IN $mauze_its_subquery", $mysqli);
+    $khidmat_count    = getCounts("SELECT COUNT(*) `count` FROM `bqi_khidmat_preparations` WHERE `added_its` IN $mauze_its_subquery", $mysqli);
 ?>
 
 <main id="main" class="main bqi-1447">
