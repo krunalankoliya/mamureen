@@ -177,13 +177,21 @@ $(document).ready(function () {
                 return;
             }
 
-            // Validate file sizes (4 MB each)
-            var fileInputs = uploadForm.querySelectorAll('input[type="file"]');
-            var maxSize    = 4 * 1024 * 1024;
+            // Validate file sizes (4 MB each) and image types (JPEG/PNG only)
+            var fileInputs      = uploadForm.querySelectorAll('input[type="file"]');
+            var maxSize         = 4 * 1024 * 1024;
+            var allowedImgTypes = ['image/jpeg', 'image/png'];
             for (var i = 0; i < fileInputs.length; i++) {
-                if (fileInputs[i].files.length > 0 && fileInputs[i].files[0].size > maxSize) {
-                    alert('File "' + fileInputs[i].getAttribute('name') + '" must be less than 4 MB.');
-                    return;
+                if (fileInputs[i].files.length > 0) {
+                    var file = fileInputs[i].files[0];
+                    if (file.size > maxSize) {
+                        alert('File "' + file.name + '" must be less than 4 MB.');
+                        return;
+                    }
+                    if (file.type.startsWith('image/') && allowedImgTypes.indexOf(file.type) === -1) {
+                        alert('Image "' + file.name + '" is not allowed.\nOnly JPEG and PNG images are accepted.');
+                        return;
+                    }
                 }
             }
 

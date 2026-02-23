@@ -22,13 +22,19 @@ $(document).ready(function () {
             return;
         }
 
-        // File size validation (5 MB per file)
+        // File size & image type validation (5 MB per file; images must be JPEG or PNG)
         var fileInput = form.querySelector('[name="attachments[]"]');
         if (fileInput && fileInput.files.length > 0) {
-            var maxSize = 5 * 1024 * 1024;
+            var maxSize         = 5 * 1024 * 1024;
+            var allowedImgTypes = ['image/jpeg', 'image/png'];
             for (var i = 0; i < fileInput.files.length; i++) {
-                if (fileInput.files[i].size > maxSize) {
-                    alert('File "' + fileInput.files[i].name + '" exceeds the 5 MB limit.');
+                var file = fileInput.files[i];
+                if (file.size > maxSize) {
+                    alert('File "' + file.name + '" exceeds the 5 MB limit.');
+                    return;
+                }
+                if (file.type.startsWith('image/') && allowedImgTypes.indexOf(file.type) === -1) {
+                    alert('Image "' + file.name + '" is not allowed.\nOnly JPEG and PNG images are accepted.');
                     return;
                 }
             }
