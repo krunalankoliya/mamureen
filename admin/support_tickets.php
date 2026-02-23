@@ -18,7 +18,7 @@
     $new_status = in_array($_POST['new_status'], ['open', 'in_progress', 'resolved', 'closed'])
         ? $_POST['new_status'] : 'in_progress';
     // Fetch replier name directly from the correct table (avoids empty $fullname for sub admins)
-    $name_row  = mysqli_query($mysqli,
+    $name_row = mysqli_query($mysqli,
         "SELECT fullname FROM users_admin WHERE its_id = '$user_its'
          UNION SELECT fullname FROM users_sub_admin WHERE its_id = '$user_its'
          LIMIT 1"
@@ -175,7 +175,7 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-ticket-detailed-fill text-primary"></i> All Tickets</h5>
+                        <h5 class="card-title"><i class="bi bi-ticket-detailed-fill text-primary"></i> All Queries</h5>
 
                         <!-- Status Filter Tabs -->
                         <div class="mb-3">

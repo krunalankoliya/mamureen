@@ -57,6 +57,7 @@
             ['page' => 'manage_bqi_categories', 'link' => 'admin/manage_bqi_categories.php', 'text' => 'BQI 1447 Categories', 'icon' => 'bi bi-circle'],
             ['page' => 'manage_tafheem_reasons', 'link' => 'admin/manage_tafheem_reasons.php', 'text' => 'Tafheem Reasons', 'icon' => 'bi bi-circle'],
             ['page' => 'manage_program_titles', 'link' => 'admin/manage_program_titles.php', 'text' => 'Program Titles', 'icon' => 'bi bi-circle'],
+            ['page' => 'support_tickets_admin', 'link' => 'admin/support_tickets.php', 'text' => 'Manage Queries', 'icon' => 'bi bi-headset'],
             // ── BQI Reports ──
             ['page' => 'report_zakereen_parties', 'link' => 'admin/report_zakereen_parties.php', 'text' => 'Report: Zakereen Parties', 'icon' => 'bi bi-bar-chart'],
             ['page' => 'report_zakereen_farzando', 'link' => 'admin/report_zakereen_farzando.php', 'text' => 'Report: Zakereen Farzando', 'icon' => 'bi bi-bar-chart'],
@@ -65,7 +66,6 @@
             ['page' => 'report_challenges_solutions', 'link' => 'admin/report_challenges_solutions.php', 'text' => 'Report: Challenges & Solutions', 'icon' => 'bi bi-bar-chart'],
             ['page' => 'report_noteworthy_experiences', 'link' => 'admin/report_noteworthy_experiences.php', 'text' => 'Report: Noteworthy Experiences', 'icon' => 'bi bi-bar-chart'],
             ['page' => 'report_khidmat_preparations', 'link' => 'admin/report_khidmat_preparations.php', 'text' => 'Report: Khidmat Preparations', 'icon' => 'bi bi-bar-chart'],
-            ['page' => 'support_tickets_admin', 'link' => 'admin/support_tickets.php', 'text' => 'Manage Queries', 'icon' => 'bi bi-headset'],
         ];
         generateCollapsibleSidebarItem(
             array_column($adminPages, 'page'),
