@@ -3,8 +3,15 @@
     require_once __DIR__ . '/session.php';
     require_once __DIR__ . '/inc/header.php';
 
-    // ── Fetch logged-in user's email from users_mamureen ────────
-    $user_email_res  = mysqli_query($mysqli, "SELECT `email_id` FROM `users_mamureen` WHERE `its_id` = '$user_its'");
+    // ── Fetch logged-in user's email (checks all three user tables) ──
+    if ($is_admin) {
+        $email_table = 'users_admin';
+    } elseif ($is_sub_admin) {
+        $email_table = 'users_sub_admin';
+    } else {
+        $email_table = 'users_mamureen';
+    }
+    $user_email_res  = mysqli_query($mysqli, "SELECT `email_id` FROM `{$email_table}` WHERE `its_id` = '$user_its'");
     $user_email      = ($user_email_res && $user_email_res->num_rows) ? ($user_email_res->fetch_assoc()['email_id'] ?? '') : '';
     $safe_user_email = mysqli_real_escape_string($mysqli, $user_email);
 
@@ -99,7 +106,7 @@
             <div class="col-lg-4">
                 <div class="card">
                     <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-plus-circle-fill text-primary"></i> Open New Ticket</h5>
+                        <h5 class="card-title"><i class="bi bi-plus-circle-fill text-primary"></i> Open New Query</h5>
                         <form method="post">
                             <div class="mb-3">
                                 <label class="form-label">Subject <span class="required_star">*</span></label>
@@ -142,7 +149,7 @@
             <div class="col-lg-8">
                 <div class="card">
                     <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-ticket-detailed-fill text-primary"></i> My Tickets</h5>
+                        <h5 class="card-title"><i class="bi bi-ticket-detailed-fill text-primary"></i> My Queries</h5>
                         <div style="overflow-x: auto;">
                             <table class="table table-striped" id="datatable">
                                 <thead>
