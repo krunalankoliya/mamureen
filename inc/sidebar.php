@@ -57,6 +57,7 @@
             ['page' => 'manage_bqi_categories', 'link' => 'admin/manage_bqi_categories.php', 'text' => 'BQI 1447 Categories', 'icon' => 'bi bi-circle'],
             ['page' => 'manage_tafheem_reasons', 'link' => 'admin/manage_tafheem_reasons.php', 'text' => 'Tafheem Reasons', 'icon' => 'bi bi-circle'],
             ['page' => 'manage_program_titles', 'link' => 'admin/manage_program_titles.php', 'text' => 'Program Titles', 'icon' => 'bi bi-circle'],
+            //['page' => 'manage_tnc_members', 'link' => 'admin/manage_tnc_members.php', 'text' => 'Manage TNC Members', 'icon' => 'bi bi-people-fill'],
             ['page' => 'support_tickets_admin', 'link' => 'admin/support_tickets.php', 'text' => 'Manage Queries', 'icon' => 'bi bi-headset'],
             // ── BQI Reports ──
             ['page' => 'report_zakereen_parties', 'link' => 'admin/report_zakereen_parties.php', 'text' => 'Report: Zakereen Parties', 'icon' => 'bi bi-bar-chart'],
@@ -86,6 +87,7 @@
         <?php if ($is_sub_admin): ?>
             <!-- Sub Admin: BQI Dashboard + all report pages as direct links -->
             <?php generateSidebarItem('bqi_dashboard', $current_page, 'bi bi-speedometer2', 'BQI Dashboard', 'admin/bqi_dashboard.php'); ?>
+            <?php generateSidebarItem('resources', $current_page, 'bi bi-speedometer2', 'Resources & Downloads', 'resources.php'); ?>
             <?php generateSidebarItem('report_zakereen_parties', $current_page, 'bi bi-bar-chart', 'Zakereen Parties', 'admin/report_zakereen_parties.php'); ?>
             <?php generateSidebarItem('report_zakereen_farzando', $current_page, 'bi bi-bar-chart', 'Zakereen Farzando', 'admin/report_zakereen_farzando.php'); ?>
             <?php generateSidebarItem('report_individual_tafheem', $current_page, 'bi bi-bar-chart', 'Individual Tafheem', 'admin/report_individual_tafheem.php'); ?>
@@ -109,6 +111,7 @@
             <?php generateSidebarItem('maaraz', $current_page, 'bi bi-clipboard-data', "Ma'araz", 'maaraz.php'); ?>
             <?php generateSidebarItem('google_form_list', $current_page, 'bi bi-clipboard-data', 'Daily Reports', 'google_form_list.php'); ?>
             <?php generateSidebarItem('important_contacts', $current_page, 'bi bi-telephone-fill', 'Important Contacts', 'important_contacts.php'); ?>
+            <?php generateSidebarItem('tnc_members_list', $current_page, 'bi bi-people-fill', 'TNC Members', 'tnc_members_list.php'); ?>
             <?php generateSidebarItem('support_tickets', $current_page, 'bi bi-headset', 'Support Queries', 'support_tickets.php'); ?>
             <!-- Admin Section (includes BQI Reports) -->
             <?php generateAdminSection($user_its, $admin_its, $current_page); ?>
