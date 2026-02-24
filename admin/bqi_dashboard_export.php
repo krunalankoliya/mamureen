@@ -3,7 +3,7 @@ ob_start();
 require_once __DIR__ . '/../session.php';
 ob_clean();
 
-if (!$is_admin) {
+if (!$is_admin && !$is_sub_admin) {
     http_response_code(403);
     exit('Access denied.');
 }
