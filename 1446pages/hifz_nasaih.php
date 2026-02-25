@@ -361,7 +361,7 @@
                                         <!--                                </td>-->
                                         <!--                                <td>< htmlspecialchars($user['its_id']) ?></td>-->
                                         <!--                                <td>-->
-                                        <!--                                    <img src="https://www.talabulilm.com/mumin_images/< htmlspecialchars($user['its_id']) ?>.png" -->
+                                        <!--                                    <img src="<?= MODULE_PATH ?>img.php?id=<?= (int)$user['its_id'] ?>" -->
                                         <!--                                         class="fetch_photo" style="height: 50px; width: auto;" -->
                                         <!--                                         alt="< htmlspecialchars($user['full_name_en']) ?>">-->
                                         <!--                                </td>-->

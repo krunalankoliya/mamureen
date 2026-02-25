@@ -296,7 +296,7 @@ $data = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                             <!--        <?php if ($userdata): ?>-->
                             <!--            <div class="row pt-2">-->
                             <!--                <div class="col-md-12 d-flex">-->
-                            <!--                    <img src="https://www.talabulilm.com/mumin_images/<?= htmlspecialchars($userdata['its_id']) ?>.png" -->
+                            <!--                    <img src="<?= MODULE_PATH ?>img.php?id=<?= (int)$userdata['its_id'] ?>" -->
                             <!--                         class="fetch_photo" -->
                             <!--                         alt="<?= htmlspecialchars($userdata['full_name_en']) ?>">-->
                             <!--                    <div class="fetch_name">-->
