@@ -27,7 +27,8 @@
       "Bash(cmd /c \"if exist C:\\\\xampp\\\\htdocs\\\\mamureen\\\\nul del C:\\\\xampp\\\\htdocs\\\\mamureen\\\\nul\")",
       "Bash(cmd /c \"dir C:\\\\xampp\\\\htdocs\\\\mamureen\\\\nul 2>&1\")",
       "Bash(ls:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git:*)"
     ]
   }
 }
