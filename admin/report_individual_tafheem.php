@@ -18,7 +18,7 @@ while ($row = $ar->fetch_assoc()) {
 }
 
 // Fetch all records
-$result  = mysqli_query($mysqli, "SELECT t.*, u.fullname AS submitted_by
+$result  = mysqli_query($mysqli, "SELECT t.*, u.fullname AS submitted_by, u.miqaat_mauze
     FROM `bqi_individual_tafheem` t
     LEFT JOIN `users_mamureen` u ON t.added_its = u.its_id
     ORDER BY t.id DESC");
@@ -44,6 +44,7 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                                     <th>Type</th>
                                     <th>Jamaat</th>
                                     <th>Submitted By</th>
+                                    <th>Mauze</th>
                                     <th>Date</th>
                                     <th>Files</th>
                                     <th>Action</th>
@@ -68,6 +69,7 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                                         ['label' => 'Jamaat',      'value' => $r['jamaat'] ?? ''],
                                         ['label' => 'Details',     'value' => $r['report_details'] ?? ''],
                                         ['label' => 'Submitted By','value' => ($r['submitted_by'] ?? '') . ' (' . $r['added_its'] . ')'],
+                                        ['label' => 'Mauze',       'value' => $r['miqaat_mauze'] ?? ''],
                                         ['label' => 'Date',        'value' => date('d-M-Y H:i', strtotime($r['added_ts']))],
                                     ];
 
@@ -82,6 +84,7 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                                         <td><?= htmlspecialchars($r['type'] ?? '') ?></td>
                                         <td><?= htmlspecialchars($r['jamaat'] ?? '') ?></td>
                                         <td><?= htmlspecialchars($r['submitted_by'] ?? $r['added_its']) ?></td>
+                                        <td><?= htmlspecialchars($r['miqaat_mauze'] ?? '—') ?></td>
                                         <td><?= date('d-M-Y', strtotime($r['added_ts'])) ?></td>
                                         <td>
                                             <?php if ($file_count > 0): ?>

@@ -3,7 +3,7 @@ require_once __DIR__ . '/../session.php';
 $current_page = 'report_zakereen_farzando';
 require_once __DIR__ . '/../inc/header.php';
 
-$result  = mysqli_query($mysqli, "SELECT f.*, p.party_name, u.fullname AS added_by
+$result  = mysqli_query($mysqli, "SELECT f.*, p.party_name, u.fullname AS added_by, u.miqaat_mauze
     FROM `bqi_zakereen_farzando` f
     LEFT JOIN `bqi_zakereen_parties` p ON f.party_id = p.id
     LEFT JOIN `users_mamureen` u ON f.added_its = u.its_id
@@ -32,6 +32,7 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                                     <th>Mobile</th>
                                     <th>Source</th>
                                     <th>Added By</th>
+                                    <th>Mauze</th>
                                     <th>Added On</th>
                                 </tr>
                             </thead>
@@ -47,6 +48,7 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                                         <td><?= htmlspecialchars($r['mobile'] ?? '') ?></td>
                                         <td><?= $r['is_bulk_upload'] ? '<span class="badge bg-info">CSV</span>' : '<span class="badge bg-primary">Manual</span>' ?></td>
                                         <td><?= htmlspecialchars($r['added_by'] ?? $r['added_its']) ?></td>
+                                        <td><?= htmlspecialchars($r['miqaat_mauze'] ?? '—') ?></td>
                                         <td><?= date('d-M-Y', strtotime($r['added_ts'])) ?></td>
                                     </tr>
                                 <?php endforeach; ?>
