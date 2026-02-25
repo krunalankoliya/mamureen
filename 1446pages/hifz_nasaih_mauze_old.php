@@ -361,7 +361,7 @@
                                                                         </td>
                                                                         <td><?php echo htmlspecialchars($user['its_id']) ?></td>
                                                                         <td>
-                                                                            <img src="https://www.talabulilm.com/mumin_images/<?php echo htmlspecialchars($user['its_id']) ?>.png"
+                                                                            <img src="<?= user_photo_url($user['its_id']) ?>"
                                                                                  class="fetch_photo" style="height: 50px; width: auto;"
                                                                                  alt="<?php echo htmlspecialchars($user['full_name_en']) ?>">
                                                                         </td>

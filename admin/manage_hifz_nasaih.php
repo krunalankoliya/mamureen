@@ -48,7 +48,7 @@ $data = $result->fetch_all(MYSQLI_ASSOC);
                                             ?>
                                         <tr>
                                             <td><?= $admin['its_id'] ?></td>
-                                            <td><img style="max-width:70px" src="https://www.talabulilm.com/mumin_images/<?= $admin['its_id'] ?>.png" alt="Profile" class="rounded-circle"></td>
+                                            <td><img style="max-width:70px" src="<?= user_photo_url($admin['its_id']) ?>" alt="Profile" class="rounded-circle"></td>
                                             <td><?= $admin['full_name'] ?></td>
                                             <td><?= $admin['gender'] ?></td>
                                             <td><?= $age ?></td>

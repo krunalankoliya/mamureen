@@ -247,7 +247,7 @@
                                         </div>
                                         <div class="row mb-3">
                                             <div class="col-md-3 text-center">
-                                                <img src="https://www.talabulilm.com/mumin_images/<?php echo htmlspecialchars($verified_user['its_id']) ?>.png"
+                                                <img src="<?= user_photo_url($verified_user['its_id']) ?>"
                                                      class="rounded-circle" width="80" height="80"
                                                      alt="<?php echo htmlspecialchars($verified_user['full_name_en']) ?>">
                                             </div>

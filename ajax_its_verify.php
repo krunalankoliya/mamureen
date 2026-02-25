@@ -55,5 +55,5 @@ echo json_encode([
     'jamiat'       => $data['jamiat'] ?? '',
     'mobile'       => $data['mobile'] ?? '',
     'email'        => $data['email'] ?? '',
-    'photo_url'    => "https://www.talabulilm.com/mumin_images/$its_id.png",
+    'photo_url'    => user_photo_url($its_id),
 ]);

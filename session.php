@@ -6,9 +6,28 @@
     // if user is not logged in then check cookie, if found then log him in
     if (! isset($_SESSION[USER_LOGGED_IN])) {
     if (isset($_COOKIE[USER_ITS])) {
-        // verify the password
-        $ver_code = md5($_COOKIE[USER_ITS] . 'tlbilm@112345678+515253');
-        if ($_COOKIE['ver'] == $ver_code) {
+        $cookieUserId  = $_COOKIE[USER_ITS];
+        $verNew        = $_COOKIE['ver256'] ?? '';
+        $verLegacy     = $_COOKIE['ver']    ?? '';
+        $cookieValid   = false;
+
+        // SHA-256 via ver256 cookie (new)
+        if ($verNew !== '' && COOKIE_SECRET !== '') {
+            $expectedSha256 = hash_hmac('sha256', (string) $cookieUserId, COOKIE_SECRET);
+            if (hash_equals($expectedSha256, $verNew)) {
+                $cookieValid = true;
+            }
+        }
+
+        // MD5 via ver cookie (legacy — remove once all modules migrate)
+        if (!$cookieValid && $verLegacy !== '' && COOKIE_SECRET_LEGACY !== '') {
+            $expectedMd5 = md5($cookieUserId . COOKIE_SECRET_LEGACY);
+            if (hash_equals($expectedMd5, $verLegacy)) {
+                $cookieValid = true;
+            }
+        }
+
+        if ($cookieValid) {
             $_SESSION[USER_LOGGED_IN] = true;
             $_SESSION[USER_ID]        = $_COOKIE[USER_ID];
             $_SESSION[USER_ITS]       = $_COOKIE[USER_ITS];

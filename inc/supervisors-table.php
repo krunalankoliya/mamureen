@@ -26,7 +26,7 @@ $counsellorData = $counsellorResult->fetch_all(MYSQLI_ASSOC);
         foreach ($counsellorData as $data) {
         ?>
             <tr>
-                <td><img style="max-width:70px" src="https://www.talabulilm.com/mumin_images/<?= $data['its_id'] ?>.png" alt="Profile" class="rounded-circle"></td>
+                <td><img style="max-width:70px" src="<?= user_photo_url($data['its_id']) ?>" alt="Profile" class="rounded-circle"></td>
                 <td><?= $data['its_id'] ?></td>
                 <td><?= $data['full_name'] ?></td>
                 <td><?= $data['email'] ?></td>

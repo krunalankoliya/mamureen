@@ -247,9 +247,8 @@
                     <div class="card-body text-center">
                         <h5 class="card-title"><?php echo $row[0]['full_name_en'] ?></h5>
                         <?php
-                            $imagePath = "https://www.talabulilm.com/mumin_images/" . $row[0]['aamil_masool_its_id'] . ".png";
-                            if (@getimagesize($imagePath)) {
-                                echo '<img src="' . $imagePath . '" style="width:80px" />';
+                            if ($row[0]['aamil_masool_its_id']) {
+                                echo '<img src="' . user_photo_url($row[0]['aamil_masool_its_id']) . '" style="width:80px" />';
                             } else {
                                 echo '<img src="https://www.talabulilm.com/placeholder_image/placeholder.png" style="width:80px" />';
                             }

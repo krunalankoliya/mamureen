@@ -84,7 +84,7 @@ $data   = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                                     <?php foreach ($data as $row) : ?>
                                         <tr>
                                             <td><?= htmlspecialchars($row['its_id']) ?></td>
-                                            <td><img style="width:50px;height:50px;object-fit:cover;" src="https://www.talabulilm.com/mumin_images/<?= $row['its_id'] ?>.png" class="rounded-circle" alt=""></td>
+                                            <td><img style="width:50px;height:50px;object-fit:cover;" src="<?= user_photo_url($row['its_id']) ?>" class="rounded-circle" alt=""></td>
                                             <td><?= htmlspecialchars($row['fullname']) ?></td>
                                             <td><?= htmlspecialchars($row['avs_idara']) ?></td>
                                             <td><?= htmlspecialchars($row['email_id']) ?></td>

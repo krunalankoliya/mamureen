@@ -239,7 +239,7 @@ WHERE `bs`.`added_its` = '$user_its'";
                                     <?php if ($userdata): ?>
                                         <div class="row pt-2">
                                             <div class="col-md-12 d-flex">
-                                                <img src="https://www.talabulilm.com/mumin_images/<?php echo htmlspecialchars($userdata['its_id']) ?>.png"
+                                                <img src="<?= user_photo_url($userdata['its_id']) ?>"
                                                      class="fetch_photo"
                                                      alt="<?php echo htmlspecialchars($userdata['full_name_en']) ?>">
                                                 <div class="fetch_name">

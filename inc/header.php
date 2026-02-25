@@ -1,19 +1,20 @@
 <?php
     require_once __DIR__ . '/../session.php';
 
-    $query   = "SELECT its_id,miqaat_mauze,miqaat_jamiat,`zone`,fullname FROM users_mamureen WHERE its_id = $user_its UNION SELECT its_id,miqaat_mauze,miqaat_jamiat,`zone`,fullname FROM users_admin WHERE its_id = $user_its UNION SELECT its_id,miqaat_mauze,miqaat_jamiat,`zone`,fullname FROM users_sub_admin WHERE its_id = $user_its";
-    $result  = mysqli_query($mysqli, $query);
-    $rowdata = $result->fetch_assoc();
+    $query   = "SELECT its_id,miqaat_mauze,miqaat_jamiat,`zone`,fullname FROM users_mamureen WHERE its_id = $user_its
+                UNION SELECT its_id,miqaat_mauze,miqaat_jamiat,`zone`,fullname FROM users_admin WHERE its_id = $user_its
+                UNION SELECT its_id,miqaat_mauze,'' AS miqaat_jamiat,'' AS `zone`,fullname FROM users_sub_admin WHERE its_id = $user_its
+                LIMIT 1";
+    $result  = @mysqli_query($mysqli, $query);
+    $rowdata  = ($result !== false) ? ($result->fetch_assoc() ?? []) : [];
+    $mauze    = $rowdata['miqaat_mauze'] ?? '';
+    $zone     = $rowdata['zone']         ?? '';
+    $jamiat   = $rowdata['miqaat_jamiat'] ?? '';
+    $fullname = $rowdata['fullname']      ?? '';
 
-    $mauze    = $rowdata['miqaat_mauze'];
-    $zone     = $rowdata['zone'];
-    $jamiat   = $rowdata['miqaat_jamiat'];
-    $fullname = $rowdata['fullname'];
-
-    $query             = "SELECT `city` FROM `its_jamaat_master` WHERE `jamaat` = '$mauze'";
-    $result            = mysqli_query($coremysqli, $query);
-    $aamilsahebDetails = $result->fetch_assoc();
-    $city              = $aamilsahebDetails['city'];
+    $result            = @mysqli_query($coremysqli, "SELECT `city` FROM `its_jamaat_master` WHERE `jamaat` = '" . mysqli_real_escape_string($coremysqli, $mauze) . "'");
+    $aamilsahebDetails = ($result !== false) ? ($result->fetch_assoc() ?? []) : [];
+    $city              = $aamilsahebDetails['city'] ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -65,7 +66,7 @@
         <li class="nav-item dropdown pe-3">
 
           <a class="nav-link nav-profile d-flex align-items-center pe-0" href="#" data-bs-toggle="dropdown">
-            <img src="https://www.talabulilm.com/mumin_images/<?php echo $_SESSION[USER_ITS] ?>.png" alt="Profile" class="rounded-circle">
+            <img src="<?= user_photo_url($_SESSION[USER_ITS]) ?>" alt="Profile" class="rounded-circle">
           </a><!-- End Profile Iamge Icon -->
 
           <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow profile">

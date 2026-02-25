@@ -128,7 +128,7 @@ $sub_admin_list = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
                                             <td><?= $i + 1 ?></td>
                                             <td><?= htmlspecialchars($sa['its_id']) ?></td>
                                             <td>
-                                                <img src="https://www.talabulilm.com/mumin_images/<?= $sa['its_id'] ?>.png"
+                                                <img src="<?= user_photo_url($sa['its_id']) ?>"
                                                      style="width:40px;height:40px;object-fit:cover;border-radius:50%;" alt="">
                                             </td>
                                             <td><?= htmlspecialchars($sa['fullname']) ?></td>

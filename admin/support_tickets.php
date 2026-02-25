@@ -294,7 +294,7 @@
                 <?php foreach ($modal_replies as $r): ?>
                     <?php if ($r['is_admin_reply']): ?>
                         <div class="bubble bubble-admin">
-                            <strong><i class="bi bi-shield-check text-success"></i> <?php echo htmlspecialchars($r['replied_by_name'] ?: 'Support Team') ?></strong><br>
+                            <strong><i class="bi bi-shield-check text-success"></i> BQI Office</strong><br>
                             <?php echo nl2br(htmlspecialchars($r['reply_text'])) ?>
                             <small><?php echo date('d-M-Y H:i', strtotime($r['created_at'])) ?></small>
                         </div>

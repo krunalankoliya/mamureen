@@ -3,7 +3,7 @@
         <?php
         if ($data) {
         ?>
-            <img style="max-width:70px" src="https://www.talabulilm.com/mumin_images/<?= $data['its_id'] ?>.png" alt="Profile" class="rounded-circle">
+            <img style="max-width:70px" src="<?= user_photo_url($data['its_id']) ?>" alt="Profile" class="rounded-circle">
         <?php
         }
         ?>

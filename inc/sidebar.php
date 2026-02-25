@@ -18,7 +18,7 @@
     function generateCollapsibleSidebarItem($pages, $current_page, $icon, $text, $subItems, $name)
     {
     $activeClass    = in_array($current_page, $pages) ? 'show' : '';
-    $collapsedClass = in_array($current_page, $pages) ? 'collapsed' : '';
+    $collapsedClass = in_array($current_page, $pages) ? '' : 'collapsed';
     echo "
     <li class='nav-item'>
         <a class='nav-link $collapsedClass' data-bs-target='#$name-nav' data-bs-toggle='collapse' href='#'>

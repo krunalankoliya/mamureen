@@ -93,7 +93,7 @@ require_once(__DIR__ . '/includes/report_html_header.php');
                     ?>
                         <tr>
                             <td scope="col"><?= $i++ ?></td>
-                            <td scope="col"><img src="https://www.talabulilm.com/mumin_images/<?= $user['its_id'] ?>.png" alt="Profile" class="rounded-circle" style="width:60px;"></td>
+                            <td scope="col"><img src="<?= user_photo_url($user['its_id']) ?>" alt="Profile" class="rounded-circle" style="width:60px;"></td>
                             <td scope="col"><?= $user['fullname'] ?></td>
                             <td scope="col"><?= $user['kg_age'] ?></td>
                             <td scope="col"><?= $user['avs_idara'] ?></td>
@@ -120,7 +120,7 @@ require_once(__DIR__ . '/includes/report_html_header.php');
                     $row = $result->fetch_assoc();
                     ?>
                     <tr>
-                        <td scope="col"><img src="https://www.talabulilm.com/mumin_images/<?= $row['aamil_masool_its_id'] ?>.png" alt="Profile" class="rounded-circle" style="width:60px;" /></td>
+                        <td scope="col"><img src="<?= user_photo_url($row['aamil_masool_its_id']) ?>" alt="Profile" class="rounded-circle" style="width:60px;" /></td>
                         <td scope="col"><?= $row['full_name_en'] ?></td>
                     </tr>
                 </tbody>

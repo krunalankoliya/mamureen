@@ -26,6 +26,12 @@ if ($coremysqli === false) {
 $coremysqli -> set_charset("utf8");
 
 define('ITS_KEY', '1qaz2w24sx');
+define('COOKIE_SECRET',        'adfefdddb86e4d5d2347e0dd5b560f0df37b2392ae19a05df4906e60158e7ebd');
+define('COOKIE_SECRET_LEGACY', 'tlbilm@112345678+515253');
+
+function user_photo_url($its_id) {
+    return MODULE_PATH . 'img.php?id=' . (int) $its_id;
+}
 
 define('USER_LOGGED_IN', 'user_logged_in');
 define('USER_ID', 'user_id');
