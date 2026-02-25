@@ -5,6 +5,7 @@
 
     $mauze    = $rowdata['miqaat_mauze'];
     $name     = $rowdata['fullname'];
+    $jamiat   = $rowdata['miqaat_jamiat'] ?? '';
     $user_its = (int) $_SESSION[USER_ITS];
 
     // Get all available forms
@@ -68,6 +69,7 @@
                                                         $formLink = str_replace('ITS_ID', $user_its, $formLink);
                                                         $formLink = str_replace('MAUZE', $mauze, $formLink);
                                                         $formLink = str_replace('NAME', $name, $formLink);
+                                                        $formLink = str_replace('JAMIAT', $jamiat, $formLink);
 
                                                         // Expand forms.gle short URLs to full docs.google.com URLs
                                                         // (forms.gle is not in the server CSP frame-src; docs.google.com is)

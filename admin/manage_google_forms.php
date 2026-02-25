@@ -81,6 +81,7 @@ $rows = $result->fetch_all(MYSQLI_ASSOC);
                                        <li>- Replace the ITS ID value with `ITS_ID` (keep in capital letters)</li>
                                        <li>- Replace the Name value with `NAME` (keep in capital letters)</li>
                                        <li>- Replace the Mauze value with `MAUZE` (keep in capital letters)</li>
+                                       <li>- Replace the Jamiat value with `JAMIAT` (keep in capital letters)</li>
                                     </ul>
                                     <!-- Horizontal Form -->
                                     <form method="post" enctype="multipart/form-data">
