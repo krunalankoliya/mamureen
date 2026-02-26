@@ -1,402 +1,283 @@
 <?php
-    require_once __DIR__ . '/session.php';
-    $current_page = 'training_sessions';
-    require_once __DIR__ . '/inc/header.php';
+$current_page = 'training_sessions';
+require_once __DIR__ . '/session.php';
+require_once __DIR__ . '/inc/header.php';
 
-    // Handle Delete
-    if (isset($_POST['delete_training'])) {
+$message = null;
+
+/**
+ * Logic: Delete Training
+ */
+if (isset($_POST['delete_training'])) {
     $delete_id = (int) $_POST['delete_id'];
-    $result    = mysqli_query($mysqli, "DELETE FROM `bqi_training_sessions` WHERE `id` = '$delete_id' AND `user_its` = '$user_its'");
-    if ($result) {
+    try {
+        $db->query("DELETE FROM `bqi_training_sessions` WHERE `id` = ? AND `user_its` = ?", [$delete_id, $user_its]);
         $message = ['text' => 'Record deleted successfully.', 'tag' => 'success'];
-    } else {
-        $message = ['text' => 'Failed to delete: ' . mysqli_error($mysqli), 'tag' => 'danger'];
+    } catch (Exception $e) {
+        $message = ['text' => 'Error: ' . $e->getMessage(), 'tag' => 'danger'];
     }
-    }
+}
 
-    // Handle Update
-    if (isset($_POST['update_training'])) {
-    $edit_id          = (int) $_POST['edit_id'];
-    $description      = mysqli_real_escape_string($mysqli, $_POST['description'] ?? '');
-    $session_date     = mysqli_real_escape_string($mysqli, $_POST['session_date']);
-    $duration_minutes = (int) $_POST['duration_minutes'];
-    $attendee_count   = (int) $_POST['attendee_count'];
-    $result           = mysqli_query($mysqli, "UPDATE `bqi_training_sessions` SET `description` = '$description', `session_date` = '$session_date', `duration_minutes` = '$duration_minutes', `attendee_count` = '$attendee_count' WHERE `id` = '$edit_id' AND `user_its` = '$user_its'");
-    if ($result) {
+/**
+ * Logic: Update Training
+ */
+if (isset($_POST['update_training'])) {
+    $edit_id = (int) $_POST['edit_id'];
+    try {
+        $db->query("UPDATE `bqi_training_sessions` SET `description` = ?, `session_date` = ?, `duration_minutes` = ?, `attendee_count` = ? WHERE `id` = ? AND `user_its` = ?", [
+            $_POST['description'], $_POST['session_date'], (int)$_POST['duration_minutes'], (int)$_POST['attendee_count'], $edit_id, $user_its
+        ]);
         $message = ['text' => 'Record updated successfully.', 'tag' => 'success'];
-    } else {
-        $message = ['text' => 'Failed to update: ' . mysqli_error($mysqli), 'tag' => 'danger'];
+    } catch (Exception $e) {
+        $message = ['text' => 'Error: ' . $e->getMessage(), 'tag' => 'danger'];
     }
-    }
+}
 
-    if (isset($_POST['submit'])) {
-    $errors              = [];
-    $uploaded_file_count = 0;
-    $uploadFileName1     = $uploadFileName2     = $uploadFileName3     = '';
+/**
+ * Logic: Handle Submit (Add)
+ */
+if (isset($_POST['submit'])) {
+    $errors = [];
+    $uploaded_files = [];
 
-    function prossesFile($fileTag, $user_its)
-    {
-        $maxsize    = 4194304;
-        $acceptable = ['jpeg', 'jpg', 'png'];
-        $is_error   = false;
-
-        $fileName  = $_FILES[$fileTag]['name'];
-        $tempPath  = $_FILES[$fileTag]['tmp_name'];
-        $file_size = $_FILES[$fileTag]['size'];
-        $fileType  = pathinfo($fileName, PATHINFO_EXTENSION);
-
-        if ($file_size >= $maxsize || ! in_array(strtolower($fileType), $acceptable)) {
-            $is_error = true;
+    // Simple File Upload Wrapper
+    foreach (['upload_photo_1', 'upload_photo_2', 'upload_photo_3'] as $tag) {
+        if (isset($_FILES[$tag]) && $_FILES[$tag]['error'] === UPLOAD_ERR_OK) {
+            $ext = strtolower(pathinfo($_FILES[$tag]['name'], PATHINFO_EXTENSION));
+            if (in_array($ext, ['jpg', 'jpeg', 'png']) && $_FILES[$tag]['size'] <= 4194304) {
+                $newName = $user_its . $tag . date('YmdHis') . '.' . $ext;
+                if (move_uploaded_file($_FILES[$tag]['tmp_name'], __DIR__ . '/user_uploads/' . $newName)) {
+                    $uploaded_files[$tag] = $newName;
+                }
+            }
         }
-
-        if (! $is_error) {
-            $fileUploadName = $user_its . $fileTag . date('YmdHis') . '.' . $fileType;
-            $moved_file     = move_uploaded_file($tempPath, __DIR__ . '/user_uploads/' . $fileUploadName);
-            return $moved_file ? $fileUploadName : false;
-        }
-        return false;
     }
 
-    if (isset($_FILES['upload_photo_1']) && $_FILES['upload_photo_1']['tmp_name'] !== '') {
-        $uploadFileName1 = prossesFile('upload_photo_1', $user_its);
-        if ($uploadFileName1) {
-            $uploaded_file_count++;
-        }
-
-    }
-    if (isset($_FILES['upload_photo_2']) && $_FILES['upload_photo_2']['tmp_name'] !== '') {
-        $uploadFileName2 = prossesFile('upload_photo_2', $user_its);
-        if ($uploadFileName2) {
-            $uploaded_file_count++;
-        }
-
-    }
-    if (isset($_FILES['upload_photo_3']) && $_FILES['upload_photo_3']['tmp_name'] !== '') {
-        $uploadFileName3 = prossesFile('upload_photo_3', $user_its);
-        if ($uploadFileName3) {
-            $uploaded_file_count++;
-        }
-
-    }
-
-    $selected_title_ids = $_POST['program_title_ids'] ?? [];
-    if (empty($selected_title_ids)) {
-        $errors[] = 'Please select at least one program title.';
-    }
-    if (empty($_POST['session_date'])) {
-        $errors[] = 'Session date is required.';
-    }
-    if (empty($_POST['duration_minutes']) || (int) $_POST['duration_minutes'] < 1) {
-        $errors[] = 'Duration (in minutes) is required and must be at least 1.';
-    }
-    if (empty($_POST['attendee_count']) || (int) $_POST['attendee_count'] < 1) {
-        $errors[] = 'Attendee count is required.';
-    }
+    $selected_titles = $_POST['program_title_ids'] ?? [];
+    if (empty($selected_titles)) $errors[] = 'Please select at least one program title.';
+    if (empty($_POST['session_date'])) $errors[] = 'Session date is required.';
 
     if (empty($errors)) {
-        $program_type      = mysqli_real_escape_string($mysqli, $_POST['program_type']);
-        $attendee_count    = (int) $_POST['attendee_count'];
-        $session_date      = mysqli_real_escape_string($mysqli, $_POST['session_date']);
-        $description       = mysqli_real_escape_string($mysqli, $_POST['description']);
-        $duration_minutes  = (int) $_POST['duration_minutes'];
-        $program_title_ids = implode(',', array_map('intval', $selected_title_ids));
-        $upload_photo_1    = mysqli_real_escape_string($mysqli, $uploadFileName1);
-        $upload_photo_2    = mysqli_real_escape_string($mysqli, $uploadFileName2);
-        $upload_photo_3    = mysqli_real_escape_string($mysqli, $uploadFileName3);
-
-        $query = "INSERT INTO `bqi_training_sessions`
-                    (`user_its`, `jamaat`, `program_type`, `program_title_ids`,
-                     `session_date`, `description`, `duration_minutes`, `attendee_count`,
-                     `upload_photo_1`, `upload_photo_2`, `upload_photo_3`, `uploaded_file_count`)
-                  VALUES
-                    ('$user_its', '$mauze', '$program_type', '$program_title_ids',
-                     '$session_date', '$description', '$duration_minutes', '$attendee_count',
-                     '$upload_photo_1', '$upload_photo_2', '$upload_photo_3', '$uploaded_file_count')";
-
         try {
-            mysqli_query($mysqli, $query);
-            $message    = ['text' => 'Training session report submitted successfully.', 'tag' => 'success'];
-            $show_popup = true;
-        } catch (\Exception $e) {
+            $db->insert('bqi_training_sessions', [
+                'user_its' => $user_its,
+                'jamaat' => $mauze,
+                'program_type' => $_POST['program_type'],
+                'program_title_ids' => implode(',', array_map('intval', $selected_titles)),
+                'session_date' => $_POST['session_date'],
+                'description' => $_POST['description'],
+                'duration_minutes' => (int)$_POST['duration_minutes'],
+                'attendee_count' => (int)$_POST['attendee_count'],
+                'upload_photo_1' => $uploaded_files['upload_photo_1'] ?? '',
+                'upload_photo_2' => $uploaded_files['upload_photo_2'] ?? '',
+                'upload_photo_3' => $uploaded_files['upload_photo_3'] ?? '',
+                'uploaded_file_count' => count($uploaded_files)
+            ]);
+            $message = ['text' => 'Training session report submitted successfully.', 'tag' => 'success'];
+        } catch (Exception $e) {
             $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
         }
     } else {
         $message = ['text' => implode('<br>', $errors), 'tag' => 'danger'];
     }
-    }
+}
 
-    // Fetch distinct active program types for the dropdown
-    $types_result  = mysqli_query($mysqli, "SELECT DISTINCT `program_type` FROM `bqi_program_titles` WHERE `is_active` = 1 AND `program_type` != '' ORDER BY `program_type`");
-    $program_types = $types_result->fetch_all(MYSQLI_ASSOC);
+// Fetch Master Data
+$program_types = $db->fetchAll("SELECT DISTINCT `program_type` FROM `bqi_program_titles` WHERE `is_active` = 1 AND `program_type` != '' ORDER BY `program_type` ASC");
+$titles_raw = $db->fetchAll("SELECT id, title_name FROM bqi_program_titles");
+$titles_map = array_column($titles_raw, 'title_name', 'id');
 
-    // Lookup map: id => title_name for display in reports table
-    $titles_map        = [];
-    $all_titles_result = mysqli_query($mysqli, "SELECT `id`, `title_name` FROM `bqi_program_titles` ORDER BY `id`");
-    while ($row = $all_titles_result->fetch_assoc()) {
-    $titles_map[$row['id']] = $row['title_name'];
-    }
-
-    // Fetch this mauze's training sessions
-    $mauze_its_subquery = "(SELECT `its_id` FROM `users_mamureen` WHERE `miqaat_mauze` = '$mauze')";
-    $reports = [];
-    $result  = mysqli_query($mysqli, "SELECT ts.*, um.fullname AS submitted_by FROM `bqi_training_sessions` ts LEFT JOIN `users_mamureen` um ON um.its_id = ts.user_its WHERE ts.user_its IN $mauze_its_subquery ORDER BY ts.id DESC");
-    if ($result) {
-    $reports = $result->fetch_all(MYSQLI_ASSOC);
-    }
+$reports = $db->fetchAll("
+    SELECT ts.*, um.fullname AS submitted_by 
+    FROM bqi_training_sessions ts 
+    LEFT JOIN users_mamureen um ON um.its_id = ts.user_its 
+    WHERE ts.user_its IN (SELECT its_id FROM users_mamureen WHERE miqaat_mauze = ?) 
+    ORDER BY ts.id DESC", [$mauze]);
 ?>
 
-<link rel="stylesheet" href="assets/css/training_sessions.css">
-<main id="main" class="main bqi-1447">
-    <section class="section dashboard">
-        <div class="row">
-            <?php require_once __DIR__ . '/inc/messages.php'; ?>
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Training Sessions / Seminars</h5>
-                    <p><strong>IMPORTANT INSTRUCTIONS:</strong></p>
-                    <ul>
-                        <li>Photos with extension .jpg, .jpeg or .png can only be uploaded</li>
-                        <li>Maximum allowed photo size is 4 MB</li>
-                        <li>All fields marked with <span class="required_star">*</span> are required.</li>
-                    </ul>
+<main id="main" class="main main-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1">Trainings & Sessions</h1>
+            <p class="text-muted small mb-0">Record and monitor all local training baramij.</p>
+        </div>
+        <div>
+            <span class="badge bg-light text-primary border px-3 py-2 rounded-pill">
+                Reports: <?= count($reports) ?>
+            </span>
+        </div>
+    </div>
 
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-body">
-                                    <h5 class="card-title">Submit New Report</h5>
-                                    <form method="post" enctype="multipart/form-data" id="uploadForm" data-show-popup="<?php echo ! empty($show_popup) ? '1' : '0' ?>">
+    <?php if ($message): ?>
+        <div class="alert alert-<?= $message['tag']; ?> border-0 shadow-sm rounded-4 mb-4">
+            <i class="bi bi-info-circle-fill me-2"></i> <?= $message['text']; ?>
+        </div>
+    <?php endif; ?>
 
-                                        <div class="row mb-3">
-                                            <label class="col-sm-4 col-form-label">Program Type<span class="required_star">*</span></label>
-                                            <div class="col-sm-8">
-                                                <select name="program_type" id="program_type_select" class="form-select" required>
-                                                    <option value="" disabled selected>Select Program Type...</option>
-                                                    <?php foreach ($program_types as $pt): ?>
-                                                        <option value="<?php echo htmlspecialchars($pt['program_type']) ?>"><?php echo htmlspecialchars($pt['program_type']) ?></option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                            </div>
-                                        </div>
+    <div class="row g-4">
+        <!-- Input Form -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm p-4">
+                <h5 class="fw-bold mb-3">Submit New Report</h5>
+                <form method="post" enctype="multipart/form-data" id="uploadForm">
+                    
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Program Type</label>
+                        <select name="program_type" id="program_type_select" class="form-select" required>
+                            <option value="">Select Category...</option>
+                            <?php foreach ($program_types as $pt): ?>
+                                <option value="<?= h($pt['program_type']) ?>"><?= h($pt['program_type']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
 
-                                        <div class="row mb-3">
-                                            <label class="col-sm-4 col-form-label">Program Title(s)<span class="required_star">*</span></label>
-                                            <div class="col-sm-8">
-                                                <!-- Excel-style filter -->
-                                                <div class="ts-filter-wrap" id="ts_filter_wrap">
-                                                    <!-- Hidden inputs injected here by JS on checkbox change -->
-                                                    <div id="ts_hidden_inputs"></div>
-                                                    <!-- Trigger button -->
-                                                    <button type="button" class="ts-filter-btn" id="ts_filter_btn">
-                                                        <span id="ts_filter_label" class="text-muted">Select a Program Type first</span>
-                                                        <i class="bi bi-caret-down-fill ts-caret"></i>
-                                                    </button>
-                                                    <!-- Dropdown panel -->
-                                                    <div class="ts-filter-panel" id="ts_filter_panel">
-                                                        <div class="ts-filter-search">
-                                                            <input type="text" id="ts_search_input" placeholder="Search titles..." autocomplete="off">
-                                                        </div>
-                                                        <div class="ts-filter-actions">
-                                                            <a href="#" id="ts_select_all">Select All</a>
-                                                            <span class="ts-sep">|</span>
-                                                            <a href="#" id="ts_clear_all">Clear</a>
-                                                        </div>
-                                                        <div class="ts-filter-list" id="ts_filter_list">
-                                                            <div class="ts-placeholder">Select a Program Type first</div>
-                                                        </div>
-                                                    </div>
-                                                    <div id="no_titles_msg" class="text-warning mt-1 small" style="display:none;">No titles found for this program type.</div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="row mb-3">
-                                            <label class="col-sm-4 col-form-label">Description</label>
-                                            <div class="col-sm-8">
-                                                <textarea name="description" class="form-control" rows="3" placeholder="Optional description about the session..."></textarea>
-                                            </div>
-                                        </div>
-                                        <div class="row mb-3">
-                                            <label class="col-sm-4 col-form-label">Session Date<span class="required_star">*</span></label>
-                                            <div class="col-sm-8">
-                                                <input type="date" name="session_date" class="form-control" required>
-                                            </div>
-                                        </div>
-
-                                        <div class="row mb-3">
-                                            <label class="col-sm-4 col-form-label">Duration (minutes)<span class="required_star">*</span></label>
-                                            <div class="col-sm-8">
-                                                <input type="number" name="duration_minutes" class="form-control" placeholder="e.g. 60" min="1" required>
-                                            </div>
-                                        </div>
-
-                                        <div class="row mb-3">
-                                            <label class="col-sm-4 col-form-label">Attendee Count<span class="required_star">*</span></label>
-                                            <div class="col-sm-8">
-                                                <input type="number" name="attendee_count" class="form-control" placeholder="Number of Attendees" min="1" required>
-                                            </div>
-                                        </div>
-
-                                        <div class="row mb-3">
-                                            <label class="col-sm-4 col-form-label">Upload Photo 1<span class="required_star">*</span></label>
-                                            <div class="col-sm-8">
-                                                <input type="file" class="form-control" accept="image/*" name="upload_photo_1" required>
-                                            </div>
-                                        </div>
-
-                                        <div class="row mb-3">
-                                            <label class="col-sm-4 col-form-label">Upload Photo 2</label>
-                                            <div class="col-sm-8">
-                                                <input type="file" class="form-control" accept="image/*" name="upload_photo_2">
-                                            </div>
-                                        </div>
-
-                                        <div class="row mb-3">
-                                            <label class="col-sm-4 col-form-label">Upload Photo 3</label>
-                                            <div class="col-sm-8">
-                                                <input type="file" class="form-control" accept="image/*" name="upload_photo_3">
-                                            </div>
-                                        </div>
-
-                                        <div id="progressContainer" class="d-none mb-3">
-                                            <div class="progress">
-                                                <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
-                                            </div>
-                                            <div id="uploadMessage" class="mt-2 text-center fw-bold d-none"></div>
-                                        </div>
-
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="d-grid gap-2">
-                                                    <input type="reset" value="Reset Form" class="btn btn-outline-secondary">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="d-grid gap-2">
-                                                    <input type="submit" value="Submit" name="submit" id="submitBtn" class="btn btn-primary">
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Program Title(s)</label>
+                        <div class="bg-light p-3 rounded-3 border" style="max-height: 150px; overflow-y: auto;" id="ts_filter_list">
+                            <p class="small text-muted mb-0">Select a program type first...</p>
                         </div>
+                        <div id="ts_hidden_inputs"></div>
+                    </div>
 
-                        <div class="col-md-6" style="overflow-x: auto;">
-                            <h5 class="card-title">Previously Submitted Reports</h5>
-                            <table class="table table-striped" id="datatable">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Program Type</th>
-                                        <th>Program Title(s)</th>
-                                        <th>Description</th>
-                                        <th>Session Date</th>
-                                        <th>Duration (min)</th>
-                                        <th>Attendees</th>
-                                        <th>Uploads</th>
-                                        <th>Submitted</th>
-                                        <th>Submitted By</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($reports as $key => $data): ?>
-                                        <tr>
-                                            <td><?php echo $key + 1 ?></td>
-                                            <td><?php echo htmlspecialchars($data['program_type']) ?></td>
-                                            <td>
-                                                <?php
-                                                    if (! empty($data['program_title_ids'])) {
-                                                        $ids   = explode(',', $data['program_title_ids']);
-                                                        $names = [];
-                                                        foreach ($ids as $id) {
-                                                            $names[] = htmlspecialchars($titles_map[(int) $id] ?? '#' . $id);
-                                                        }
-                                                        echo implode(', ', $names);
-                                                    } else {
-                                                        echo '-';
-                                                    }
-                                                ?>
-                                            </td>
-                                            <td><?php echo htmlspecialchars($data['description']) ?></td>
-                                            <td><?php echo date('d-M-Y', strtotime($data['session_date'])) ?></td>
-                                            <td><?php echo $data['duration_minutes'] ?></td>
-                                            <td><?php echo $data['attendee_count'] ?></td>
-                                            <td><?php echo $data['uploaded_file_count'] ?></td>
-                                            <td><?php echo date('d-M-Y', strtotime($data['added_ts'])) ?></td>
-                                            <td><?php echo htmlspecialchars($data['submitted_by'] ?? '') ?></td>
-                                            <td>
-                                                <button type="button" class="btn btn-sm btn-outline-info edit-session-btn"
-                                                    data-id="<?php echo $data['id'] ?>"
-                                                    data-desc="<?php echo htmlspecialchars($data['description']) ?>"
-                                                    data-date="<?php echo htmlspecialchars($data['session_date']) ?>"
-                                                    data-duration="<?php echo $data['duration_minutes'] ?>"
-                                                    data-attendees="<?php echo $data['attendee_count'] ?>"
-                                                    data-bs-toggle="modal" data-bs-target="#editSessionModal">
-                                                    <i class="bi bi-pencil-square"></i>
-                                                </button>
-                                                <form method="post" class="d-inline">
-                                                    <input type="hidden" name="delete_id" value="<?php echo $data['id'] ?>">
-                                                    <button type="submit" name="delete_training" class="btn btn-sm btn-outline-danger delete-btn">
-                                                        <i class="bi bi-trash-fill"></i>
-                                                    </button>
-                                                </form>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Session Date</label>
+                        <input type="date" name="session_date" class="form-control" required>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Duration (Min)</label>
+                            <input type="number" name="duration_minutes" class="form-control" placeholder="60" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Attendees</label>
+                            <input type="number" name="attendee_count" class="form-control" placeholder="0" required>
                         </div>
                     </div>
 
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold">Description</label>
+                        <textarea name="description" class="form-control" rows="2" placeholder="Optional notes..."></textarea>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold">Evidence / Photos (Max 3)</label>
+                        <input type="file" name="upload_photo_1" class="form-control mb-2" accept="image/*" required>
+                        <input type="file" name="upload_photo_2" class="form-control mb-2" accept="image/*">
+                        <input type="file" name="upload_photo_3" class="form-control" accept="image/*">
+                    </div>
+
+                    <button type="submit" name="submit" class="btn btn-primary w-100 rounded-pill py-2 fw-bold">
+                        <i class="bi bi-cloud-arrow-up me-2"></i> Submit Report
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- History Table -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-header bg-white py-3 px-4 border-bottom-0">
+                    <h5 class="fw-bold mb-0">Recent Activity</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light bg-opacity-50">
+                            <tr>
+                                <th class="px-4 py-3 small text-muted text-uppercase border-0">Type & Title</th>
+                                <th class="py-3 small text-muted text-uppercase border-0">Attendees</th>
+                                <th class="py-3 small text-muted text-uppercase border-0">Date</th>
+                                <th class="px-4 py-3 small text-muted text-uppercase border-0 text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($reports as $r): ?>
+                                <tr>
+                                    <td class="px-4 py-3">
+                                        <div class="fw-bold text-dark"><?= h($r['program_type']) ?></div>
+                                        <div class="text-muted small" style="font-size: 0.75rem;">
+                                            <?php 
+                                            $ids = explode(',', $r['program_title_ids']);
+                                            $names = [];
+                                            foreach($ids as $id) $names[] = $titles_map[$id] ?? 'Unknown';
+                                            echo h(implode(', ', $names));
+                                            ?>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 text-center">
+                                        <div class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3"><?= $r['attendee_count'] ?></div>
+                                    </td>
+                                    <td class="py-3 small text-secondary">
+                                        <?= date('d M, Y', strtotime($r['session_date'])) ?>
+                                    </td>
+                                    <td class="px-4 py-3 text-end">
+                                        <button class="btn btn-light btn-sm rounded-pill edit-session-btn" 
+                                                data-id="<?= $r['id'] ?>"
+                                                data-desc="<?= h($r['description']) ?>"
+                                                data-date="<?= h($r['session_date']) ?>"
+                                                data-duration="<?= $r['duration_minutes'] ?>"
+                                                data-attendees="<?= $r['attendee_count'] ?>"
+                                                data-bs-toggle="modal" data-bs-target="#editSessionModal">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <form method="post" class="d-inline">
+                                            <input type="hidden" name="delete_id" value="<?= $r['id'] ?>">
+                                            <button type="submit" name="delete_training" class="btn btn-light btn-sm rounded-pill text-danger">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
 </main>
 
-<!-- Edit Session Modal -->
+<!-- Edit Modal -->
 <div class="modal fade" id="editSessionModal" tabindex="-1">
     <div class="modal-dialog">
-        <div class="modal-content">
+        <div class="modal-content border-0 shadow-lg rounded-4">
             <form method="post">
-                <div class="modal-header">
-                    <h5 class="modal-title">Edit Training Session</h5>
+                <div class="modal-header border-bottom-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0">Edit Session</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body px-4">
                     <input type="hidden" name="edit_id" id="edit_session_id">
                     <div class="mb-3">
-                        <label class="form-label">Description</label>
-                        <textarea name="description" id="edit_session_desc" class="form-control" rows="3"></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Session Date<span class="required_star">*</span></label>
+                        <label class="form-label small fw-bold">Date</label>
                         <input type="date" name="session_date" id="edit_session_date" class="form-control" required>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Duration (minutes)<span class="required_star">*</span></label>
-                        <input type="number" name="duration_minutes" id="edit_session_duration" class="form-control" min="1" required>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Duration (Min)</label>
+                            <input type="number" name="duration_minutes" id="edit_session_duration" class="form-control" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold">Attendees</label>
+                            <input type="number" name="attendee_count" id="edit_session_attendees" class="form-control" required>
+                        </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Attendee Count<span class="required_star">*</span></label>
-                        <input type="number" name="attendee_count" id="edit_session_attendees" class="form-control" min="1" required>
+                        <label class="form-label small fw-bold">Description</label>
+                        <textarea name="description" id="edit_session_desc" class="form-control" rows="3"></textarea>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" name="update_training" class="btn btn-primary">Update</button>
+                <div class="modal-footer border-top-0 pb-4 px-4">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" name="update_training" class="btn btn-primary rounded-pill px-4">Save Changes</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<?php require_once __DIR__ . '/inc/footer.php'; ?>
-<style>
-.progress     { height: 25px; }
-.progress-bar { line-height: 25px; font-weight: bold; }
-#uploadMessage { font-size: 14px; }
-</style>
+<?php 
+require_once __DIR__ . '/inc/footer.php'; 
+require_once __DIR__ . '/inc/js-block.php'; 
+?>
 <script src="assets/js/training_sessions.js"></script>

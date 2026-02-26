@@ -1,255 +1,153 @@
 <?php
-require_once(__DIR__ . '/session.php');
 $current_page = 'challenges_solutions';
+require_once __DIR__ . '/session.php';
+require_once __DIR__ . '/inc/header.php';
 
-require_once(__DIR__ . '/inc/header.php');
+$message = null;
 
-// Handle Submit
+/**
+ * Logic: Submit Challenge
+ */
 if (isset($_POST['submit_challenge'])) {
-    $category_id = (int)$_POST['category_id'];
-    $challenge_text = mysqli_real_escape_string($mysqli, $_POST['challenge_text']);
-    $solution_text = mysqli_real_escape_string($mysqli, $_POST['solution_text']);
+    try {
+        $record_id = $db->insert('bqi_challenges_solutions', [
+            'category_id' => (int)$_POST['category_id'],
+            'challenge_text' => $_POST['challenge_text'],
+            'solution_text' => $_POST['solution_text'],
+            'user_its' => $user_its,
+            'jamaat' => $mauze,
+            'added_its' => $user_its
+        ]);
 
-    if ($category_id <= 0 || empty($challenge_text) || empty($solution_text)) {
-        $message = ['text' => 'All required fields must be filled.', 'tag' => 'danger'];
-    } else {
-        $query = "INSERT INTO `bqi_challenges_solutions` (`category_id`, `challenge_text`, `solution_text`, `user_its`, `jamaat`, `added_its`)
-                  VALUES ('$category_id', '$challenge_text', '$solution_text', '$user_its', '$mauze', '$user_its')";
-        try {
-            mysqli_query($mysqli, $query);
-            $record_id = mysqli_insert_id($mysqli);
-
-            // Handle file uploads
-            if (isset($_FILES['attachments'])) {
-                $file_count = count($_FILES['attachments']['name']);
-                for ($i = 0; $i < $file_count; $i++) {
-                    if ($_FILES['attachments']['error'][$i] === UPLOAD_ERR_OK) {
-                        $fileName = $_FILES['attachments']['name'][$i];
-                        $tempPath = $_FILES['attachments']['tmp_name'][$i];
-                        $fileSize = $_FILES['attachments']['size'][$i];
-                        $fileType = pathinfo($fileName, PATHINFO_EXTENSION);
-                        $acceptable = ['jpeg', 'jpg', 'png', 'mp4', 'mov', 'avi', 'mp3', 'wav', 'ogg', 'pdf'];
-
-                        if ($fileSize > 5242880) continue;
-                        if (!in_array(strtolower($fileType), $acceptable)) continue;
-
-                        $uploadName = $user_its . '_challenge_' . date('YmdHis') . '_' . $i . '.' . $fileType;
-                        $moved = move_uploaded_file($tempPath, __DIR__ . "/user_uploads/" . $uploadName);
-
-                        if ($moved) {
-                            $esc_name = mysqli_real_escape_string($mysqli, $fileName);
-                            $esc_type = mysqli_real_escape_string($mysqli, $fileType);
-                            $attachQuery = "INSERT INTO `bqi_file_attachments` (`module`, `record_id`, `file_name`, `file_path`, `file_type`, `file_size`, `added_its`)
-                                            VALUES ('challenge', '$record_id', '$esc_name', '$uploadName', '$esc_type', '$fileSize', '$user_its')";
-                            mysqli_query($mysqli, $attachQuery);
-                        }
+        // Process attachments
+        if (isset($_FILES['attachments'])) {
+            foreach ($_FILES['attachments']['name'] as $i => $name) {
+                if ($_FILES['attachments']['error'][$i] === UPLOAD_ERR_OK) {
+                    $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+                    $newName = $user_its . '_challenge_' . date('YmdHis') . '_' . $i . '.' . $ext;
+                    if (move_uploaded_file($_FILES['attachments']['tmp_name'][$i], __DIR__ . "/user_uploads/" . $newName)) {
+                        $db->insert('bqi_file_attachments', [
+                            'module' => 'challenge',
+                            'record_id' => $record_id,
+                            'file_name' => $name,
+                            'file_path' => $newName,
+                            'file_type' => $ext,
+                            'file_size' => $_FILES['attachments']['size'][$i],
+                            'added_its' => $user_its
+                        ]);
                     }
                 }
             }
-
-            $message = ['text' => 'Challenge & Solution report submitted successfully.', 'tag' => 'success'];
-            $show_popup = true;
-        } catch (Exception $e) {
-            $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
         }
-    }
-}
-
-// Handle Edit
-if (isset($_POST['update_challenge'])) {
-    $edit_id = (int)$_POST['edit_id'];
-    $category_id = (int)$_POST['category_id'];
-    $challenge_text = mysqli_real_escape_string($mysqli, $_POST['challenge_text']);
-    $solution_text = mysqli_real_escape_string($mysqli, $_POST['solution_text']);
-
-    $query = "UPDATE `bqi_challenges_solutions` SET `category_id` = '$category_id', `challenge_text` = '$challenge_text', `solution_text` = '$solution_text',
-              `update_its` = '$user_its', `update_ts` = NOW() WHERE `id` = '$edit_id' AND `added_its` = '$user_its'";
-    try {
-        mysqli_query($mysqli, $query);
-        $message = ['text' => 'Report updated successfully.', 'tag' => 'success'];
+        $message = ['text' => 'Challenge & Solution report submitted.', 'tag' => 'success'];
     } catch (Exception $e) {
         $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
     }
 }
 
-// Fetch categories
-$query = "SELECT * FROM `bqi_categories` WHERE `category_type` = 'challenge' AND `is_active` = 1 ORDER BY `sort_order`, `category_name`";
-$result = mysqli_query($mysqli, $query);
-$categories = $result->fetch_all(MYSQLI_ASSOC);
-
-// Fetch mauze's submitted records
-$mauze_its_subquery = "(SELECT `its_id` FROM `users_mamureen` WHERE `miqaat_mauze` = '$mauze')";
-$query = "SELECT cs.*, c.category_name, um.fullname AS submitted_by FROM `bqi_challenges_solutions` cs
-          LEFT JOIN `bqi_categories` c ON cs.category_id = c.id
-          LEFT JOIN `users_mamureen` um ON um.its_id = cs.added_its
-          WHERE cs.added_its IN $mauze_its_subquery
-          ORDER BY cs.added_ts DESC";
-$result = mysqli_query($mysqli, $query);
-$records = $result->fetch_all(MYSQLI_ASSOC);
+// Master Data
+$categories = $db->fetchAll("SELECT * FROM `bqi_categories` WHERE `category_type` = 'challenge' AND `is_active` = 1 ORDER BY `sort_order` ASC");
+$records = $db->fetchAll("
+    SELECT cs.*, c.category_name, um.fullname AS submitted_by 
+    FROM bqi_challenges_solutions cs
+    LEFT JOIN bqi_categories c ON cs.category_id = c.id
+    LEFT JOIN users_mamureen um ON um.its_id = cs.added_its
+    WHERE cs.added_its IN (SELECT its_id FROM users_mamureen WHERE miqaat_mauze = ?)
+    ORDER BY cs.added_ts DESC", [$mauze]);
 ?>
 
-<main id="main" class="main bqi-1447">
-    <section class="section dashboard">
-        <div class="row">
-            <?php require_once(__DIR__ . '/inc/messages.php'); ?>
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Challenges / Solutions Reporting</h5>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="card">
-                                <div class="card-body">
-                                    <h5 class="card-title">Submit New Report</h5>
-                                    <form method="post" enctype="multipart/form-data" id="uploadForm">
-
-                                        <div class="row mb-3">
-                                            <label class="col-sm-4 col-form-label">Category<span class="required_star">*</span></label>
-                                            <div class="col-sm-8">
-                                                <select name="category_id" class="form-select" required>
-                                                    <option value="" disabled selected>Select Category...</option>
-                                                    <?php foreach ($categories as $c) : ?>
-                                                        <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['category_name']) ?></option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                            </div>
-                                        </div>
-
-                                        <div class="row mb-3">
-                                            <label class="col-sm-4 col-form-label">Challenge<span class="required_star">*</span></label>
-                                            <div class="col-sm-8">
-                                                <textarea name="challenge_text" class="form-control" style="height: 100px;" dir="auto" placeholder="Describe the challenge faced..." required></textarea>
-                                            </div>
-                                        </div>
-
-                                        <div class="row mb-3">
-                                            <label class="col-sm-4 col-form-label">Solution<span class="required_star">*</span></label>
-                                            <div class="col-sm-8">
-                                                <textarea name="solution_text" class="form-control" style="height: 100px;" dir="auto" placeholder="Describe the solution applied..." required></textarea>
-                                            </div>
-                                        </div>
-
-                                        <div class="row mb-3">
-                                            <label class="col-sm-4 col-form-label">Attachments</label>
-                                            <div class="col-sm-8">
-                                                <input type="file" name="attachments[]" class="form-control" accept="image/*,video/*,audio/*,.pdf" multiple>
-                                                <div class="alert alert-info mt-2 py-1 px-2 mb-0">
-                                                    <small><strong>Allowed:</strong> Images (JPG, PNG), Videos (MP4, MOV, AVI), Audio (MP3, WAV, OGG), PDF<br>
-                                                    <strong>Max file size: 5 MB per file</strong></small>
-                                                </div>
-                                                <div id="progressContainer" class="mt-2 d-none">
-                                                    <div class="progress">
-                                                        <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
-                                                    </div>
-                                                    <div id="uploadMessage" class="mt-2 text-center fw-bold d-none"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="d-grid gap-2">
-                                                    <input type="reset" value="Reset" class="btn btn-outline-secondary">
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="d-grid gap-2">
-                                                    <button type="submit" name="submit_challenge" id="submitBtn" class="btn btn-primary">Submit Report</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-6" style="overflow-x: auto;">
-                            <h5 class="card-title">Your Submitted Reports</h5>
-                            <table class="table table-striped" id="datatable">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Category</th>
-                                        <th>Challenge</th>
-                                        <th>Solution</th>
-                                        <th>Date</th>
-                                        <th>Submitted By</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($records as $key => $r) : ?>
-                                        <tr>
-                                            <td><?= $key + 1 ?></td>
-                                            <td><?= htmlspecialchars($r['category_name'] ?? 'N/A') ?></td>
-                                            <td><?= htmlspecialchars(mb_substr($r['challenge_text'], 0, 50)) ?>...</td>
-                                            <td><?= htmlspecialchars(mb_substr($r['solution_text'], 0, 50)) ?>...</td>
-                                            <td><?= date('d-M-Y', strtotime($r['added_ts'])) ?></td>
-                                            <td><?= htmlspecialchars($r['submitted_by'] ?? '') ?></td>
-                                            <td>
-                                                <button type="button" class="btn btn-sm btn-outline-info edit-btn"
-                                                    data-id="<?= $r['id'] ?>"
-                                                    data-category="<?= $r['category_id'] ?>"
-                                                    data-challenge="<?= htmlspecialchars($r['challenge_text']) ?>"
-                                                    data-solution="<?= htmlspecialchars($r['solution_text']) ?>"
-                                                    data-bs-toggle="modal" data-bs-target="#editModal">
-                                                    <i class="bi bi-pencil-square"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
+<main id="main" class="main main-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1">Challenges & Solutions</h1>
+            <p class="text-muted small mb-0">Document critical obstacles and the strategies used to overcome them.</p>
         </div>
-    </section>
-</main>
+    </div>
 
-<!-- Edit Modal -->
-<div class="modal fade" id="editModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <form method="post">
-                <div class="modal-header">
-                    <h5 class="modal-title">Edit Challenge / Solution</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" name="edit_id" id="edit_id">
+    <?php if ($message): ?>
+        <div class="alert alert-<?= $message['tag']; ?> border-0 shadow-sm rounded-4 mb-4">
+            <i class="bi bi-info-circle-fill me-2"></i> <?= $message['text']; ?>
+        </div>
+    <?php endif; ?>
+
+    <div class="row g-4">
+        <!-- Form -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm p-4">
+                <h5 class="fw-bold mb-3">Submit Report</h5>
+                <form method="post" enctype="multipart/form-data">
                     <div class="mb-3">
-                        <label class="form-label">Category</label>
-                        <select name="category_id" id="edit_category" class="form-select" required>
+                        <label class="form-label small fw-bold">Impact Category</label>
+                        <select name="category_id" class="form-select" required>
+                            <option value="">Select Category...</option>
                             <?php foreach ($categories as $c) : ?>
-                                <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['category_name']) ?></option>
+                                <option value="<?= $c['id'] ?>"><?= h($c['category_name']) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
+
                     <div class="mb-3">
-                        <label class="form-label">Challenge</label>
-                        <textarea name="challenge_text" id="edit_challenge" class="form-control" style="height: 120px;" dir="auto" required></textarea>
+                        <label class="form-label small fw-bold">The Challenge</label>
+                        <textarea name="challenge_text" class="form-control" rows="3" placeholder="Describe the obstacle..." required></textarea>
                     </div>
+
                     <div class="mb-3">
-                        <label class="form-label">Solution</label>
-                        <textarea name="solution_text" id="edit_solution" class="form-control" style="height: 120px;" dir="auto" required></textarea>
+                        <label class="form-label small fw-bold">The Applied Solution</label>
+                        <textarea name="solution_text" class="form-control" rows="3" placeholder="How was it resolved?" required></textarea>
                     </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold">Evidence (Files/Photos)</label>
+                        <input type="file" name="attachments[]" class="form-control" accept="image/*,video/*,audio/*,.pdf" multiple>
+                    </div>
+
+                    <button type="submit" name="submit_challenge" class="btn btn-primary w-100 rounded-pill py-2 fw-bold shadow-sm">
+                        Submit Report
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- History -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-header bg-white py-3 px-4 border-bottom-0">
+                    <h5 class="fw-bold mb-0">Submission History</h5>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" name="update_challenge" class="btn btn-primary">Update</button>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 datatable">
+                        <thead class="bg-light bg-opacity-50">
+                            <tr>
+                                <th class="px-4 py-3 small text-muted text-uppercase border-0">Challenge Details</th>
+                                <th class="py-3 small text-muted text-uppercase border-0">Solution</th>
+                                <th class="px-4 py-3 small text-muted text-uppercase border-0 text-end">Registrar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($records as $r): ?>
+                                <tr>
+                                    <td class="px-4 py-3">
+                                        <div class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-2 mb-1" style="font-size: 0.65rem;"><?= h($r['category_name']) ?></div>
+                                        <div class="text-dark small fw-semibold"><?= h(mb_substr($r['challenge_text'], 0, 60)) ?>...</div>
+                                    </td>
+                                    <td class="py-3">
+                                        <div class="text-muted small"><?= h(mb_substr($r['solution_text'], 0, 60)) ?>...</div>
+                                    </td>
+                                    <td class="px-4 py-3 text-end">
+                                        <div class="small fw-bold text-dark"><?= h($r['submitted_by'] ?? 'N/A') ?></div>
+                                        <div class="text-muted" style="font-size: 0.7rem;"><?= date('d M, Y', strtotime($r['added_ts'])) ?></div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
-</div>
+</main>
 
-<?php require_once(__DIR__ . '/inc/footer.php'); ?>
-<style>
-.progress     { height: 25px; }
-.progress-bar { line-height: 25px; font-weight: bold; }
-#uploadMessage { font-size: 14px; }
-</style>
-<script src="assets/js/challenges_solutions.js"></script>
+<?php 
+require_once __DIR__ . '/inc/footer.php'; 
+require_once __DIR__ . '/inc/js-block.php'; 
+?>

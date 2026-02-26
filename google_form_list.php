@@ -1,120 +1,87 @@
 <?php
-    require_once __DIR__ . '/session.php';
-    $current_page = 'google_form_list';
-    require_once __DIR__ . '/inc/header.php';
+$current_page = 'google_form_list';
+require_once __DIR__ . '/session.php';
+require_once __DIR__ . '/inc/header.php';
 
-    $mauze    = $rowdata['miqaat_mauze'];
-    $name     = $rowdata['fullname'];
-    $jamiat   = $rowdata['miqaat_jamiat'] ?? '';
-    $user_its = (int) $_SESSION[USER_ITS];
+// Fetch available forms
+$forms = $db->fetchAll("SELECT * FROM `google_forms` ORDER BY id DESC");
 
-    // Get all available forms
-    $query  = "SELECT * FROM `google_forms` ORDER BY id DESC";
-    $result = mysqli_query($mysqli, $query);
-    $forms  = $result->fetch_all(MYSQLI_ASSOC);
-
-    // Handle form view request
-    $selectedForm = null;
-    if (isset($_GET['id']) && ! empty($_GET['id'])) {
-    $id         = intval($_GET['id']);
-    $formQuery  = "SELECT * FROM `google_forms` WHERE id = $id";
-    $formResult = mysqli_query($mysqli, $formQuery);
-    if ($formResult && mysqli_num_rows($formResult) > 0) {
-        $selectedForm = mysqli_fetch_assoc($formResult);
-    }
-    }
+$selectedForm = null;
+if (isset($_GET['id'])) {
+    $selectedForm = $db->fetch("SELECT * FROM `google_forms` WHERE id = ?", [(int)$_GET['id']]);
+}
 ?>
 
-<main id="main" class="main">
-    <section class="section">
-        <div class="row">
-            <div class="col-lg-12">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Daily Reports Forms</h5>
+<main id="main" class="main main-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1">Daily Reporting</h1>
+            <p class="text-muted small mb-0">Fill out and submit your periodic activity reports via Google Forms.</p>
+        </div>
+    </div>
 
-                        <?php if (empty($forms)): ?>
-                            <div class="alert alert-info">
-                                No forms are available at this time.
-                            </div>
-                        <?php else: ?>
-                            <div class="row">
-                                <!-- Form List -->
-                                <div class="col-md-4">
-                                    <div class="list-group">
-                                        <?php foreach ($forms as $form): ?>
-                                            <a href="google_form_list.php?id=<?php echo $form['id'] ?>" class="list-group-item list-group-item-action <?php echo(isset($_GET['id']) && $_GET['id'] == $form['id']) ? 'active' : '' ?>">
-                                                <div class="d-flex w-100 justify-content-between">
-                                                    <h5 class="mb-1"><?php echo htmlspecialchars($form['form_title']) ?></h5>
-                                                </div>
-                                                <small>Added: <?php echo date('M d, Y', strtotime($form['upload_date'])) ?></small>
-                                            </a>
-                                        <?php endforeach; ?>
-                                    </div>
-                                </div>
-                                <!-- Form Display Area -->
-                                <div class="col-md-8">
-                                    <?php if ($selectedForm): ?>
-                                        <div class="card">
-                                            <div class="card-header">
-                                                <h5><?php echo htmlspecialchars($selectedForm['form_title']) ?></h5>
-                                            </div>
-                                            <div class="card-body">
-                                                <div class="embed-responsive">
-                                                    <?php
-                                                        // Get the form link
-                                                        $formLink = $selectedForm['form_link'];
-
-                                                        // Replace ITS_ID with user_its and MAUZE with mauze
-                                                        $formLink = str_replace('ITS_ID', $user_its, $formLink);
-                                                        $formLink = str_replace('MAUZE', $mauze, $formLink);
-                                                        $formLink = str_replace('NAME', $name, $formLink);
-                                                        $formLink = str_replace('JAMIAT', $jamiat, $formLink);
-
-                                                        // Expand forms.gle short URLs to full docs.google.com URLs
-                                                        // (forms.gle is not in the server CSP frame-src; docs.google.com is)
-                                                        if (strpos($formLink, 'forms.gle') !== false) {
-                                                            $ch = curl_init($formLink);
-                                                            curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
-                                                            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
-                                                            curl_setopt($ch, CURLOPT_NOBODY, true);
-                                                            curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-                                                            curl_exec($ch);
-                                                            $expandedUrl = curl_getinfo($ch, CURLINFO_REDIRECT_URL);
-                                                            curl_close($ch);
-                                                            if (! empty($expandedUrl)) {
-                                                                $formLink = $expandedUrl;
-                                                            }
-                                                        }
-
-                                                        // Check if it's already an embed link, if not convert it
-                                                        if (strpos($formLink, 'viewform') !== false && strpos($formLink, 'embedded=true') === false) {
-                                                            // Convert regular form link to embedded version
-                                                            $formLink = str_replace('viewform', 'viewform?embedded=true', $formLink);
-                                                        }
-                                                    ?>
-                                                    <iframe src="<?php echo htmlspecialchars($formLink) ?>" width="100%" height="700px" frameborder="0" marginheight="0" marginwidth="0">Loading…</iframe>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    <?php else: ?>
-                                        <div class="card">
-                                            <div class="card-body text-center p-5">
-                                                <h4 class="text-muted">Select a form from the list to view</h4>
-                                                <p class="text-muted">The form will appear here when selected</p>
-                                            </div>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        <?php endif; ?>
-                    </div>
+    <div class="row g-4">
+        <!-- Forms List -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm overflow-hidden">
+                <div class="card-header bg-white border-bottom-0 py-3 px-4">
+                    <h6 class="fw-bold mb-0">Available Forms</h6>
+                </div>
+                <div class="list-group list-group-flush">
+                    <?php if (empty($forms)): ?>
+                        <div class="p-4 text-center text-muted small">No forms configured yet.</div>
+                    <?php else: ?>
+                        <?php foreach ($forms as $f): 
+                            $isActive = (isset($_GET['id']) && $_GET['id'] == $f['id']);
+                        ?>
+                            <a href="?id=<?= $f['id'] ?>" class="list-group-item list-group-item-action border-0 px-4 py-3 <?= $isActive ? 'active' : '' ?>">
+                                <div class="fw-bold small mb-1"><?= h($f['form_title']) ?></div>
+                                <div class="<?= $isActive ? 'text-white-50' : 'text-muted' ?>" style="font-size: 0.65rem;">Added: <?= date('d M, Y', strtotime($f['upload_date'])) ?></div>
+                            </a>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
-    </section>
-</main><!-- End #main -->
 
-<?php
-require_once __DIR__ . '/inc/footer.php';
+        <!-- Form Viewer -->
+        <div class="col-lg-8">
+            <?php if ($selectedForm): 
+                $link = $selectedForm['form_link'];
+                $link = str_replace(['ITS_ID', 'MAUZE', 'NAME', 'JAMIAT'], [$user_its, $mauze, $fullname, $jamiat], $link);
+                
+                // Embedded conversion
+                if (strpos($link, 'viewform') !== false && strpos($link, 'embedded=true') === false) {
+                    $link = str_replace('viewform', 'viewform?embedded=true', $link);
+                }
+            ?>
+                <div class="card border-0 shadow-sm overflow-hidden">
+                    <div class="card-header bg-primary text-white border-0 py-3 px-4 d-flex justify-content-between align-items-center">
+                        <h6 class="fw-bold mb-0"><?= h($selectedForm['form_title']) ?></h6>
+                        <a href="<?= h($link) ?>" target="_blank" class="btn btn-sm btn-light rounded-pill px-3 fw-bold" style="font-size: 0.7rem;">
+                            <i class="bi bi-box-arrow-up-right me-1"></i> Open in New Tab
+                        </a>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="ratio ratio-16x9" style="min-height: 700px;">
+                            <iframe src="<?= h($link) ?>" frameborder="0" marginheight="0" marginwidth="0">Loading...</iframe>
+                        </div>
+                    </div>
+                </div>
+            <?php else: ?>
+                <div class="card border-0 shadow-sm p-5 text-center bg-light bg-opacity-50">
+                    <div class="mb-3">
+                        <i class="bi bi-file-earmark-text text-muted opacity-25" style="font-size: 4rem;"></i>
+                    </div>
+                    <h5 class="fw-bold text-muted">Select a form to begin</h5>
+                    <p class="small text-muted mb-0">Choose a form from the left sidebar to view and fill it out.</p>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+</main>
+
+<?php 
+require_once __DIR__ . '/inc/footer.php'; 
+require_once __DIR__ . '/inc/js-block.php'; 
 ?>

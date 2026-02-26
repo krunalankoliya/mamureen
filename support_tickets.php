@@ -1,281 +1,236 @@
 <?php
-    $current_page = 'support_tickets';
-    require_once __DIR__ . '/session.php';
-    require_once __DIR__ . '/inc/header.php';
+$current_page = 'support_tickets';
+require_once __DIR__ . '/session.php';
+require_once __DIR__ . '/inc/header.php';
 
-    // ── Fetch logged-in user's email (checks all three user tables) ──
-    if ($is_admin) {
-        $email_table = 'users_admin';
-    } elseif ($is_sub_admin) {
-        $email_table = 'users_sub_admin';
-    } else {
-        $email_table = 'users_mamureen';
-    }
-    $user_email_res  = mysqli_query($mysqli, "SELECT `email_id` FROM `{$email_table}` WHERE `its_id` = '$user_its'");
-    $user_email      = ($user_email_res && $user_email_res->num_rows) ? ($user_email_res->fetch_assoc()['email_id'] ?? '') : '';
-    $safe_user_email = mysqli_real_escape_string($mysqli, $user_email);
+// Fetch user email from appropriate table
+$email_table = $is_admin ? 'users_admin' : ($is_sub_admin ? 'users_sub_admin' : 'users_mamureen');
+$user_email = $db->fetch("SELECT `email_id` FROM `{$email_table}` WHERE `its_id` = ?", [$user_its])['email_id'] ?? '';
 
-    // ── Handle: Create Ticket ────────────────────────────────────
-    if (isset($_POST['create_ticket'])) {
-    $subject     = trim(mysqli_real_escape_string($mysqli, $_POST['subject']));
-    $description = trim(mysqli_real_escape_string($mysqli, $_POST['description']));
-    $priority    = in_array($_POST['priority'], ['low', 'medium', 'high']) ? $_POST['priority'] : 'medium';
+$message = null;
 
-    if (empty($subject) || empty($description)) {
-        $message = ['text' => 'Subject and description are required.', 'tag' => 'danger'];
-    } else {
-        $insert = "INSERT INTO `support_tickets` (`ticket_number`, `subject`, `description`, `priority`, `added_its`, `added_by_name`, `email`, `miqaat_mauze`)
-                   VALUES ('TMP', '$subject', '$description', '$priority', '$user_its', '$fullname', '$safe_user_email', '$mauze')";
-        mysqli_query($mysqli, $insert);
-        $new_id        = mysqli_insert_id($mysqli);
-        $ticket_number = 'TKT-' . str_pad($new_id, 6, '0', STR_PAD_LEFT);
-        mysqli_query($mysqli, "UPDATE `support_tickets` SET `ticket_number` = '$ticket_number' WHERE `id` = '$new_id'");
-        $message = ['text' => "Ticket <strong>{$ticket_number}</strong> submitted successfully. We will get back to you shortly.", 'tag' => 'success'];
+/**
+ * Logic: Create Ticket
+ */
+if (isset($_POST['create_ticket'])) {
+    $subject = trim($_POST['subject'] ?? '');
+    $desc = trim($_POST['description'] ?? '');
+    
+    if ($subject && $desc) {
+        $id = $db->insert('support_tickets', [
+            'ticket_number' => 'TMP',
+            'subject' => $subject,
+            'description' => $desc,
+            'priority' => $_POST['priority'],
+            'added_its' => $user_its,
+            'added_by_name' => $fullname,
+            'email' => $user_email,
+            'miqaat_mauze' => $mauze
+        ]);
+        $ticket_no = 'TKT-' . str_pad($id, 6, '0', STR_PAD_LEFT);
+        $db->query("UPDATE support_tickets SET ticket_number = ? WHERE id = ?", [$ticket_no, $id]);
+        $message = ['text' => "Ticket <strong>$ticket_no</strong> created successfully.", 'tag' => 'success'];
     }
-    }
+}
 
-    // ── Handle: User Reply ───────────────────────────────────────
-    if (isset($_POST['add_reply'])) {
-    $ticket_id  = (int) $_POST['ticket_id'];
-    $reply_text = trim(mysqli_real_escape_string($mysqli, $_POST['reply_text']));
+/**
+ * Logic: Add Reply
+ */
+if (isset($_POST['add_reply'])) {
+    $tid = (int)$_POST['ticket_id'];
+    $reply = trim($_POST['reply_text']);
+    
+    // Ensure ownership
+    $owned = $db->fetch("SELECT id FROM support_tickets WHERE id = ? AND added_its = ?", [$tid, $user_its]);
+    if ($owned && $reply) {
+        $db->insert('support_ticket_replies', [
+            'ticket_id' => $tid,
+            'reply_text' => $reply,
+            'replied_by_its' => $user_its,
+            'replied_by_name' => $fullname,
+            'is_admin_reply' => 0
+        ]);
+        $db->query("UPDATE support_tickets SET updated_at = NOW() WHERE id = ?", [$tid]);
+        $message = ['text' => 'Reply posted.', 'tag' => 'success'];
+    }
+}
 
-    // Ensure ticket belongs to this user
-    $chk = mysqli_query($mysqli, "SELECT id FROM `support_tickets` WHERE `id` = '$ticket_id' AND `added_its` = '$user_its'");
-    if ($chk && $chk->num_rows > 0 && ! empty($reply_text)) {
-        mysqli_query($mysqli, "INSERT INTO `support_ticket_replies` (`ticket_id`, `reply_text`, `replied_by_its`, `replied_by_name`, `is_admin_reply`)
-                               VALUES ('$ticket_id', '$reply_text', '$user_its', '$fullname', 0)");
-        mysqli_query($mysqli, "UPDATE `support_tickets` SET `updated_at` = NOW() WHERE `id` = '$ticket_id'");
-        $message = ['text' => 'Reply added.', 'tag' => 'success'];
-    }
-    }
+// Fetch Tickets
+$tickets = $db->fetchAll("SELECT * FROM support_tickets WHERE added_its = ? ORDER BY created_at DESC", [$user_its]);
 
-    // ── Fetch this user's tickets ────────────────────────────────
-    $tickets = mysqli_query($mysqli, "SELECT * FROM `support_tickets` WHERE `added_its` = '$user_its' ORDER BY `created_at` DESC")
-    ->fetch_all(MYSQLI_ASSOC);
-
-    // ── Fetch ticket thread for modal (AJAX-style via GET) ───────
-    $modal_ticket  = null;
-    $modal_replies = [];
-    if (isset($_GET['view']) && (int) $_GET['view'] > 0) {
-    $view_id = (int) $_GET['view'];
-    $res     = mysqli_query($mysqli, "SELECT * FROM `support_tickets` WHERE `id` = '$view_id' AND `added_its` = '$user_its'");
-    if ($res && $res->num_rows) {
-        $modal_ticket  = $res->fetch_assoc();
-        $modal_replies = mysqli_query($mysqli, "SELECT * FROM `support_ticket_replies` WHERE `ticket_id` = '$view_id' ORDER BY `created_at` ASC")
-            ->fetch_all(MYSQLI_ASSOC);
+// View Logic
+$view_ticket = null;
+$replies = [];
+if (isset($_GET['view'])) {
+    $view_ticket = $db->fetch("SELECT * FROM support_tickets WHERE id = ? AND added_its = ?", [(int)$_GET['view'], $user_its]);
+    if ($view_ticket) {
+        $replies = $db->fetchAll("SELECT * FROM support_ticket_replies WHERE ticket_id = ? ORDER BY created_at ASC", [$view_ticket['id']]);
     }
-    }
+}
 ?>
 
-<style>
-.ticket-thread { max-height: 420px; overflow-y: auto; }
-.bubble       { border-radius: 12px; padding: 10px 14px; margin-bottom: 10px; max-width: 85%; }
-.bubble-user  { background: #e8f0fe; margin-left: auto; text-align: right; }
-.bubble-admin { background: #e6f4ea; }
-.bubble small { display: block; margin-top: 4px; color: #666; font-size: 11px; }
-.priority-low    { color: #2eca6a; font-weight: 600; }
-.priority-medium { color: #ff9f43; font-weight: 600; }
-.priority-high   { color: #dc3545; font-weight: 600; }
-/* Custom ticket popup — not a Bootstrap modal (avoids JS interference) */
-.ticket-popup-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.55); z-index: 1055; overflow-y: auto; padding: 40px 15px;
-}
-.ticket-popup-box {
-    max-width: 820px; margin: 0 auto; background: #fff;
-    border-radius: 8px; box-shadow: 0 6px 24px rgba(0,0,0,0.25);
-}
-.ticket-popup-header {
-    padding: 16px 20px; border-bottom: 1px solid #dee2e6;
-    display: flex; justify-content: space-between; align-items: flex-start;
-}
-.ticket-popup-body { padding: 20px; max-height: 65vh; overflow-y: auto; }
-.ticket-popup-footer { padding: 12px 20px; border-top: 1px solid #dee2e6; text-align: right; }
-</style>
-
-<main id="main" class="main bqi-1447">
-    <div class="pagetitle">
-        <h1>Support Queries</h1>
+<main id="main" class="main main-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1">Help & Support</h1>
+            <p class="text-muted small mb-0">Submit queries and track status of your support tickets.</p>
+        </div>
     </div>
 
-    <section class="section">
-        <div class="row">
-            <?php require_once __DIR__ . '/inc/messages.php'; ?>
-
-            <!-- Create Ticket -->
-            <div class="col-lg-4">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-plus-circle-fill text-primary"></i> Open New Query</h5>
-                        <form method="post">
-                            <div class="mb-3">
-                                <label class="form-label">Subject <span class="required_star">*</span></label>
-                                <select name="subject" class="form-select" required>
-                                    <option value="" disabled selected>Select Subject...</option>
-                                    <option value="Shaadi Tafheem">Shaadi Tafheem</option>
-                                    <option value="Social Media Awareness">Social Media Awareness</option>
-                                    <option value="Zakereen Farzando Training">Zakereen Farzando Training</option>
-                                    <option value="General">General</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Priority</label>
-                                <select name="priority" class="form-select">
-                                    <option value="low">Low</option>
-                                    <option value="medium" selected>Medium</option>
-                                    <option value="high">High</option>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Notification Email</label>
-                                <input type="text" class="form-control" value="<?php echo htmlspecialchars($user_email ?: 'No email on record') ?>" disabled>
-                                <small class="text-muted">Reply notifications will be sent to this email.</small>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">Description <span class="required_star">*</span></label>
-                                <textarea name="description" class="form-control" rows="5" placeholder="Describe your issue in detail..." required></textarea>
-                            </div>
-                            <div class="d-grid">
-                                <button type="submit" name="create_ticket" class="btn btn-primary">
-                                    <i class="bi bi-send-fill"></i> Submit Ticket
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            <!-- My Tickets Table -->
-            <div class="col-lg-8">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-ticket-detailed-fill text-primary"></i> My Queries</h5>
-                        <div style="overflow-x: auto;">
-                            <table class="table table-striped" id="datatable">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Ticket No.</th>
-                                        <th>Subject</th>
-                                        <th>Priority</th>
-                                        <th>Status</th>
-                                        <th>Date</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($tickets as $i => $t): ?>
-                                        <tr>
-                                            <td><?php echo $i + 1 ?></td>
-                                            <td><code><?php echo htmlspecialchars($t['ticket_number']) ?></code></td>
-                                            <td><?php echo htmlspecialchars($t['subject']) ?></td>
-                                            <td>
-                                                <?php
-                                                    $pc = ['low' => 'success', 'medium' => 'warning', 'high' => 'danger'];
-                                                    echo '<span class="badge bg-' . ($pc[$t['priority']] ?? 'secondary') . '">' . ucfirst($t['priority']) . '</span>';
-                                                ?>
-                                            </td>
-                                            <td>
-                                                <?php
-                                                    $sc = ['open' => 'primary', 'in_progress' => 'warning', 'resolved' => 'success', 'closed' => 'secondary'];
-                                                    $sl = ['open' => 'Open', 'in_progress' => 'In Progress', 'resolved' => 'Resolved', 'closed' => 'Closed'];
-                                                    echo '<span class="badge bg-' . ($sc[$t['status']] ?? 'secondary') . '">' . ($sl[$t['status']] ?? ucfirst($t['status'])) . '</span>';
-                                                ?>
-                                            </td>
-                                            <td><?php echo date('d-M-Y', strtotime($t['created_at'])) ?></td>
-                                            <td>
-                                                <a href="?view=<?php echo $t['id'] ?>" class="btn btn-sm btn-outline-info">
-                                                    <i class="bi bi-eye-fill"></i>
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
+    <?php if ($message): ?>
+        <div class="alert alert-<?= $message['tag']; ?> border-0 shadow-sm rounded-4 mb-4">
+            <i class="bi bi-info-circle-fill me-2"></i> <?= $message['text']; ?>
         </div>
-    </section>
+    <?php endif; ?>
+
+    <div class="row g-4">
+        <!-- New Ticket -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm p-4 h-100">
+                <h5 class="fw-bold mb-3">Open New Query</h5>
+                <form method="post">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Department / Subject</label>
+                        <select name="subject" class="form-select" required>
+                            <option value="">Select Topic...</option>
+                            <option value="Shaadi Tafheem">Shaadi Tafheem</option>
+                            <option value="Social Media Awareness">Social Media Awareness</option>
+                            <option value="Zakereen Farzando Training">Zakereen Farzando Training</option>
+                            <option value="General">General Technical Issue</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Priority</label>
+                        <select name="priority" class="form-select">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Description</label>
+                        <textarea name="description" class="form-control" rows="5" placeholder="Please provide details..." required></textarea>
+                    </div>
+                    <button type="submit" name="create_ticket" class="btn btn-primary w-100 rounded-pill py-2 fw-bold">
+                        <i class="bi bi-send me-2"></i> Submit Ticket
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Ticket List -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-header bg-white py-3 px-4 border-bottom-0">
+                    <h5 class="fw-bold mb-0">My Support History</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 datatable">
+                        <thead class="bg-light bg-opacity-50">
+                            <tr>
+                                <th class="px-4 py-3 small text-muted text-uppercase border-0">Ticket ID</th>
+                                <th class="py-3 small text-muted text-uppercase border-0">Subject</th>
+                                <th class="py-3 small text-muted text-uppercase border-0">Status</th>
+                                <th class="px-4 py-3 small text-muted text-uppercase border-0 text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($tickets as $t): 
+                                $status_badge = [
+                                    'open' => 'bg-primary',
+                                    'in_progress' => 'bg-warning',
+                                    'resolved' => 'bg-success',
+                                    'closed' => 'bg-secondary'
+                                ];
+                            ?>
+                                <tr>
+                                    <td class="px-4 py-3">
+                                        <code class="fw-bold"><?= $t['ticket_number'] ?></code>
+                                        <div class="text-muted small" style="font-size: 0.65rem;"><?= date('d M, Y', strtotime($t['created_at'])) ?></div>
+                                    </td>
+                                    <td class="py-3">
+                                        <div class="fw-bold text-dark small"><?= h($t['subject']) ?></div>
+                                        <div class="text-muted truncate small" style="max-width: 250px; font-size: 0.75rem;"><?= h($t['description']) ?></div>
+                                    </td>
+                                    <td class="py-3">
+                                        <span class="badge <?= $status_badge[$t['status']] ?? 'bg-light' ?> bg-opacity-10 <?= str_replace('bg-', 'text-', $status_badge[$t['status']]) ?> rounded-pill px-3">
+                                            <?= ucfirst(str_replace('_', ' ', $t['status'])) ?>
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3 text-end">
+                                        <a href="?view=<?= $t['id'] ?>" class="btn btn-light btn-sm rounded-pill px-3">
+                                            <i class="bi bi-chat-text me-1"></i> View Thread
+                                        </a>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </main>
 
-<!-- ── View Ticket Popup ──────────────────────────────────── -->
-<?php if ($modal_ticket):
-    $sc = ['open' => 'primary', 'in_progress' => 'warning', 'resolved' => 'success', 'closed' => 'secondary'];
-    $sl = ['open' => 'Open', 'in_progress' => 'In Progress', 'resolved' => 'Resolved', 'closed' => 'Closed'];
-    $pc = ['low' => 'success', 'medium' => 'warning', 'high' => 'danger'];
-?>
-<div class="ticket-popup-overlay">
-    <div class="ticket-popup-box">
-        <div class="ticket-popup-header">
-            <div>
-                <h5 class="mb-1">
-                    <code><?php echo htmlspecialchars($modal_ticket['ticket_number']) ?></code>
-                    &mdash; <?php echo htmlspecialchars($modal_ticket['subject']) ?>
-                </h5>
-                <span class="badge bg-<?php echo $sc[$modal_ticket['status']] ?? 'secondary' ?>"><?php echo $sl[$modal_ticket['status']] ?? ucfirst($modal_ticket['status']) ?></span>
-                <span class="badge bg-<?php echo $pc[$modal_ticket['priority']] ?? 'secondary' ?>">Priority: <?php echo ucfirst($modal_ticket['priority']) ?></span>
-            </div>
-            <a href="support_tickets.php" class="btn-close"></a>
-        </div>
-        <div class="ticket-popup-body">
-            <p class="text-muted small mb-3">
-                Submitted on <?php echo date('d-M-Y H:i', strtotime($modal_ticket['created_at'])) ?>
-                &bull; <?php echo htmlspecialchars($modal_ticket['miqaat_mauze'] ?? '') ?>
-            </p>
-            <hr>
-
-            <!-- Thread -->
-            <div class="ticket-thread mb-3">
-                <div class="bubble bubble-user">
-                    <strong><?php echo htmlspecialchars($modal_ticket['added_by_name'] ?? 'You') ?></strong><br>
-                    <?php echo nl2br(htmlspecialchars($modal_ticket['description'])) ?>
-                    <small><?php echo date('d-M-Y H:i', strtotime($modal_ticket['created_at'])) ?></small>
+<!-- Ticket Thread Popover (Non-modal Overlay) -->
+<?php if ($view_ticket): ?>
+    <div class="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-flex align-items-center justify-content-center" style="z-index: 9999; backdrop-filter: blur(4px);">
+        <div class="bg-white rounded-4 shadow-lg w-100 mx-3" style="max-width: 800px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column;">
+            <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="fw-bold mb-0"><?= $view_ticket['ticket_number'] ?> &bull; <?= h($view_ticket['subject']) ?></h5>
+                    <span class="badge bg-light text-muted border rounded-pill small">Priority: <?= ucfirst($view_ticket['priority']) ?></span>
                 </div>
-                <?php foreach ($modal_replies as $r): ?>
-                    <?php if ($r['is_admin_reply']): ?>
-                        <div class="bubble bubble-admin">
-                            <strong><i class="bi bi-shield-check text-success"></i> BQI Office</strong><br>
-                            <?php echo nl2br(htmlspecialchars($r['reply_text'])) ?>
-                            <small><?php echo date('d-M-Y H:i', strtotime($r['created_at'])) ?></small>
+                <a href="support_tickets.php" class="btn-close"></a>
+            </div>
+            <div class="p-4" style="overflow-y: auto; flex-grow: 1; background: #f8fafc;">
+                <!-- Main Issue -->
+                <div class="bg-white p-3 rounded-4 border shadow-sm mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="fw-bold small text-primary"><?= h($view_ticket['added_by_name']) ?> (You)</span>
+                        <span class="text-muted" style="font-size: 0.7rem;"><?= date('d M, Y H:i', strtotime($view_ticket['created_at'])) ?></span>
+                    </div>
+                    <div class="text-dark small"><?= nl2br(h($view_ticket['description'])) ?></div>
+                </div>
+
+                <!-- Replies -->
+                <?php foreach ($replies as $r): ?>
+                    <div class="mb-4 d-flex <?= $r['is_admin_reply'] ? 'justify-content-start' : 'justify-content-end' ?>">
+                        <div class="p-3 rounded-4 shadow-sm border <?= $r['is_admin_reply'] ? 'bg-light' : 'bg-primary text-white' ?>" style="max-width: 80%;">
+                            <div class="d-flex justify-content-between gap-4 mb-1">
+                                <span class="fw-bold" style="font-size: 0.7rem;"><?= $r['is_admin_reply'] ? 'Office Response' : 'You' ?></span>
+                                <span class="opacity-75" style="font-size: 0.65rem;"><?= date('d/m H:i', strtotime($r['created_at'])) ?></span>
+                            </div>
+                            <div class="small"><?= nl2br(h($r['reply_text'])) ?></div>
                         </div>
-                    <?php else: ?>
-                        <div class="bubble bubble-user">
-                            <strong><?php echo htmlspecialchars($r['replied_by_name'] ?? 'You') ?></strong><br>
-                            <?php echo nl2br(htmlspecialchars($r['reply_text'])) ?>
-                            <small><?php echo date('d-M-Y H:i', strtotime($r['created_at'])) ?></small>
-                        </div>
-                    <?php endif; ?>
+                    </div>
                 <?php endforeach; ?>
             </div>
 
-            <!-- Reply Form (only if not closed/resolved) -->
-            <?php if (! in_array($modal_ticket['status'], ['resolved', 'closed'])): ?>
-                <hr>
-                <form method="post">
-                    <input type="hidden" name="ticket_id" value="<?php echo $modal_ticket['id'] ?>">
-                    <div class="mb-2">
-                        <label class="form-label fw-bold">Add Reply</label>
-                        <textarea name="reply_text" class="form-control" rows="3" placeholder="Add more details..." required></textarea>
-                    </div>
-                    <button type="submit" name="add_reply" class="btn btn-primary btn-sm">
-                        <i class="bi bi-send"></i> Send Reply
-                    </button>
-                </form>
+            <?php if (!in_array($view_ticket['status'], ['resolved', 'closed'])): ?>
+                <div class="p-4 bg-white border-top">
+                    <form method="post" class="row g-2">
+                        <input type="hidden" name="ticket_id" value="<?= $view_ticket['id'] ?>">
+                        <div class="col-10">
+                            <textarea name="reply_text" class="form-control border-0 bg-light" placeholder="Write your message here..." rows="2" required></textarea>
+                        </div>
+                        <div class="col-2 d-flex align-items-end">
+                            <button type="submit" name="add_reply" class="btn btn-primary w-100 rounded-4 py-3">
+                                <i class="bi bi-send-fill"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
             <?php else: ?>
-                <div class="alert alert-secondary py-2 mb-0">
-                    <i class="bi bi-lock-fill"></i> This ticket is <?php echo $sl[$modal_ticket['status']] ?>.
+                <div class="p-4 bg-light border-top text-center text-muted small">
+                    This ticket is now <strong><?= ucfirst($view_ticket['status']) ?></strong> and cannot be replied to.
                 </div>
             <?php endif; ?>
         </div>
-        <div class="ticket-popup-footer">
-            <a href="support_tickets.php" class="btn btn-secondary">Close</a>
-        </div>
     </div>
-</div>
 <?php endif; ?>
 
-<?php require_once __DIR__ . '/inc/footer.php'; ?>
-<?php require_once __DIR__ . '/inc/js-block.php'; ?>
+<?php 
+require_once __DIR__ . '/inc/footer.php'; 
+require_once __DIR__ . '/inc/js-block.php'; 
+?>

@@ -1,246 +1,74 @@
 <?php
-require_once(__DIR__ . '/session.php');
 $current_page = 'important_contacts';
-require_once(__DIR__ . '/inc/header.php');
+require_once __DIR__ . '/session.php';
+require_once __DIR__ . '/inc/header.php';
+
+$contacts = [
+    'Social Media' => [
+        ['name' => 'Shabbir Bs bin Ubai Bs', 'phone' => '+91 81287 55144', 'initials' => 'SH', 'color' => '#6366f1'],
+        ['name' => 'M Murtaza Mullajiwala', 'phone' => '+91 90048 81852', 'initials' => 'MU', 'color' => '#6366f1'],
+    ],
+    'ITNC - Shaadi Mutalliq' => [
+        ['name' => 'M Burhanuddin Kathawala', 'phone' => '+91 88668 07939', 'initials' => 'BU', 'color' => '#8b5cf6'],
+        ['name' => 'M Adnan Bhanpurawala', 'phone' => '+91 77389 25152', 'initials' => 'AD', 'color' => '#8b5cf6'],
+    ],
+    'Idarat al-Zakereen' => [
+        ['name' => 'Helpline', 'phone' => '+91 77478 61553', 'initials' => 'IZ', 'color' => '#ef4444'],
+    ],
+    'BQI Back Office' => [
+        ['name' => 'Shk Mufadddal Shakir', 'phone' => '+91 96194 90152', 'initials' => 'MF', 'color' => '#10b981'],
+        ['name' => 'Shk Aliasger Bhanpurawala', 'phone' => '+91 98927 26516', 'initials' => 'AB', 'color' => '#10b981'],
+        ['name' => 'Shk Aliasger Hamid', 'phone' => '+91 81530 19172', 'initials' => 'AH', 'color' => '#10b981'],
+        ['name' => 'M Mansoor Shakir', 'phone' => '+91 99306 56777', 'initials' => 'MA', 'color' => '#10b981'],
+        ['name' => 'M Moiz Nasir', 'phone' => '+91 99796 60952', 'initials' => 'MO', 'color' => '#10b981'],
+    ]
+];
 ?>
 
-<style>
-.contact-avatar {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 0.82rem;
-    flex-shrink: 0;
-    color: #fff;
-    letter-spacing: 0.5px;
-}
-.contact-item {
-    transition: background 0.15s;
-    padding-top: 1rem !important;
-    padding-bottom: 1rem !important;
-}
-.contact-item:hover {
-    background: #f8f9fa;
-}
-.section-header {
-    font-size: 0.95rem;
-    font-weight: 600;
-    letter-spacing: 0.3px;
-    padding: 0.75rem 1rem;
-    border-radius: 0.5rem 0.5rem 0 0;
-    color: #fff;
-}
-.wa-btn {
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #25d366;
-    color: #fff;
-    font-size: 1rem;
-    text-decoration: none;
-    flex-shrink: 0;
-    transition: background 0.15s, transform 0.15s;
-    box-shadow: 0 2px 6px rgba(37,211,102,0.35);
-}
-.wa-btn:hover {
-    background: #1da851;
-    color: #fff;
-    transform: scale(1.12);
-}
-.contact-card {
-    border: none;
-    border-radius: 0.5rem;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.09);
-    overflow: hidden;
-}
-.contact-name {
-    font-size: 0.88rem;
-    font-weight: 600;
-    margin-bottom: 1px;
-}
-.contact-number {
-    font-size: 0.78rem;
-    color: #6c757d;
-}
-</style>
+<main id="main" class="main main-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1">Important Contacts</h1>
+            <p class="text-muted small mb-0">Direct support and departmental contacts for BQI assistance.</p>
+        </div>
+    </div>
 
-<main id="main" class="main">
-    <section class="section dashboard">
-        <div class="row">
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title">Important Contacts</h5>
-
-                    <div class="row g-4">
-
-                        <!-- Social Media -->
-                        <div class="col-md-4">
-                            <div class="contact-card card h-100">
-                                <div class="section-header" style="background: linear-gradient(135deg, #0d6efd, #3d8bfd);">
-                                    <i class="bi bi-megaphone-fill me-2"></i>Social Media
-                                </div>
-                                <div class="card-body p-0">
-                                    <div class="contact-item d-flex align-items-center px-3 py-3 border-bottom">
-                                        <div class="contact-avatar me-3" style="background: #0d6efd;">SH</div>
-                                        <div class="flex-grow-1">
-                                            <div class="contact-name">Shabbir Bs bin Ubai Bs</div>
-                                            <div class="contact-number">+91 81287 55144</div>
-                                        </div>
-                                        <a href="https://wa.me/918128755144" target="_blank" class="wa-btn" title="Open WhatsApp">
-                                            <i class="bi bi-whatsapp"></i>
-                                        </a>
-                                    </div>
-                                    <div class="contact-item d-flex align-items-center px-3 py-3">
-                                        <div class="contact-avatar me-3" style="background: #0d6efd;">MU</div>
-                                        <div class="flex-grow-1">
-                                            <div class="contact-name">M Murtaza Mullajiwala</div>
-                                            <div class="contact-number">+91 90048 81852</div>
-                                        </div>
-                                        <a href="https://wa.me/919004881852" target="_blank" class="wa-btn" title="Open WhatsApp">
-                                            <i class="bi bi-whatsapp"></i>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
+    <div class="row g-4">
+        <?php foreach ($contacts as $dept => $list): ?>
+            <div class="<?= count($list) > 2 ? 'col-12' : 'col-lg-4' ?>">
+                <div class="card border-0 shadow-sm overflow-hidden">
+                    <div class="card-header bg-white border-0 py-3 px-4 d-flex align-items-center gap-2">
+                        <div class="bg-primary bg-opacity-10 text-primary p-2 rounded-3" style="width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-person-lines-fill small"></i>
                         </div>
-
-                        <!-- ITNC - Shaadi Mutalliq -->
-                        <div class="col-md-4">
-                            <div class="contact-card card h-100">
-                                <div class="section-header" style="background: linear-gradient(135deg, #6f42c1, #9b6dff);">
-                                    <i class="bi bi-people-fill me-2"></i>ITNC - Shaadi Mutalliq
-                                </div>
-                                <div class="card-body p-0">
-                                    <div class="contact-item d-flex align-items-center px-3 py-3 border-bottom">
-                                        <div class="contact-avatar me-3" style="background: #6f42c1;">BU</div>
-                                        <div class="flex-grow-1">
-                                            <div class="contact-name">M Burhanuddin Kathawala</div>
-                                            <div class="contact-number">+91 88668 07939</div>
-                                        </div>
-                                        <a href="https://wa.me/918866807939" target="_blank" class="wa-btn" title="Open WhatsApp">
-                                            <i class="bi bi-whatsapp"></i>
-                                        </a>
+                        <h6 class="fw-bold mb-0"><?= $dept ?></h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="row g-0">
+                            <?php foreach ($list as $c): ?>
+                                <div class="<?= count($list) > 2 ? 'col-md-4' : 'col-12' ?> border-top p-4 d-flex align-items-center gap-3 hover-bg-light transition-all">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white shadow-sm" 
+                                         style="width: 48px; height: 48px; background: <?= $c['color'] ?>; flex-shrink: 0; font-size: 0.8rem;">
+                                        <?= $c['initials'] ?>
                                     </div>
-                                    <div class="contact-item d-flex align-items-center px-3 py-3">
-                                        <div class="contact-avatar me-3" style="background: #6f42c1;">AD</div>
-                                        <div class="flex-grow-1">
-                                            <div class="contact-name">M Adnan Bhanpurawala</div>
-                                            <div class="contact-number">+91 77389 25152</div>
-                                        </div>
-                                        <a href="https://wa.me/917738925152" target="_blank" class="wa-btn" title="Open WhatsApp">
-                                            <i class="bi bi-whatsapp"></i>
-                                        </a>
+                                    <div class="flex-grow-1">
+                                        <div class="fw-bold text-dark small"><?= h($c['name']) ?></div>
+                                        <div class="text-muted" style="font-size: 0.75rem;"><?= $c['phone'] ?></div>
                                     </div>
+                                    <a href="https://wa.me/<?= preg_replace('/[^0-9]/', '', $c['phone']) ?>" target="_blank" class="btn btn-light btn-sm rounded-circle shadow-sm" style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: #25d366;">
+                                        <i class="bi bi-whatsapp h5 mb-0"></i>
+                                    </a>
                                 </div>
-                            </div>
+                            <?php endforeach; ?>
                         </div>
-
-                        <!-- Idarat al-Zakereen -->
-                        <div class="col-md-4">
-                            <div class="contact-card card h-100">
-                                <div class="section-header" style="background: linear-gradient(135deg, #dc3545, #ff6b7a);">
-                                    <i class="bi bi-telephone-fill me-2"></i>Idarat al-Zakereen
-                                </div>
-                                <div class="card-body p-0">
-                                    <div class="contact-item d-flex align-items-center px-3 py-3">
-                                        <div class="contact-avatar me-3" style="background: #dc3545;">IZ</div>
-                                        <div class="flex-grow-1">
-                                            <div class="contact-name">Helpline</div>
-                                            <div class="contact-number">+91 77478 61553</div>
-                                        </div>
-                                        <a href="https://wa.me/917747861553" target="_blank" class="wa-btn" title="Open WhatsApp">
-                                            <i class="bi bi-whatsapp"></i>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- BQI Back Office (full width) -->
-                        <div class="col-md-12">
-                            <div class="contact-card card">
-                                <div class="section-header" style="background: linear-gradient(135deg, #198754, #28c76f);">
-                                    <i class="bi bi-building me-2"></i>BQI Back Office
-                                </div>
-                                <div class="card-body p-0">
-                                    <div class="row g-0">
-                                        <div class="col-md-4 border-end border-bottom">
-                                            <div class="contact-item d-flex align-items-center px-3 py-3">
-                                                <div class="contact-avatar me-3" style="background: #198754;">MF</div>
-                                                <div class="flex-grow-1">
-                                                    <div class="contact-name">Shk Mufadddal Shakir</div>
-                                                    <div class="contact-number">+91 96194 90152</div>
-                                                </div>
-                                                <a href="https://wa.me/919619490152" target="_blank" class="wa-btn ms-2" title="Open WhatsApp">
-                                                    <i class="bi bi-whatsapp"></i>
-                                                </a>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4 border-end border-bottom">
-                                            <div class="contact-item d-flex align-items-center px-3 py-3">
-                                                <div class="contact-avatar me-3" style="background: #198754;">AB</div>
-                                                <div class="flex-grow-1">
-                                                    <div class="contact-name">Shk Aliasger Bhanpurawala</div>
-                                                    <div class="contact-number">+91 98927 26516</div>
-                                                </div>
-                                                <a href="https://wa.me/919892726516" target="_blank" class="wa-btn ms-2" title="Open WhatsApp">
-                                                    <i class="bi bi-whatsapp"></i>
-                                                </a>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4 border-bottom">
-                                            <div class="contact-item d-flex align-items-center px-3 py-3">
-                                                <div class="contact-avatar me-3" style="background: #198754;">AH</div>
-                                                <div class="flex-grow-1">
-                                                    <div class="contact-name">Shk Aliasger Hamid</div>
-                                                    <div class="contact-number">+91 81530 19172</div>
-                                                </div>
-                                                <a href="https://wa.me/918153019172" target="_blank" class="wa-btn ms-2" title="Open WhatsApp">
-                                                    <i class="bi bi-whatsapp"></i>
-                                                </a>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4 border-end">
-                                            <div class="contact-item d-flex align-items-center px-3 py-3">
-                                                <div class="contact-avatar me-3" style="background: #198754;">MA</div>
-                                                <div class="flex-grow-1">
-                                                    <div class="contact-name">M Mansoor Shakir</div>
-                                                    <div class="contact-number">+91 99306 56777</div>
-                                                </div>
-                                                <a href="https://wa.me/919930656777" target="_blank" class="wa-btn ms-2" title="Open WhatsApp">
-                                                    <i class="bi bi-whatsapp"></i>
-                                                </a>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="contact-item d-flex align-items-center px-3 py-3">
-                                                <div class="contact-avatar me-3" style="background: #198754;">MO</div>
-                                                <div class="flex-grow-1">
-                                                    <div class="contact-name">M Moiz Nasir</div>
-                                                    <div class="contact-number">+91 99796 60952</div>
-                                                </div>
-                                                <a href="https://wa.me/919979660952" target="_blank" class="wa-btn ms-2" title="Open WhatsApp">
-                                                    <i class="bi bi-whatsapp"></i>
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
+        <?php endforeach; ?>
+    </div>
 </main>
 
-<?php require_once(__DIR__ . '/inc/footer.php'); ?>
+<?php 
+require_once __DIR__ . '/inc/footer.php'; 
+require_once __DIR__ . '/inc/js-block.php'; 
+?>

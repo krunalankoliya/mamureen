@@ -1,269 +1,195 @@
 <?php
-    $current_page = 'dashboard';
-    require_once __DIR__ . '/session.php';
-    if ($is_sub_admin) {
-    header('Location: ' . MODULE_PATH . 'admin/bqi_dashboard.php');
-    exit();
-    }
-    require_once __DIR__ . '/inc/header.php';
+$current_page = 'dashboard';
+require_once __DIR__ . '/session.php';
+require_once __DIR__ . '/inc/header.php';
 
-    function getCounts($query, $mysqli)
-    {
-    $result = mysqli_query($mysqli, $query);
-    $res    = $result->fetch_assoc();
-    return ($res && $res['count']) ? (int) $res['count'] : 0;
-    }
+// Data fetching via the new DB Class
+$mauze_its_subquery = "SELECT its_id FROM users_mamureen WHERE miqaat_mauze = ?";
 
-    $mauze_its_subquery = "(SELECT `its_id` FROM `users_mamureen` WHERE `miqaat_mauze` = '$mauze')";
+// Stats
+$stats = [
+    'parties' => $db->count("SELECT COUNT(*) FROM bqi_zakereen_parties WHERE is_active = 1 AND added_its IN ($mauze_its_subquery)", [$mauze]),
+    'farzando' => $db->count("SELECT COUNT(*) FROM bqi_zakereen_farzando WHERE added_its IN ($mauze_its_subquery)", [$mauze]),
+    'training' => $db->count("SELECT COUNT(*) FROM bqi_training_sessions WHERE user_its IN ($mauze_its_subquery) AND program_type LIKE '%Zakereen Farzando Training%'", [$mauze]),
+    'social' => $db->count("SELECT COUNT(*) FROM bqi_training_sessions WHERE user_its IN ($mauze_its_subquery) AND program_type LIKE '%Social Media Awareness%'", [$mauze]),
+    'challenges' => $db->count("SELECT COUNT(*) FROM bqi_challenges_solutions WHERE added_its IN ($mauze_its_subquery)", [$mauze]),
+    'noteworthy' => $db->count("SELECT COUNT(*) FROM bqi_noteworthy_experiences WHERE added_its IN ($mauze_its_subquery)", [$mauze]),
+];
 
-    // Section 1: Zakereen
-    $parties_count           = getCounts("SELECT COUNT(*) `count` FROM `bqi_zakereen_parties` WHERE `is_active` = 1 AND `added_its` IN $mauze_its_subquery", $mysqli);
-    $farzando_count          = getCounts("SELECT COUNT(*) `count` FROM `bqi_zakereen_farzando` WHERE `added_its` IN $mauze_its_subquery", $mysqli);
-    $training_farzando_count = getCounts("SELECT COUNT(*) `count` FROM `bqi_training_sessions` WHERE `user_its` IN $mauze_its_subquery AND `program_type` LIKE '%Zakereen Farzando Training%'", $mysqli);
-
-    // Section 2: Social Media
-    // $social_media_count = getCounts("SELECT COUNT(*) `count` FROM `meeting_and_photo_reports` WHERE `jamaat` = '$mauze' AND `category` LIKE 'Social Media Awareness%'", $mysqli);
-    $social_media_count = getCounts("SELECT COUNT(*) `count` FROM `bqi_training_sessions` WHERE `user_its` IN $mauze_its_subquery AND `program_type` LIKE '%Social Media Awareness%'", $mysqli);
-    $one_on_one_count   = getCounts("SELECT COUNT(*) `count` FROM `bqi_individual_tafheem` WHERE `added_its` IN $mauze_its_subquery AND `type` LIKE '%Social Media Awareness%'", $mysqli);
-
-    // Section 3: Shaadi Umoor
-    $shaadi_baramij_count     = getCounts("SELECT COUNT(*) `count` FROM `bqi_training_sessions` WHERE `user_its` IN $mauze_its_subquery AND `program_type` LIKE '%Shaadi Tafheem%'", $mysqli);
-    $individual_tafheem_count = getCounts("SELECT COUNT(*) `count` FROM `bqi_individual_tafheem` WHERE `added_its` IN $mauze_its_subquery AND `type` LIKE '%Shaadi Tafheem%'", $mysqli);
-
-    // Section 4
-    $challenges_count = getCounts("SELECT COUNT(*) `count` FROM `bqi_challenges_solutions` WHERE `added_its` IN $mauze_its_subquery", $mysqli);
-    $noteworthy_count = getCounts("SELECT COUNT(*) `count` FROM `bqi_noteworthy_experiences` WHERE `added_its` IN $mauze_its_subquery", $mysqli);
-    $khidmat_count    = getCounts("SELECT COUNT(*) `count` FROM `bqi_khidmat_preparations` WHERE `added_its` IN $mauze_its_subquery", $mysqli);
+// Fetch Aamil Info from Core DB
+$aamil = [];
+if (isset($core_pdo)) {
+    $stmt = $core_pdo->prepare("SELECT u.full_name_en, j.primary_email, j.aamil_masool_its_id FROM its_jamaat_master j LEFT JOIN user u ON j.aamil_masool_its_id = u.its_id WHERE j.jamaat = ?");
+    $stmt->execute([$mauze]);
+    $aamil = $stmt->fetch() ?: [];
+}
 ?>
 
-<main id="main" class="main bqi-1447">
-    <div class="pagetitle">
-        <h1>Dashboard</h1>
+<main id="main" class="main main-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1">Dashboard Overview</h1>
+            <p class="text-muted small mb-0">Welcome back, <?= h($fullname) ?>. Here is what's happening today.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                <i class="bi bi-download me-1"></i> Export Data
+            </button>
+            <a href="raise-ticket.php" class="btn btn-primary btn-sm rounded-pill px-3">
+                <i class="bi bi-plus-lg me-1"></i> New Entry
+            </a>
+        </div>
     </div>
 
-    <section class="section dashboard">
-        <div class="row">
-
-            <!-- Left side columns -->
-            <div class="col-lg-8">
-
-                <!-- SECTION 1: ZAKEREEN -->
-                <div class="card mb-3">
-                    <div class="card-body pb-0">
-                        <h5 class="card-title pb-0 mb-2"><i class="bi bi-people-fill text-primary"></i> Zakereen</h5>
-                        <div class="row align-items-stretch">
-                            <div class="col-md-4 mb-3">
-                                <a href="<?php echo MODULE_PATH ?>zakereen_parties.php" class="text-decoration-none d-block h-100">
-                                    <div class="d-flex align-items-center p-3 rounded h-100" style="background: linear-gradient(135deg, #e8f0fe 0%, #d2e3fc 100%); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: #4154f1; flex-shrink: 0;">
-                                            <i class="bi bi-flag-fill text-white" style="font-size: 20px;"></i>
-                                        </div>
-                                        <div class="ps-3">
-                                            <h6 class="mb-0 text-dark" style="font-size: 22px; font-weight: 700;"><?php echo $parties_count ?></h6>
-                                            <small class="text-muted">Zakereen Parties</small>
-                                        </div>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <a href="<?php echo MODULE_PATH ?>zakereen_farzando.php" class="text-decoration-none d-block h-100">
-                                    <div class="d-flex align-items-center p-3 rounded h-100" style="background: linear-gradient(135deg, #e8f0fe 0%, #d2e3fc 100%); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: #4154f1; flex-shrink: 0;">
-                                            <i class="bi bi-person-lines-fill text-white" style="font-size: 20px;"></i>
-                                        </div>
-                                        <div class="ps-3">
-                                            <h6 class="mb-0 text-dark" style="font-size: 22px; font-weight: 700;"><?php echo $farzando_count ?></h6>
-                                            <small class="text-muted">Zakereen Farzando</small>
-                                        </div>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <a href="<?php echo MODULE_PATH ?>training_sessions.php" class="text-decoration-none d-block h-100">
-                                    <div class="d-flex align-items-center p-3 rounded h-100" style="background: linear-gradient(135deg, #e8f0fe 0%, #d2e3fc 100%); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: #4154f1; flex-shrink: 0;">
-                                            <i class="bi bi-mortarboard-fill text-white" style="font-size: 20px;"></i>
-                                        </div>
-                                        <div class="ps-3">
-                                            <h6 class="mb-0 text-dark" style="font-size: 22px; font-weight: 700;"><?php echo $training_farzando_count ?></h6>
-                                            <small class="text-muted">Training Sessions</small>
-                                        </div>
-                                    </div>
-                                </a>
-                            </div>
-                        </div>
+    <div class="row g-4">
+        <!-- Section: Key Metrics -->
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="stat-box">
+                    <div class="stat-icon-wrapper bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div>
+                        <div class="stat-value"><?= $stats['parties'] ?></div>
+                        <div class="stat-label">Zakereen Parties</div>
                     </div>
                 </div>
-
-                <!-- SECTION 2: SOCIAL MEDIA -->
-                <div class="card mb-3">
-                    <div class="card-body pb-0">
-                        <h5 class="card-title pb-0 mb-2"><i class="bi bi-phone-fill text-success"></i> Social Media</h5>
-                        <div class="row align-items-stretch">
-                            <div class="col-md-4 mb-3">
-                                <a href="<?php echo MODULE_PATH ?>training_sessions.php" class="text-decoration-none d-block h-100">
-                                    <div class="d-flex align-items-center p-3 rounded h-100" style="background: linear-gradient(135deg, #e6f4ea 0%, #ceead6 100%); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: #2eca6a; flex-shrink: 0;">
-                                            <i class="bi bi-broadcast text-white" style="font-size: 20px;"></i>
-                                        </div>
-                                        <div class="ps-3">
-                                            <h6 class="mb-0 text-dark" style="font-size: 22px; font-weight: 700;"><?php echo $social_media_count ?></h6>
-                                            <small class="text-muted">Social Media Baramij</small>
-                                        </div>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <a href="<?php echo MODULE_PATH ?>individual_tafheem.php" class="text-decoration-none d-block h-100">
-                                    <div class="d-flex align-items-center p-3 rounded h-100" style="background: linear-gradient(135deg, #e6f4ea 0%, #ceead6 100%); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: #2eca6a; flex-shrink: 0;">
-                                            <i class="bi bi-chat-dots-fill text-white" style="font-size: 20px;"></i>
-                                        </div>
-                                        <div class="ps-3">
-                                            <h6 class="mb-0 text-dark" style="font-size: 22px; font-weight: 700;"><?php echo $one_on_one_count ?></h6>
-                                            <small class="text-muted">One on One Counseling</small>
-                                        </div>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <a href="<?php echo MODULE_PATH ?>maaraz.php" class="text-decoration-none d-block h-100">
-                                    <div class="d-flex align-items-center p-3 rounded h-100" style="background: linear-gradient(135deg, #e6f4ea 0%, #ceead6 100%); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: #2eca6a; flex-shrink: 0;">
-                                            <i class="bi bi-hourglass-split text-white" style="font-size: 20px;"></i>
-                                        </div>
-                                        <div class="ps-3">
-                                            <span class="badge bg-warning text-dark" style="font-size: 13px;">Pending</span>
-                                            <br><small class="text-muted">Ma'araz</small>
-                                        </div>
-                                    </div>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- SECTION 3: SHAADI UMOOR -->
-                <div class="card mb-3">
-                    <div class="card-body pb-0">
-                        <h5 class="card-title pb-0 mb-2">Shaadi Umoor</h5>
-                        <div class="row align-items-stretch">
-                            <div class="col-md-6 mb-3">
-                                <a href="<?php echo MODULE_PATH ?>training_sessions.php" class="text-decoration-none d-block h-100">
-                                    <div class="d-flex align-items-center p-3 rounded h-100" style="background: linear-gradient(135deg, #fce8e6 0%, #f8d0cc 100%); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: #ff6384; flex-shrink: 0;">
-                                            <i class="bi bi-calendar-event-fill text-white" style="font-size: 20px;"></i>
-                                        </div>
-                                        <div class="ps-3">
-                                            <h6 class="mb-0 text-dark" style="font-size: 22px; font-weight: 700;"><?php echo $shaadi_baramij_count ?></h6>
-                                            <small class="text-muted">Shaadi Layak Farzando Baramij</small>
-                                        </div>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <a href="<?php echo MODULE_PATH ?>individual_tafheem.php" class="text-decoration-none d-block h-100">
-                                    <div class="d-flex align-items-center p-3 rounded h-100" style="background: linear-gradient(135deg, #fce8e6 0%, #f8d0cc 100%); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: #ff6384; flex-shrink: 0;">
-                                            <i class="bi bi-person-check-fill text-white" style="font-size: 20px;"></i>
-                                        </div>
-                                        <div class="ps-3">
-                                            <h6 class="mb-0 text-dark" style="font-size: 22px; font-weight: 700;"><?php echo $individual_tafheem_count ?></h6>
-                                            <small class="text-muted">Individual Tafheem</small>
-                                        </div>
-                                    </div>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- SECTION 4: REPORTS -->
-                <div class="card mb-3">
-                    <div class="card-body pb-0">
-                        <h5 class="card-title pb-0 mb-2"><i class="bi bi-clipboard-data-fill text-warning"></i> Reports</h5>
-                        <div class="row align-items-stretch">
-                            <div class="col-md-4 mb-3">
-                                <a href="<?php echo MODULE_PATH ?>challenges_solutions.php" class="text-decoration-none d-block h-100">
-                                    <div class="d-flex align-items-center p-3 rounded h-100" style="background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: #ff9f43; flex-shrink: 0;">
-                                            <i class="bi bi-exclamation-triangle-fill text-white" style="font-size: 20px;"></i>
-                                        </div>
-                                        <div class="ps-3">
-                                            <h6 class="mb-0 text-dark" style="font-size: 22px; font-weight: 700;"><?php echo $challenges_count ?></h6>
-                                            <small class="text-muted">Challenges</small>
-                                        </div>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <a href="<?php echo MODULE_PATH ?>noteworthy_experiences.php" class="text-decoration-none d-block h-100">
-                                    <div class="d-flex align-items-center p-3 rounded h-100" style="background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: #ff9f43; flex-shrink: 0;">
-                                            <i class="bi bi-star-fill text-white" style="font-size: 20px;"></i>
-                                        </div>
-                                        <div class="ps-3">
-                                            <h6 class="mb-0 text-dark" style="font-size: 22px; font-weight: 700;"><?php echo $noteworthy_count ?></h6>
-                                            <small class="text-muted">Noteworthy</small>
-                                        </div>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <a href="<?php echo MODULE_PATH ?>khidmat_preparations.php" class="text-decoration-none d-block h-100">
-                                    <div class="d-flex align-items-center p-3 rounded h-100" style="background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: #ff9f43; flex-shrink: 0;">
-                                            <i class="bi bi-tools text-white" style="font-size: 20px;"></i>
-                                        </div>
-                                        <div class="ps-3">
-                                            <h6 class="mb-0 text-dark" style="font-size: 22px; font-weight: 700;"><?php echo $khidmat_count ?></h6>
-                                            <small class="text-muted">Khidmat Preps</small>
-                                        </div>
-                                    </div>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div><!-- End Left side columns -->
-
-            <!-- Right side columns -->
-            <div class="col-lg-4">
-
-                <?php require_once __DIR__ . '/inc/downloads.php'; ?>
-
-                <?php
-                    $mauze = $rowdata['miqaat_mauze'];
-                    $query = "SELECT `u`.`full_name_en`,`j`.`primary_email`,`j`.`aamil_masool_its_id` FROM `its_jamaat_master` `j`
-                      LEFT JOIN user `u` ON `j`.`aamil_masool_its_id` = `u`.`its_id`
-                      WHERE `j`.`jamaat` = '$mauze'";
-                    $result = mysqli_query($coremysqli, $query);
-                    $row    = $result->fetch_all(MYSQLI_ASSOC);
-                ?>
-                <!-- Aamil Saheb Info card -->
-                <div class="card">
-                    <div class="card-header">Aamil Saheb Info</div>
-                    <div class="card-body text-center">
-                        <h5 class="card-title"><?php echo $row[0]['full_name_en'] ?></h5>
-                        <?php
-                            if ($row[0]['aamil_masool_its_id']) {
-                                echo '<img src="' . user_photo_url($row[0]['aamil_masool_its_id']) . '" style="width:80px" />';
-                            } else {
-                                echo '<img src="https://www.talabulilm.com/placeholder_image/placeholder.png" style="width:80px" />';
-                            }
-                        ?>
-                    </div>
-                    <div class="card-footer">
-                        <p>Email: <a href="mailto:<?php echo $row[0]['primary_email'] ?>"><?php echo $row[0]['primary_email'] ?></a></p>
-                    </div>
-                </div><!-- End Aamil Saheb Info card -->
-
-            </div><!-- End Right side columns -->
-
+            </div>
         </div>
-    </section>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="stat-box">
+                    <div class="stat-icon-wrapper bg-success bg-opacity-10 text-success">
+                        <i class="bi bi-person-badge"></i>
+                    </div>
+                    <div>
+                        <div class="stat-value"><?= $stats['farzando'] ?></div>
+                        <div class="stat-label">Active Farzando</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="stat-box">
+                    <div class="stat-icon-wrapper bg-warning bg-opacity-10 text-warning">
+                        <i class="bi bi-mortarboard"></i>
+                    </div>
+                    <div>
+                        <div class="stat-value"><?= $stats['training'] ?></div>
+                        <div class="stat-label">Sessions Held</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="stat-box">
+                    <div class="stat-icon-wrapper bg-info bg-opacity-10 text-info">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </div>
+                    <div>
+                        <div class="stat-value"><?= $stats['social'] ?></div>
+                        <div class="stat-label">Social Impact</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Performance Metrics</span>
+                    <i class="bi bi-three-dots text-muted"></i>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="p-4 rounded-4 bg-light bg-opacity-50 border border-dashed text-center">
+                                <h2 class="fw-bold mb-1"><?= $stats['challenges'] ?></h2>
+                                <p class="text-muted small mb-0">Challenges Reported</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-4 rounded-4 bg-light bg-opacity-50 border border-dashed text-center">
+                                <h2 class="fw-bold mb-1 text-primary"><?= $stats['noteworthy'] ?></h2>
+                                <p class="text-muted small mb-0">Noteworthy Experiences</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Custom Navigation Blocks -->
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="card h-100 p-4 border-0 bg-primary text-white" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);">
+                        <h5 class="fw-bold mb-3">Quick Submission</h5>
+                        <p class="small opacity-75 mb-4">Quickly register a new Zakereen party or farzando record in just few clicks.</p>
+                        <div class="mt-auto">
+                            <a href="zakereen_parties.php" class="btn btn-light btn-sm rounded-pill px-4 fw-bold text-primary">Get Started</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100 p-4">
+                        <h5 class="fw-bold mb-3">Resources</h5>
+                        <p class="text-muted small mb-4">Download the latest documents, guidelines, and resource kits for this miqaat.</p>
+                        <div class="mt-auto">
+                            <a href="resources.php" class="btn btn-outline-primary btn-sm rounded-pill px-4 fw-bold">View Library</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar / Right Info Column -->
+        <div class="col-lg-4">
+            <!-- Aamil Saheb Profile Card -->
+            <div class="card text-center p-4 border-0 bg-white mb-4">
+                <div class="position-relative d-inline-block mx-auto mb-3">
+                    <?php if (!empty($aamil['aamil_masool_its_id'])): ?>
+                        <img src="<?= user_photo_url($aamil['aamil_masool_its_id']) ?>" class="rounded-circle shadow-sm" style="width: 100px; height: 100px; object-fit: cover; border: 3px solid #f8fafc;">
+                    <?php else: ?>
+                        <div class="rounded-circle bg-light d-flex align-items-center justify-content-center shadow-sm" style="width: 100px; height: 100px;">
+                            <i class="bi bi-person text-secondary h1 mb-0"></i>
+                        </div>
+                    <?php endif; ?>
+                    <span class="position-absolute bottom-0 end-0 bg-success border border-white border-2 rounded-circle" style="width: 18px; height: 18px;"></span>
+                </div>
+                <h5 class="fw-bold mb-0"><?= h($aamil['full_name_en'] ?? 'N/A') ?></h5>
+                <p class="text-muted small mb-3">Aamil Saheb / Masool</p>
+                <a href="mailto:<?= h($aamil['primary_email'] ?? '') ?>" class="btn btn-accent btn-sm rounded-pill w-100 border py-2">
+                    <i class="bi bi-envelope me-2"></i>Contact
+                </a>
+            </div>
+
+            <!-- Helpful Links -->
+            <div class="card p-4">
+                <h6 class="fw-bold mb-3">Recent Downloads</h6>
+                <div class="d-flex flex-column gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-light p-2 rounded text-danger"><i class="bi bi-file-pdf h5 mb-0"></i></div>
+                        <div>
+                            <div class="fw-bold small">Guidelines 1447.pdf</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">2.4 MB • 2 days ago</div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-light p-2 rounded text-success"><i class="bi bi-file-excel h5 mb-0"></i></div>
+                        <div>
+                            <div class="fw-bold small">Format_Report.xlsx</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">1.1 MB • 5 days ago</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </main>
 
-<?php require_once __DIR__ . '/inc/footer.php'; ?>
-<?php require_once __DIR__ . '/inc/js-block.php'; ?>
+<?php 
+require_once __DIR__ . '/inc/footer.php'; 
+require_once __DIR__ . '/inc/js-block.php'; 
+?>

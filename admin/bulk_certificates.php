@@ -94,7 +94,7 @@ if (empty($attendees)) {
         $certificateImage = ($gender === 'F') ? 'certificate_female.png' : 'certificate_male.png';
         ?>
         <div class="cert-container">
-            <img class="img-cert" src="https://www.talabulilm.com/mamureen/certificates/<?= $certificateImage ?>" alt="Certificate"/>
+            <img class="img-cert" src="<?php echo MODULE_PATH ?>certificates/<?= $certificateImage ?>" alt="Certificate"/>
             <div class="cert-name"><?= $name ?></div>
             <div class="cert-date"><?= $date ?></div>
             <div class="cert-its"><?= $jamaat .' - '. $its_id ?></div>

@@ -1,132 +1,117 @@
 <?php
-require_once(__DIR__ . '/session.php');
-
 $current_page = 'resources';
-require_once(__DIR__ . '/inc/header.php');
-$its_id = (int)$_SESSION[USER_ITS];
+require_once __DIR__ . '/session.php';
+require_once __DIR__ . '/inc/header.php';
 
-$query = "SELECT 
-    my.id,
-    my.upload_date,
-    my.title,
-    my.file_name,
-    my.dot_color,
-    dl.its_id,
-    dl.id AS download_log_id,
-    dl.download_id,
-    dl.download_date,
-    CASE 
-        WHEN dl.id IS NOT NULL THEN 1 
-        ELSE 0 
-    END AS is_downloaded
-FROM my_downloads my
-LEFT JOIN download_log dl 
-    ON my.id = dl.download_id 
-    AND dl.its_id = $its_id GROUP BY `my`.`id` ORDER BY `my`.`id` DESC";
-$result = mysqli_query($mysqli, $query);
-$data = $result->fetch_all(MYSQLI_ASSOC);
+// Fetch Downloads with check for user logs
+$downloads = $db->fetchAll("
+    SELECT my.*, 
+    (SELECT dl.download_date FROM download_log dl WHERE dl.download_id = my.id AND dl.its_id = ? LIMIT 1) as download_date
+    FROM my_downloads my 
+    ORDER BY my.id DESC", [$user_its]);
 
-$linkQuery = "SELECT * FROM `my_links` ORDER BY `upload_date` DESC";
-$linkResult = mysqli_query($mysqli, $linkQuery);
-$linkData = $linkResult->fetch_all(MYSQLI_ASSOC);
-
+$links = $db->fetchAll("SELECT * FROM `my_links` ORDER BY `upload_date` DESC");
 ?>
 
-<main id="main" class="main">
-
-    <div class="pagetitle">
-        <h1>Resources and Downloadables</h1>
-    </div><!-- End Page Title -->
-
-    <section class="section dashboard">
-        <div class="row">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">Downloads</h5>
-                        <div class="activity">
-                            <?php
-                            if (empty($data)) {
-                                echo '<p>No data available.</p>';
-                            } else {
-                                foreach ($data as $e_id => $resource) {
-                                    if ($resource['is_downloaded'] == 1) {
-                                        $display_date = date('d/m/y', strtotime($resource['download_date']));
-                                        $download_text = "downloaded at " . $display_date;
-                                         $title_class = ""; // Normal text for downloaded files
-                                    } else {
-                                        $display_date = date('d/m/y', strtotime($resource['upload_date']));
-                                        $download_text = "";
-                                         $title_class = "fw-bold"; 
-                                    }
-                        
-                                    $current_date = time();
-                                    $upload_date = ($current_date - strtotime($display_date)) < (48 * 60 * 60) ? '<span class="badge bg-success">New</span>' : $display_date;
-                            ?>
-                                    <div class="activity-item d-flex">
-                                        <div class="activite-label"><?= $upload_date ?></div>
-                                        <i class='bi bi-circle-fill activity-badge <?= $resource['dot_color'] ?> align-self-start'></i>
-                                        <div class="activity-content">
-                                            <a href="download_log.php?id=<?= $resource['id'] ?>" class="<?= $title_class ?>">
-                                                <?= $resource['title'] ?> <?= $download_text ?>
-                                            </a>
-                                        </div>
-                                    </div>
-                            <?php
-                                }
-                            }
-                            ?>
-                        </div>
-
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6">
-                <div class="row">
-                    <div class="col-md-12">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="card-title">Links</h5>
-                                <ul class="list-group">
-                                    <?php
-                                        if (empty($linkData)) {
-                                            echo '<p>No data available.</p>';
-                                        } else {
-                                            foreach ($linkData as $e_id => $link) {
-
-                                        ?>
-                                            <li class="list-group-item"><i class="bx bx-link text-primary"></i> <a target="_blank" href="<?=$link['link']?>"><?=$link['title']?></a></li>
-
-                                        <?php
-                                            }
-                                        }
-                                        ?>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!--<div class="col-md-12">-->
-                <!--    <div class="card">-->
-                <!--        <div class="card-body">-->
-                <!--            <h5 class="card-title">Workshop Video Links</h5>-->
-                <!--            <ul class="list-group">-->
-                <!--                <li class="list-group-item"><i class="bx bxs-video text-primary"></i> <a target="_blank" href="https://www.youtube.com/watch?v=wNpNV88SdOo">BQI Orientation Day 1 (Monday)</a></li>-->
-                <!--                <li class="list-group-item"><i class="bx bxs-video text-primary"></i> <a target="_blank" href="https://www.youtube.com/watch?v=gOB5ENPIuxc">B.Q.I Khidmat Orientation 1445H - Session Two</a></li>-->
-
-                <!--            </ul>-->
-                <!--        </div>-->
-                <!--    </div>-->
-                <!--</div>-->
-            </div>
-
-
+<main id="main" class="main main-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1">Knowledge Center</h1>
+            <p class="text-muted small mb-0">Access official documents, guidelines, and important resource links.</p>
         </div>
-    </section>
+    </div>
 
-</main><!-- End #main -->
+    <div class="row g-4">
+        <!-- Downloads Column -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0">Available Downloads</h5>
+                    <i class="bi bi-cloud-download text-primary h5 mb-0"></i>
+                </div>
+                <div class="card-body px-0">
+                    <div class="list-group list-group-flush">
+                        <?php if (empty($downloads)): ?>
+                            <div class="p-5 text-center text-muted">No downloads available at this time.</div>
+                        <?php else: ?>
+                            <?php foreach ($downloads as $res): 
+                                $is_new = (time() - strtotime($res['upload_date'])) < (72 * 3600);
+                                $is_downloaded = !empty($res['download_date']);
+                            ?>
+                                <div class="list-group-item px-4 py-3 border-0 border-bottom">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="bg-light p-2 rounded-3 text-primary">
+                                            <i class="bi bi-file-earmark-text h4 mb-0"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <h6 class="fw-bold mb-0 text-dark"><?= h($res['title']) ?></h6>
+                                                <?php if($is_new): ?>
+                                                    <span class="badge bg-success bg-opacity-10 text-success rounded-pill" style="font-size: 0.6rem;">NEW</span>
+                                                <?php endif; ?>
+                                            </div>
+                                            <small class="text-muted">
+                                                Added: <?= date('d M, Y', strtotime($res['upload_date'])) ?>
+                                                <?php if($is_downloaded): ?>
+                                                    • <span class="text-success"><i class="bi bi-check-all"></i> Downloaded on <?= date('d/m/y', strtotime($res['download_date'])) ?></span>
+                                                <?php endif; ?>
+                                            </small>
+                                        </div>
+                                        <a href="download_log.php?id=<?= $res['id'] ?>" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-<?php
-require_once(__DIR__ . '/inc/footer.php');
+        <!-- Links Column -->
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0">External Links</h5>
+                    <i class="bi bi-link-45deg text-primary h5 mb-0"></i>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <div class="d-flex flex-column gap-3">
+                        <?php if (empty($links)): ?>
+                            <p class="text-muted small text-center">No links registered.</p>
+                        <?php else: ?>
+                            <?php foreach ($links as $link): ?>
+                                <a href="<?= h($link['link']) ?>" target="_blank" class="d-flex align-items-center gap-3 p-3 rounded-4 bg-light text-decoration-none border hover-shadow transition-all">
+                                    <div class="bg-white p-2 rounded shadow-sm text-primary">
+                                        <i class="bi bi-box-arrow-up-right"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="fw-bold text-dark small"><?= h($link['title']) ?></div>
+                                        <div class="text-muted truncate" style="font-size: 0.65rem; max-width: 200px;"><?= h($link['link']) ?></div>
+                                    </div>
+                                    <i class="bi bi-chevron-right text-muted small"></i>
+                                </a>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card border-0 bg-primary text-white p-4 shadow-sm" style="background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="bg-white bg-opacity-20 p-2 rounded-3">
+                        <i class="bi bi-info-circle h4 mb-0"></i>
+                    </div>
+                    <h6 class="fw-bold mb-0">Usage Guidance</h6>
+                </div>
+                <p class="small opacity-75 mb-0">All resources are intended for official use. Please ensure you have the latest version of guidelines before submitting reports.</p>
+            </div>
+        </div>
+    </div>
+</main>
+
+<?php 
+require_once __DIR__ . '/inc/footer.php'; 
+require_once __DIR__ . '/inc/js-block.php'; 
 ?>

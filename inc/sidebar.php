@@ -1,122 +1,75 @@
 <?php
-    require_once __DIR__ . '/../session.php';
+require_once __DIR__ . '/../session.php';
 
-    // Function to generate a sidebar item
-    function generateSidebarItem($page, $current_page, $icon, $text, $link)
-    {
-    $activeClass = $current_page === $page ? 'collapsed' : '';
-    echo "
-    <li class='nav-item'>
-        <a class='nav-link $activeClass' href='" . MODULE_PATH . "$link'>
-            <i class='$icon'></i>
-            <span>$text</span>
-        </a>
-    </li>";
-    }
+/**
+ * Clean & Modern Sidebar Refactor
+ */
 
-    // Function to generate a collapsible sidebar item with sub-items
-    function generateCollapsibleSidebarItem($pages, $current_page, $icon, $text, $subItems, $name)
-    {
-    $activeClass    = in_array($current_page, $pages) ? 'show' : '';
-    $collapsedClass = in_array($current_page, $pages) ? '' : 'collapsed';
-    echo "
-    <li class='nav-item'>
-        <a class='nav-link $collapsedClass' data-bs-target='#$name-nav' data-bs-toggle='collapse' href='#'>
-            <i class='$icon'></i>
-            <span>$text</span>
-            <i class='bi bi-chevron-down ms-auto'></i>
-        </a>
-        <ul id='$name-nav' class='nav-content collapse $activeClass' data-bs-parent='#sidebar-nav'>";
-    foreach ($subItems as $item) {
-        $activeSubClass = $current_page === $item['page'] ? 'active' : '';
-        echo "
-            <li class='nav-item'>
-                <a class='nav-link $activeSubClass' href='" . MODULE_PATH . "{$item['link']}'>
-                    <i class='{$item['icon']}'></i>
-                    <span>{$item['text']}</span>
-                </a>
-            </li>";
-    }
-    echo "
-        </ul>
-    </li>";
-    }
-
-    // Function to generate admin section (admin only)
-    function generateAdminSection($user_its, $admin_its, $current_page)
-    {
-    if (in_array($user_its, $admin_its)) {
-        $adminPages = [
-            ['page' => 'bqi_dashboard', 'link' => 'admin/bqi_dashboard.php', 'text' => 'BQI Dashboard', 'icon' => 'bi bi-speedometer2'],
-            ['page' => 'manage_admin', 'link' => 'admin/manage_admin.php', 'text' => 'Manage Admin', 'icon' => 'bi bi-circle'],
-            ['page' => 'manage_sub_admin', 'link' => 'admin/manage_sub_admin.php', 'text' => 'Manage Sub Admin', 'icon' => 'bi bi-circle'],
-            ['page' => 'manage_mamureen', 'link' => 'admin/manage_mamureen.php', 'text' => 'Manage Mamureen', 'icon' => 'bi bi-circle'],
-            ['page' => 'Manage_Resources', 'link' => 'admin/manage-download.php', 'text' => 'Manage Resources', 'icon' => 'bi bi-circle'],
-            ['page' => 'Manage_link', 'link' => 'admin/manage-link.php', 'text' => 'Manage Links', 'icon' => 'bi bi-circle'],
-            ['page' => 'manage_google_forms', 'link' => 'admin/manage_google_forms.php', 'text' => 'Manage Feedback Forms', 'icon' => 'bi bi-circle'],
-            ['page' => 'manage_bqi_categories', 'link' => 'admin/manage_bqi_categories.php', 'text' => 'BQI 1447 Categories', 'icon' => 'bi bi-circle'],
-            ['page' => 'manage_tafheem_reasons', 'link' => 'admin/manage_tafheem_reasons.php', 'text' => 'Tafheem Reasons', 'icon' => 'bi bi-circle'],
-            ['page' => 'manage_program_titles', 'link' => 'admin/manage_program_titles.php', 'text' => 'Program Titles', 'icon' => 'bi bi-circle'],
-            //['page' => 'manage_tnc_members', 'link' => 'admin/manage_tnc_members.php', 'text' => 'Manage TNC Members', 'icon' => 'bi bi-people-fill'],
-            ['page' => 'support_tickets_admin', 'link' => 'admin/support_tickets.php', 'text' => 'Manage Queries', 'icon' => 'bi bi-headset'],
-            // ── BQI Reports ──
-            ['page' => 'report_zakereen_parties', 'link' => 'admin/report_zakereen_parties.php', 'text' => 'Report: Zakereen Parties', 'icon' => 'bi bi-bar-chart'],
-            ['page' => 'report_zakereen_farzando', 'link' => 'admin/report_zakereen_farzando.php', 'text' => 'Report: Zakereen Farzando', 'icon' => 'bi bi-bar-chart'],
-            ['page' => 'report_individual_tafheem', 'link' => 'admin/report_individual_tafheem.php', 'text' => 'Report: Individual Tafheem', 'icon' => 'bi bi-bar-chart'],
-            ['page' => 'report_training_sessions', 'link' => 'admin/report_training_sessions.php', 'text' => 'Report: Training Sessions', 'icon' => 'bi bi-bar-chart'],
-            ['page' => 'report_challenges_solutions', 'link' => 'admin/report_challenges_solutions.php', 'text' => 'Report: Challenges & Solutions', 'icon' => 'bi bi-bar-chart'],
-            ['page' => 'report_noteworthy_experiences', 'link' => 'admin/report_noteworthy_experiences.php', 'text' => 'Report: Noteworthy Experiences', 'icon' => 'bi bi-bar-chart'],
-            ['page' => 'report_khidmat_preparations', 'link' => 'admin/report_khidmat_preparations.php', 'text' => 'Report: Khidmat Preparations', 'icon' => 'bi bi-bar-chart'],
-        ];
-        generateCollapsibleSidebarItem(
-            array_column($adminPages, 'page'),
-            $current_page,
-            'bi bi-person',
-            'Admin',
-            $adminPages,
-            'admin'
-        );
-    }
-    }
-
+$navItems = [
+    'General' => [
+        ['page' => 'dashboard', 'icon' => 'bi bi-grid-fill', 'text' => 'Overview', 'link' => 'index.php'],
+        ['page' => 'resources', 'icon' => 'bi bi-folder2-open', 'text' => 'Resources', 'link' => 'resources.php'],
+    ],
+    'Operational' => [
+        ['page' => 'zakereen_parties', 'icon' => 'bi bi-shield-check', 'text' => 'Parties', 'link' => 'zakereen_parties.php'],
+        ['page' => 'zakereen_farzando', 'icon' => 'bi bi-person-plus-fill', 'text' => 'Farzando', 'link' => 'zakereen_farzando.php'],
+        ['page' => 'training_sessions', 'icon' => 'bi bi-journal-text', 'text' => 'Trainings', 'link' => 'training_sessions.php'],
+    ],
+    'Support' => [
+        ['page' => 'important_contacts', 'icon' => 'bi bi-telephone-outbound', 'text' => 'Contacts', 'link' => 'important_contacts.php'],
+        ['page' => 'support_tickets', 'icon' => 'bi bi-chat-left-dots-fill', 'text' => 'Help Desk', 'link' => 'support_tickets.php'],
+    ]
+];
 ?>
 
-<aside id="sidebar" class="sidebar">
+<aside id="sidebar" class="sidebar shadow-sm">
     <ul class="sidebar-nav" id="sidebar-nav">
 
         <?php if ($is_sub_admin): ?>
-            <!-- Sub Admin: BQI Dashboard + all report pages as direct links -->
-            <?php generateSidebarItem('bqi_dashboard', $current_page, 'bi bi-speedometer2', 'BQI Dashboard', 'admin/bqi_dashboard.php'); ?>
-            <?php generateSidebarItem('resources', $current_page, 'bi bi-speedometer2', 'Resources & Downloads', 'resources.php'); ?>
-            <?php generateSidebarItem('report_zakereen_parties', $current_page, 'bi bi-bar-chart', 'Zakereen Parties', 'admin/report_zakereen_parties.php'); ?>
-            <?php generateSidebarItem('report_zakereen_farzando', $current_page, 'bi bi-bar-chart', 'Zakereen Farzando', 'admin/report_zakereen_farzando.php'); ?>
-            <?php generateSidebarItem('report_individual_tafheem', $current_page, 'bi bi-bar-chart', 'Individual Tafheem', 'admin/report_individual_tafheem.php'); ?>
-            <?php generateSidebarItem('report_training_sessions', $current_page, 'bi bi-bar-chart', 'Training Sessions', 'admin/report_training_sessions.php'); ?>
-            <?php generateSidebarItem('report_challenges_solutions', $current_page, 'bi bi-bar-chart', 'Challenges & Solutions', 'admin/report_challenges_solutions.php'); ?>
-            <?php generateSidebarItem('report_noteworthy_experiences', $current_page, 'bi bi-bar-chart', 'Noteworthy Experiences', 'admin/report_noteworthy_experiences.php'); ?>
-            <?php generateSidebarItem('report_khidmat_preparations', $current_page, 'bi bi-bar-chart', 'Khidmat Preparations', 'admin/report_khidmat_preparations.php'); ?>
-            <?php generateSidebarItem('support_tickets_admin', $current_page, 'bi bi-headset', 'Support Queries', 'admin/support_tickets.php'); ?>
-
+            <li class="nav-heading text-uppercase small fw-bold opacity-50 px-4 mb-2">Management</li>
+            <li class="nav-item">
+                <a class="nav-link <?= ($current_page == 'bqi_dashboard') ? 'active' : 'collapsed' ?>" href="<?= MODULE_PATH ?>admin/bqi_dashboard.php">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Admin Hub</span>
+                </a>
+            </li>
         <?php else: ?>
-            <!-- Regular mamureen + Admin pages -->
-            <?php generateSidebarItem('dashboard', $current_page, 'bi bi-grid', 'Dashboard', 'index.php'); ?>
-            <?php generateSidebarItem('resources', $current_page, 'bi bi-download', 'Resources & Downloads', 'resources.php'); ?>
-            <?php generateSidebarItem('zakereen_parties', $current_page, 'bi bi-clipboard-data', 'Zakereen Parties', 'zakereen_parties.php'); ?>
-            <?php generateSidebarItem('zakereen_farzando', $current_page, 'bi bi-clipboard-data', 'Zakereen Farzando', 'zakereen_farzando.php'); ?>
-            <?php generateSidebarItem('individual_tafheem', $current_page, 'bi bi-clipboard-data', 'Individual Tafheem', 'individual_tafheem.php'); ?>
-            <?php generateSidebarItem('training_sessions', $current_page, 'bi bi-clipboard-data', 'Training Sessions', 'training_sessions.php'); ?>
-            <?php generateSidebarItem('challenges_solutions', $current_page, 'bi bi-clipboard-data', 'Challenges / Solutions', 'challenges_solutions.php'); ?>
-            <?php generateSidebarItem('noteworthy_experiences', $current_page, 'bi bi-clipboard-data', 'Noteworthy Experiences', 'noteworthy_experiences.php'); ?>
-            <?php generateSidebarItem('khidmat_preparations', $current_page, 'bi bi-clipboard-data', 'Khidmat Preparations', 'khidmat_preparations.php'); ?>
-            <?php generateSidebarItem('maaraz', $current_page, 'bi bi-clipboard-data', "Ma'araz", 'maaraz.php'); ?>
-            <?php generateSidebarItem('google_form_list', $current_page, 'bi bi-clipboard-data', 'Daily Reports', 'google_form_list.php'); ?>
-            <?php generateSidebarItem('important_contacts', $current_page, 'bi bi-telephone-fill', 'Important Contacts', 'important_contacts.php'); ?>
-            <?php generateSidebarItem('tnc_members_list', $current_page, 'bi bi-people-fill', 'TNC Members', 'tnc_members_list.php'); ?>
-            <?php generateSidebarItem('support_tickets', $current_page, 'bi bi-headset', 'Support Queries', 'support_tickets.php'); ?>
-            <!-- Admin Section (includes BQI Reports) -->
-            <?php generateAdminSection($user_its, $admin_its, $current_page); ?>
+            
+            <?php foreach ($navItems as $heading => $items): ?>
+                <li class="nav-heading text-uppercase small fw-bold opacity-50 px-4 mt-3 mb-2"><?= $heading ?></li>
+                <?php foreach ($items as $item): ?>
+                    <li class="nav-item">
+                        <a class="nav-link <?= ($current_page == $item['page']) ? 'active' : 'collapsed' ?>" href="<?= MODULE_PATH . $item['link'] ?>">
+                            <i class="<?= $item['icon'] ?>"></i>
+                            <span><?= $item['text'] ?></span>
+                        </a>
+                    </li>
+                <?php endforeach; ?>
+            <?php endforeach; ?>
+
+            <?php if ($is_admin): ?>
+                <li class="nav-heading text-uppercase small fw-bold opacity-50 px-4 mt-3 mb-2">System</li>
+                <li class="nav-item">
+                    <a class="nav-link collapsed border-0 bg-transparent" data-bs-target="#admin-nav" data-bs-toggle="collapse" href="#">
+                        <i class="bi bi-gear-fill"></i><span>Settings</span><i class="bi bi-chevron-down ms-auto small"></i>
+                    </a>
+                    <ul id="admin-nav" class="nav-content collapse list-unstyled ps-4 py-2" data-bs-parent="#sidebar-nav">
+                        <li><a href="<?= MODULE_PATH ?>admin/manage_admin.php" class="small text-decoration-none d-block py-1 text-secondary hover-primary"><i class="bi bi-circle small me-2"></i>Admins</a></li>
+                        <li><a href="<?= MODULE_PATH ?>admin/manage_mamureen.php" class="small text-decoration-none d-block py-1 text-secondary hover-primary"><i class="bi bi-circle small me-2"></i>Users</a></li>
+                    </ul>
+                </li>
+            <?php endif; ?>
 
         <?php endif; ?>
 
     </ul>
-</aside><!-- End Sidebar-->
+
+    <!-- Quick Feedback Widget -->
+    <div class="mt-auto px-4 pb-4">
+        <div class="p-3 rounded-4 bg-light border">
+            <h6 class="fw-bold small mb-1">Need help?</h6>
+            <p class="text-muted" style="font-size: 0.75rem;">Contact support if you encounter issues.</p>
+            <a href="support_tickets.php" class="btn btn-primary btn-sm w-100 rounded-pill">Open Ticket</a>
+        </div>
+    </div>
+</aside>

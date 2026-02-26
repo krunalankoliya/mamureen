@@ -1,266 +1,200 @@
 <?php
-    require_once __DIR__ . '/../session.php';
-    $current_page = 'manage_program_titles';
-    require_once __DIR__ . '/../inc/header.php';
+$current_page = 'manage_program_titles';
+require_once __DIR__ . '/../session.php';
+require_once __DIR__ . '/../inc/header.php';
 
-    $program_type_options = [
-        'Zakereen Farzando Training',
-        'Social Media Awareness',
-        'Shaadi Tafheem',
-    ];
+$message = null;
+$program_types = ['Zakereen Farzando Training', 'Social Media Awareness', 'Shaadi Tafheem'];
 
-    // Handle Add
-    if (isset($_POST['add_title'])) {
-        $title_name   = trim(mysqli_real_escape_string($mysqli, $_POST['title_name']));
-        $program_type = mysqli_real_escape_string($mysqli, $_POST['program_type']);
-        $sort_order   = (int) ($_POST['sort_order'] ?? 0);
-
-        if (empty($title_name)) {
-            $message = ['text' => 'Program title name is required.', 'tag' => 'danger'];
-        } elseif (!in_array($program_type, $program_type_options)) {
-            $message = ['text' => 'Invalid program type selected.', 'tag' => 'danger'];
-        } else {
-            $query = "INSERT INTO `bqi_program_titles` (`title_name`, `program_type`, `is_active`, `sort_order`)
-                      VALUES ('$title_name', '$program_type', 1, '$sort_order')";
-            try {
-                mysqli_query($mysqli, $query);
-                $message = ['text' => "Program title '$title_name' added successfully.", 'tag' => 'success'];
-            } catch (\Exception $e) {
-                $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
-            }
-        }
+/**
+ * Logic: Add Title
+ */
+if (isset($_POST['add_title'])) {
+    try {
+        $db->insert('bqi_program_titles', [
+            'title_name' => trim($_POST['title_name']),
+            'program_type' => $_POST['program_type'],
+            'sort_order' => (int)$_POST['sort_order'],
+            'is_active' => 1
+        ]);
+        $message = ['text' => 'Program title added.', 'tag' => 'success'];
+    } catch (Exception $e) {
+        $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
     }
+}
 
-    // Handle Edit
-    if (isset($_POST['update_title'])) {
-        $edit_id      = (int) $_POST['edit_id'];
-        $title_name   = trim(mysqli_real_escape_string($mysqli, $_POST['title_name']));
-        $program_type = mysqli_real_escape_string($mysqli, $_POST['program_type']);
-        $sort_order   = (int) ($_POST['sort_order'] ?? 0);
-
-        if (empty($title_name)) {
-            $message = ['text' => 'Program title name is required.', 'tag' => 'danger'];
-        } elseif (!in_array($program_type, $program_type_options)) {
-            $message = ['text' => 'Invalid program type selected.', 'tag' => 'danger'];
-        } else {
-            $query = "UPDATE `bqi_program_titles`
-                      SET `title_name` = '$title_name', `program_type` = '$program_type', `sort_order` = '$sort_order'
-                      WHERE `id` = '$edit_id'";
-            try {
-                mysqli_query($mysqli, $query);
-                $message = ['text' => 'Program title updated successfully.', 'tag' => 'success'];
-            } catch (\Exception $e) {
-                $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
-            }
-        }
+/**
+ * Logic: Update
+ */
+if (isset($_POST['update_title'])) {
+    try {
+        $db->query("UPDATE bqi_program_titles SET title_name = ?, program_type = ?, sort_order = ? WHERE id = ?", [
+            $_POST['title_name'], $_POST['program_type'], (int)$_POST['sort_order'], (int)$_POST['edit_id']
+        ]);
+        $message = ['text' => 'Title updated.', 'tag' => 'success'];
+    } catch (Exception $e) {
+        $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
     }
+}
 
-    // Handle Toggle Active/Inactive
-    if (isset($_POST['toggle_active'])) {
-        $toggle_id  = (int) $_POST['toggle_id'];
-        $new_status = (int) $_POST['new_status'];
-        $query      = "UPDATE `bqi_program_titles` SET `is_active` = '$new_status' WHERE `id` = '$toggle_id'";
-        try {
-            mysqli_query($mysqli, $query);
-            $message = ['text' => 'Program title status updated.', 'tag' => 'success'];
-        } catch (\Exception $e) {
-            $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
-        }
-    }
+/**
+ * Logic: Status Toggle
+ */
+if (isset($_POST['toggle_active'])) {
+    $db->query("UPDATE bqi_program_titles SET is_active = ? WHERE id = ?", [(int)$_POST['new_status'], (int)$_POST['toggle_id']]);
+}
 
-    // Handle Delete
-    if (isset($_POST['delete_title'])) {
-        $delete_id = (int) $_POST['delete_id'];
-
-        $check = mysqli_query($mysqli, "SELECT COUNT(*) as cnt FROM `meeting_and_photo_reports`
-                                        WHERE FIND_IN_SET('$delete_id', `program_title_ids`) > 0");
-        $row   = $check->fetch_assoc();
-
-        if ($row['cnt'] > 0) {
-            $message = ['text' => 'Cannot delete: this program title is in use. You can deactivate it instead.', 'tag' => 'danger'];
-        } else {
-            $query = "DELETE FROM `bqi_program_titles` WHERE `id` = '$delete_id'";
-            try {
-                mysqli_query($mysqli, $query);
-                $message = ['text' => 'Program title deleted successfully.', 'tag' => 'success'];
-            } catch (\Exception $e) {
-                $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
-            }
-        }
-    }
-
-    // Fetch all titles
-    $query  = "SELECT * FROM `bqi_program_titles` ORDER BY `program_type`, `sort_order`, `title_name`";
-    $result = mysqli_query($mysqli, $query);
-    $titles = $result->fetch_all(MYSQLI_ASSOC);
+$titles = $db->fetchAll("SELECT * FROM bqi_program_titles ORDER BY program_type ASC, sort_order ASC");
 ?>
 
-<main id="main" class="main">
-    <section class="section dashboard">
-        <div class="row">
-            <?php require_once __DIR__ . '/../inc/messages.php'; ?>
-            <div class="card">
-                <div class="card-body" style="overflow-y: auto;">
-                    <h5 class="card-title">Manage Program Titles</h5>
+<main id="main" class="main main-content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1">Program Library</h1>
+            <p class="text-muted small mb-0">Manage the global list of program titles and categories for reporting.</p>
+        </div>
+    </div>
 
-                    <div class="row">
-                        <!-- Add New Title Form -->
-                        <div class="col-md-12">
-                            <div class="card">
-                                <div class="card-body">
-                                    <h5 class="card-title">Add New Program Title</h5>
-                                    <form method="post">
-                                        <div class="row g-2 align-items-end">
-                                            <div class="col-md-4">
-                                                <label for="add_program_type" class="form-label">Program Type</label>
-                                                <select id="add_program_type" name="program_type" class="form-select" required>
-                                                    <option value="" disabled selected>Select Program Type...</option>
-                                                    <?php foreach ($program_type_options as $opt): ?>
-                                                        <option value="<?php echo $opt ?>"><?php echo $opt ?></option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label for="add_title_name" class="form-label">Program Title Name</label>
-                                                <input id="add_title_name" type="text" name="title_name" class="form-control" placeholder="Enter program title" required>
-                                            </div>
-                                            <div class="col-md-1">
-                                                <label for="add_sort_order" class="form-label">Order</label>
-                                                <input id="add_sort_order" type="number" name="sort_order" class="form-control" value="0" min="0">
-                                            </div>
-                                            <div class="col-md-2">
-                                                <button class="btn btn-primary w-100" name="add_title" type="submit">Add Title</button>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
+    <?php if ($message): ?>
+        <div class="alert alert-<?= $message['tag']; ?> border-0 shadow-sm rounded-4 mb-4">
+            <i class="bi bi-info-circle-fill me-2"></i> <?= $message['text']; ?>
+        </div>
+    <?php endif; ?>
 
-                        <!-- Titles Table -->
-                        <div class="col-md-12">
-                            <table class="table table-striped" id="datatable">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Program Type</th>
-                                        <th>Program Title</th>
-                                        <th>Sort Order</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php foreach ($titles as $key => $t): ?>
-                                        <tr>
-                                            <td><?php echo $key + 1 ?></td>
-                                            <td><?php echo htmlspecialchars($t['program_type'] ?? '') ?></td>
-                                            <td><?php echo htmlspecialchars($t['title_name']) ?></td>
-                                            <td><?php echo $t['sort_order'] ?></td>
-                                            <td>
-                                                <form method="post" style="display:inline;">
-                                                    <input type="hidden" name="toggle_id" value="<?php echo $t['id'] ?>">
-                                                    <input type="hidden" name="new_status" value="<?php echo $t['is_active'] ? 0 : 1 ?>">
-                                                    <button type="submit" name="toggle_active" class="btn btn-sm <?php echo $t['is_active'] ? 'btn-success' : 'btn-secondary' ?>">
-                                                        <?php echo $t['is_active'] ? 'Active' : 'Inactive' ?>
-                                                    </button>
-                                                </form>
-                                            </td>
-                                            <td>
-                                                <button type="button" class="btn btn-sm btn-outline-info edit-btn"
-                                                    data-id="<?php echo $t['id'] ?>"
-                                                    data-name="<?php echo htmlspecialchars($t['title_name']) ?>"
-                                                    data-type="<?php echo htmlspecialchars($t['program_type'] ?? '') ?>"
-                                                    data-sort="<?php echo $t['sort_order'] ?>"
-                                                    data-bs-toggle="modal" data-bs-target="#editModal">
-                                                    <i class="bi bi-pencil-square"></i>
-                                                </button>
-                                                <form method="post" style="display:inline;">
-                                                    <input type="hidden" name="delete_id" value="<?php echo $t['id'] ?>">
-                                                    <button type="submit" name="delete_title" class="btn btn-sm btn-outline-danger delete-btn">
-                                                        <i class="bi bi-trash-fill"></i>
-                                                    </button>
-                                                </form>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm p-4">
+                <h5 class="fw-bold mb-3">Define New Title</h5>
+                <form method="post">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Parent Category</label>
+                        <select name="program_type" class="form-select" required>
+                            <option value="">Choose Category...</option>
+                            <?php foreach ($program_types as $pt): ?>
+                                <option value="<?= h($pt) ?>"><?= h($pt) ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Title Name</label>
+                        <input type="text" name="title_name" class="form-control" placeholder="e.g. Basic Orientation" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold">Sort Order</label>
+                        <input type="number" name="sort_order" class="form-control" value="0">
+                    </div>
+                    <button type="submit" name="add_title" class="btn btn-primary w-100 rounded-pill py-2 shadow-sm">
+                        Save to Library
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm overflow-hidden h-100">
+                <div class="card-header bg-white py-3 px-4 border-bottom-0">
+                    <h5 class="fw-bold mb-0">Configured Titles</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0 datatable">
+                        <thead class="bg-light bg-opacity-50">
+                            <tr>
+                                <th class="px-4 py-3 small text-muted text-uppercase border-0">Program Title</th>
+                                <th class="py-3 small text-muted text-uppercase border-0">Category</th>
+                                <th class="py-3 small text-muted text-uppercase border-0">Order</th>
+                                <th class="px-4 py-3 small text-muted text-uppercase border-0 text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($titles as $t): ?>
+                                <tr>
+                                    <td class="px-4 py-3">
+                                        <div class="fw-bold text-dark small"><?= h($t['title_name']) ?></div>
+                                        <?php if($t['is_active']): ?>
+                                            <span class="badge bg-success bg-opacity-10 text-success rounded-pill" style="font-size: 0.6rem;">ACTIVE</span>
+                                        <?php else: ?>
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill" style="font-size: 0.6rem;">DISABLED</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="py-3">
+                                        <span class="small text-muted"><?= h($t['program_type']) ?></span>
+                                    </td>
+                                    <td class="py-3 small"><?= $t['sort_order'] ?></td>
+                                    <td class="px-4 py-3 text-end">
+                                        <div class="d-flex gap-1 justify-content-end">
+                                            <button class="btn btn-light btn-sm rounded-pill edit-btn" 
+                                                    data-id="<?= $t['id'] ?>" data-name="<?= h($t['title_name']) ?>" 
+                                                    data-type="<?= h($t['program_type']) ?>" data-sort="<?= $t['sort_order'] ?>"
+                                                    data-bs-toggle="modal" data-bs-target="#editModal">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <form method="post" class="d-inline">
+                                                <input type="hidden" name="toggle_id" value="<?= $t['id'] ?>">
+                                                <input type="hidden" name="new_status" value="<?= $t['is_active'] ? 0 : 1 ?>">
+                                                <button type="submit" name="toggle_active" class="btn btn-light btn-sm rounded-pill <?= $t['is_active'] ? 'text-warning' : 'text-success' ?>">
+                                                    <i class="bi <?= $t['is_active'] ? 'bi-eye-slash' : 'bi-eye' ?>"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
 </main>
 
 <!-- Edit Modal -->
 <div class="modal fade" id="editModal" tabindex="-1">
     <div class="modal-dialog">
-        <div class="modal-content">
+        <div class="modal-content border-0 shadow-lg rounded-4">
             <form method="post">
-                <div class="modal-header">
-                    <h5 class="modal-title">Edit Program Title</h5>
+                <div class="modal-header border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0">Edit Program Title</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body px-4">
                     <input type="hidden" name="edit_id" id="edit_id">
                     <div class="mb-3">
-                        <label class="form-label">Program Type</label>
+                        <label class="form-label small fw-bold">Title Name</label>
+                        <input type="text" name="title_name" id="edit_name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Program Type</label>
                         <select name="program_type" id="edit_type" class="form-select" required>
-                            <option value="" disabled>Select Program Type...</option>
-                            <?php foreach ($program_type_options as $opt): ?>
-                                <option value="<?php echo $opt ?>"><?php echo $opt ?></option>
+                            <?php foreach ($program_types as $pt): ?>
+                                <option value="<?= h($pt) ?>"><?= h($pt) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Program Title Name</label>
-                        <input type="text" name="title_name" id="edit_name" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Sort Order</label>
-                        <input type="number" name="sort_order" id="edit_sort" class="form-control" min="0">
+                        <label class="form-label small fw-bold">Sort Order</label>
+                        <input type="number" name="sort_order" id="edit_sort" class="form-control">
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" name="update_title" class="btn btn-primary">Update</button>
+                <div class="modal-footer border-0 pb-4 px-4">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" name="update_title" class="btn btn-primary rounded-pill px-4">Save Changes</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<?php require_once __DIR__ . '/../inc/footer.php'; ?>
-</body>
+<?php 
+require_once __DIR__ . '/../inc/footer.php'; 
+require_once __DIR__ . '/../inc/js-block.php'; 
+?>
 <script>
-$(document).ready(function () {
-    // Edit modal populate
-    $('.edit-btn').click(function() {
+$(document).ready(function(){
+    $('.edit-btn').click(function(){
         $('#edit_id').val($(this).data('id'));
         $('#edit_name').val($(this).data('name'));
-        $('#edit_sort').val($(this).data('sort'));
         $('#edit_type').val($(this).data('type'));
-    });
-
-    // Delete confirmation
-    $('.delete-btn').click(function(event) {
-        if (!confirm("Are you sure you want to delete this program title?")) {
-            event.preventDefault();
-        }
-    });
-
-    // DataTable
-    $('#datatable').DataTable({
-        dom: 'Bfrtip',
-        pageLength: 25,
-        buttons: [
-            { extend: 'copy', filename: function(){ return 'program_titles-' + Date.now(); } },
-            { extend: 'csv', filename: function(){ return 'program_titles-' + Date.now(); } },
-            { extend: 'excel', filename: function(){ return 'program_titles-' + Date.now(); } }
-        ]
+        $('#edit_sort').val($(this).data('sort'));
     });
 });
 </script>
-</html>
