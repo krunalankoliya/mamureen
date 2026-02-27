@@ -2,116 +2,265 @@
 $current_page = 'resources';
 require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/inc/header.php';
+$its_id = (int)$_SESSION[USER_ITS];
 
-// Fetch Downloads with check for user logs
-$downloads = $db->fetchAll("
-    SELECT my.*, 
-    (SELECT dl.download_date FROM download_log dl WHERE dl.download_id = my.id AND dl.its_id = ? LIMIT 1) as download_date
-    FROM my_downloads my 
-    ORDER BY my.id DESC", [$user_its]);
+$query = "SELECT
+    my.id,
+    my.upload_date,
+    my.title,
+    my.file_name,
+    my.dot_color,
+    dl.its_id,
+    dl.id AS download_log_id,
+    dl.download_id,
+    dl.download_date,
+    CASE
+        WHEN dl.id IS NOT NULL THEN 1
+        ELSE 0
+    END AS is_downloaded
+FROM my_downloads my
+LEFT JOIN download_log dl
+    ON my.id = dl.download_id
+    AND dl.its_id = $its_id GROUP BY `my`.`id` ORDER BY `my`.`id` DESC";
+$result = mysqli_query($mysqli, $query);
+$data = $result->fetch_all(MYSQLI_ASSOC);
 
-$links = $db->fetchAll("SELECT * FROM `my_links` ORDER BY `upload_date` DESC");
+$linkQuery = "SELECT * FROM `my_links` ORDER BY `upload_date` DESC";
+$linkResult = mysqli_query($mysqli, $linkQuery);
+$linkData = $linkResult->fetch_all(MYSQLI_ASSOC);
+
+// Tab labels per dot_color
+$tabLabels = [
+    'text-success'   => 'Social Media',
+    'text-primary'   => 'Blue',
+    'text-danger'    => 'Shaadi Tafheem',
+    'text-warning'   => 'General',
+    'text-info'      => 'Zakereen',
+    'text-dark'      => 'Dark',
+    'text-secondary' => 'Grey',
+];
+
+// Collect distinct colors that actually exist in the data
+$usedColors = array_unique(array_column($data, 'dot_color'));
+
+// File type badge from extension
+$extBadge = [
+    'pdf'  => 'PDF',
+    'doc'  => 'DOC', 'docx' => 'DOC',
+    'xls'  => 'XLS', 'xlsx' => 'XLS',
+    'ppt'  => 'PPT', 'pptx' => 'PPT',
+    'zip'  => 'ZIP', 'rar'  => 'RAR',
+    'mp4'  => 'MP4', 'avi'  => 'AVI', 'mov' => 'MOV',
+    'mp3'  => 'MP3', 'wav'  => 'WAV',
+    'jpg'  => 'IMG', 'jpeg' => 'IMG', 'png' => 'IMG', 'gif' => 'IMG',
+];
 ?>
 
-<main id="main" class="main main-content">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 fw-bold text-dark mb-1">Knowledge Center</h1>
-            <p class="text-muted small mb-0">Access official documents, guidelines, and important resource links.</p>
-        </div>
+<style>
+/* ── Filter tabs ── */
+.dl-tabs {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #e9ecef;
+    margin-bottom: 1rem;
+}
+.dl-tab {
+    background: none;
+    border: none;
+    padding: 0.3rem 1rem;
+    border-radius: 20px;
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: #555;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+}
+.dl-tab.active { background: #1e3a8a; color: #fff; }
+.dl-tab:hover:not(.active) { background: #eef2ff; color: #1e3a8a; }
+
+/* ── Download item card ── */
+.dl-item {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.75rem 1rem;
+    border: 1px solid #e5e9f0;
+    border-radius: 10px;
+    margin-bottom: 0.55rem;
+    background: #fff;
+    text-decoration: none;
+    color: inherit;
+    transition: box-shadow .15s, border-color .15s;
+}
+.dl-item:hover {
+    box-shadow: 0 3px 14px rgba(0,0,0,0.09);
+    text-decoration: none;
+    color: inherit;
+}
+.dl-item.is-new  { border-color: #1e3a8a; border-width: 1.5px; }
+.dl-item.is-done { opacity: 0.65; }
+
+/* ── File type badge ── */
+.dl-badge {
+    min-width: 48px;
+    height: 48px;
+    background: #eef2ff;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #1e3a8a;
+    letter-spacing: 0.4px;
+    flex-shrink: 0;
+}
+.dl-badge.done-badge { background: #f1f3f5; color: #888; }
+
+/* ── Item text ── */
+.dl-item-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #1e3a8a;
+    margin: 0 0 2px;
+    line-height: 1.3;
+}
+.dl-item.is-done .dl-item-title { color: #555; font-weight: 400; }
+.dl-item-date { font-size: 0.76rem; color: #9aa3b0; margin: 0; }
+
+/* ── Links ── */
+.link-item {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.65rem 0.9rem;
+    border: 1px solid #e5e9f0;
+    border-radius: 10px;
+    margin-bottom: 0.5rem;
+    background: #fff;
+    text-decoration: none;
+    color: #333;
+    font-size: 0.88rem;
+    transition: background .15s, border-color .15s;
+}
+.link-item:hover { background: #eef2ff; border-color: #a5b4fc; color: #1e3a8a; text-decoration: none; }
+.link-item .arr { margin-left: auto; font-size: 0.72rem; color: #adb5bd; }
+</style>
+
+<main id="main" class="main">
+
+    <div class="pagetitle">
+        <h1>Resources and Downloadables</h1>
     </div>
 
-    <div class="row g-4">
-        <!-- Downloads Column -->
-        <div class="col-lg-7">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold mb-0">Available Downloads</h5>
-                    <i class="bi bi-cloud-download text-primary h5 mb-0"></i>
-                </div>
-                <div class="card-body px-0">
-                    <div class="list-group list-group-flush">
-                        <?php if (empty($downloads)): ?>
-                            <div class="p-5 text-center text-muted">No downloads available at this time.</div>
-                        <?php else: ?>
-                            <?php foreach ($downloads as $res): 
-                                $is_new = (time() - strtotime($res['upload_date'])) < (72 * 3600);
-                                $is_downloaded = !empty($res['download_date']);
+    <section class="section dashboard">
+        <div class="row">
+
+            <!-- Downloads -->
+            <div class="col-lg-7">
+                <div class="card">
+                    <div class="card-body">
+
+                        <!-- Header -->
+                        <div class="d-flex justify-content-between align-items-center mb-3 gap-2">
+                            <h5 class="mb-0 fw-bold" style="color:#1e3a8a">Downloads</h5>
+                            <input type="text" id="dlSearch" class="form-control form-control-sm"
+                                   style="max-width:200px;border-radius:20px"
+                                   placeholder="Search resources...">
+                        </div>
+
+                        <!-- Filter tabs -->
+                        <?php if (!empty($usedColors)): ?>
+                        <div class="dl-tabs">
+                            <button class="dl-tab active" data-filter="all">All</button>
+                            <?php foreach ($usedColors as $color):
+                                $label = $tabLabels[$color] ?? ucfirst(str_replace('text-', '', $color));
                             ?>
-                                <div class="list-group-item px-4 py-3 border-0 border-bottom">
-                                    <div class="d-flex align-items-center gap-3">
-                                        <div class="bg-light p-2 rounded-3 text-primary">
-                                            <i class="bi bi-file-earmark-text h4 mb-0"></i>
-                                        </div>
-                                        <div class="flex-grow-1">
-                                            <div class="d-flex align-items-center gap-2">
-                                                <h6 class="fw-bold mb-0 text-dark"><?= h($res['title']) ?></h6>
-                                                <?php if($is_new): ?>
-                                                    <span class="badge bg-success bg-opacity-10 text-success rounded-pill" style="font-size: 0.6rem;">NEW</span>
-                                                <?php endif; ?>
-                                            </div>
-                                            <small class="text-muted">
-                                                Added: <?= date('d M, Y', strtotime($res['upload_date'])) ?>
-                                                <?php if($is_downloaded): ?>
-                                                    • <span class="text-success"><i class="bi bi-check-all"></i> Downloaded on <?= date('d/m/y', strtotime($res['download_date'])) ?></span>
-                                                <?php endif; ?>
-                                            </small>
-                                        </div>
-                                        <a href="download_log.php?id=<?= $res['id'] ?>" class="btn btn-outline-primary btn-sm rounded-pill px-3">
-                                            <i class="bi bi-download"></i>
-                                        </a>
-                                    </div>
-                                </div>
+                            <button class="dl-tab" data-filter="<?= htmlspecialchars($color) ?>">
+                                <?= $label ?>
+                            </button>
                             <?php endforeach; ?>
+                        </div>
                         <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Links Column -->
-        <div class="col-lg-5">
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold mb-0">External Links</h5>
-                    <i class="bi bi-link-45deg text-primary h5 mb-0"></i>
-                </div>
-                <div class="card-body px-4 pb-4">
-                    <div class="d-flex flex-column gap-3">
-                        <?php if (empty($links)): ?>
-                            <p class="text-muted small text-center">No links registered.</p>
+                        <!-- List -->
+                        <div id="dlList">
+                        <?php if (empty($data)): ?>
+                            <p class="text-muted">No downloads available.</p>
                         <?php else: ?>
-                            <?php foreach ($links as $link): ?>
-                                <a href="<?= h($link['link']) ?>" target="_blank" class="d-flex align-items-center gap-3 p-3 rounded-4 bg-light text-decoration-none border hover-shadow transition-all">
-                                    <div class="bg-white p-2 rounded shadow-sm text-primary">
-                                        <i class="bi bi-box-arrow-up-right"></i>
-                                    </div>
-                                    <div class="flex-grow-1">
-                                        <div class="fw-bold text-dark small"><?= h($link['title']) ?></div>
-                                        <div class="text-muted truncate" style="font-size: 0.65rem; max-width: 200px;"><?= h($link['link']) ?></div>
-                                    </div>
-                                    <i class="bi bi-chevron-right text-muted small"></i>
-                                </a>
+                            <?php foreach ($data as $resource):
+                                $isNew        = (time() - strtotime($resource['upload_date'])) < (48 * 60 * 60);
+                                $isDownloaded = $resource['is_downloaded'] == 1;
+                                $ext          = strtolower(pathinfo($resource['file_name'], PATHINFO_EXTENSION));
+                                $badge        = $extBadge[$ext] ?? (strtoupper($ext) ?: 'FILE');
+                                $dotColor     = $resource['dot_color'] ?? '';
+
+                                if ($isDownloaded) {
+                                    $dateLabel = 'Downloaded ' . date('d/m/y', strtotime($resource['download_date']));
+                                    $itemClass = 'is-done';
+                                } elseif ($isNew) {
+                                    $dateLabel = 'Updated: ' . date('d/m/y', strtotime($resource['upload_date'])) . ' &middot; New';
+                                    $itemClass = 'is-new';
+                                } else {
+                                    $dateLabel = 'Updated: ' . date('d/m/y', strtotime($resource['upload_date']));
+                                    $itemClass = 'is-new';
+                                }
+                            ?>
+                            <a href="download_log.php?id=<?= $resource['id'] ?>"
+                               class="dl-item <?= $itemClass ?>"
+                               data-color="<?= htmlspecialchars($dotColor) ?>"
+                               data-title="<?= strtolower(htmlspecialchars($resource['title'])) ?>">
+                                <div class="dl-badge <?= $isDownloaded ? 'done-badge' : '' ?>">
+                                    <?= $badge ?>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <p class="dl-item-title"><?= htmlspecialchars($resource['title']) ?></p>
+                                    <p class="dl-item-date"><?= $dateLabel ?></p>
+                                </div>
+                                <?php if ($isDownloaded): ?>
+                                <i class="bi bi-check2-circle text-success ms-auto flex-shrink-0 fs-5"></i>
+                                <?php else: ?>
+                                <i class="bi bi-download text-primary ms-auto flex-shrink-0 fs-5"></i>
+                                <?php endif; ?>
+                            </a>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                        </div>
+
+                        <p id="dlNoResults" class="text-muted small d-none mt-2">No results found.</p>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Links -->
+            <div class="col-lg-5">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="mb-3 fw-bold" style="color:#1e3a8a">Links</h5>
+                        <?php if (empty($linkData)): ?>
+                            <p class="text-muted">No links available.</p>
+                        <?php else: ?>
+                            <?php foreach ($linkData as $link): ?>
+                            <a target="_blank" href="<?= htmlspecialchars($link['link']) ?>" class="link-item">
+                                <i class="bx bx-link-external text-primary fs-5"></i>
+                                <span><?= htmlspecialchars($link['title']) ?></span>
+                                <i class="bi bi-box-arrow-up-right arr"></i>
+                            </a>
                             <?php endforeach; ?>
                         <?php endif; ?>
                     </div>
                 </div>
             </div>
 
-            <div class="card border-0 bg-primary text-white p-4 shadow-sm" style="background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);">
-                <div class="d-flex align-items-center gap-3 mb-3">
-                    <div class="bg-white bg-opacity-20 p-2 rounded-3">
-                        <i class="bi bi-info-circle h4 mb-0"></i>
-                    </div>
-                    <h6 class="fw-bold mb-0">Usage Guidance</h6>
-                </div>
-                <p class="small opacity-75 mb-0">All resources are intended for official use. Please ensure you have the latest version of guidelines before submitting reports.</p>
-            </div>
         </div>
-    </div>
-</main>
+    </section>
 
-<?php 
-require_once __DIR__ . '/inc/footer.php'; 
-require_once __DIR__ . '/inc/js-block.php'; 
-?>
+</main><!-- End #main -->
+
+<script src="<?= MODULE_PATH ?>assets/js/resources.js"></script>
+
+<?php require_once(__DIR__ . '/inc/footer.php'); ?>

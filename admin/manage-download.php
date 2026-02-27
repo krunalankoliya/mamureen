@@ -60,7 +60,7 @@ $resources = $db->fetchAll("SELECT * FROM `my_downloads` ORDER BY upload_date DE
                     <div class="mb-3">
                         <label class="form-label small fw-bold">File Source</label>
                         <input type="file" name="upload_photo" id="uploadFile" class="form-control" required>
-                        
+
                         <div id="progressContainer" class="mt-3 d-none">
                             <div class="progress rounded-pill shadow-sm" style="height: 10px;">
                                 <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;"></div>
@@ -69,20 +69,25 @@ $resources = $db->fetchAll("SELECT * FROM `my_downloads` ORDER BY upload_date DE
                                 <span><span id="uploadedSize">0</span> MB / <span id="totalSize">0</span> MB</span>
                                 <span id="progressMsg">0%</span>
                             </div>
+                            <div id="uploadMessage" class="mt-2 text-center fw-bold text-primary d-none">
+                                Upload in progress, please wait...
+                            </div>
                         </div>
                     </div>
                     <div class="mb-4">
-                        <label class="form-label small fw-bold">Visual Indicator (Dot)</label>
-                        <select name="dot_color" class="form-select" required>
-                            <option value="text-primary">Blue (Standard)</option>
-                            <option value="text-success">Green (Final)</option>
-                            <option value="text-warning">Yellow (Update)</option>
-                            <option value="text-danger">Red (Important)</option>
+                        <label class="form-label small fw-bold">Category</label>
+                        <select name="dot_color" id="inputState" class="form-select" required>
+                            <option value="" disabled selected hidden>Select category...</option>
+                            <option value="text-success">Social Media</option>
+                            <option value="text-info">Zakereen</option>
+                            <option value="text-danger">Shaadi Tafheem</option>
+                            <option value="text-warning">General</option>
                         </select>
                     </div>
-                    <button type="button" id="submitBtn" class="btn btn-primary w-100 rounded-pill py-2 shadow-sm">
-                        Confirm & Upload
-                    </button>
+                    <div class="d-flex gap-2">
+                        <input type="reset" value="Reset" id="resetBtn" class="btn btn-outline-secondary w-50 rounded-pill" />
+                        <input type="button" value="Upload" id="submitBtn" class="btn btn-primary w-50 rounded-pill" />
+                    </div>
                 </form>
             </div>
         </div>
@@ -93,11 +98,11 @@ $resources = $db->fetchAll("SELECT * FROM `my_downloads` ORDER BY upload_date DE
                     <h5 class="fw-bold mb-0">Published Resources</h5>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 datatable">
+                    <table class="table table-hover align-middle mb-0">
                         <thead class="bg-light bg-opacity-50">
                             <tr>
                                 <th class="px-4 py-3 small text-muted text-uppercase border-0">File Title</th>
-                                <th class="py-3 small text-muted text-uppercase border-0">Stats</th>
+                                <th class="py-3 small text-muted text-uppercase border-0">Date</th>
                                 <th class="px-4 py-3 small text-muted text-uppercase border-0 text-end">Action</th>
                             </tr>
                         </thead>
@@ -137,8 +142,8 @@ $resources = $db->fetchAll("SELECT * FROM `my_downloads` ORDER BY upload_date DE
     </div>
 </main>
 
-<?php 
-require_once __DIR__ . '/../inc/footer.php'; 
-require_once __DIR__ . '/../inc/js-block.php'; 
+<?php
+require_once __DIR__ . '/../inc/footer.php';
+require_once __DIR__ . '/../inc/js-block.php';
 ?>
 <script src="../assets/js/manage-download.js"></script>
