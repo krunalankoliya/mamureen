@@ -1,13 +1,22 @@
 $(document).ready(function () {
   $("#datatable, #datatable1, #datatable2").each(function () {
+    var exportFormat = {
+      body: function (data, row, column, node) {
+        return $(node).data("full") || data;
+      },
+    };
     $(this).DataTable({
       dom: "lBfrtip",
       pageLength: 10,
       lengthMenu: [
         [10, 25, 50, -1],
         [10, 25, 50, "All"],
-      ], // Define the length menu options
-      buttons: ["copy", "csv", "excel"],
+      ],
+      buttons: [
+        { extend: "copy", exportOptions: { format: exportFormat } },
+        { extend: "csv", exportOptions: { format: exportFormat } },
+        { extend: "excel", exportOptions: { format: exportFormat } },
+      ],
     });
   });
 
