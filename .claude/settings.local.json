@@ -29,7 +29,11 @@
       "Bash(ls:*)",
       "Bash(git push:*)",
       "Bash(git:*)",
-      "Bash(head:*)"
+      "Bash(head:*)",
+      "Bash(grep:*)",
+      "Bash(python3:*)",
+      "WebFetch(domain:www.talabulilm.com)",
+      "Bash(powershell:*)"
     ]
   }
 }

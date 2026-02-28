@@ -1,19 +1,17 @@
 <?php
-session_start();
-date_default_timezone_set('Asia/Kolkata');
-require_once __DIR__ . '/conn.php';
+    session_start();
+    date_default_timezone_set('Asia/Kolkata');
+    require_once 'conn.php';
 
-/**
- * Handle Session and Cookie Authentication
- */
-if (!isset($_SESSION[USER_LOGGED_IN])) {
+    // if user is not logged in then check cookie, if found then log him in
+    if (! isset($_SESSION[USER_LOGGED_IN])) {
     if (isset($_COOKIE[USER_ITS])) {
-        $cookieUserId = $_COOKIE[USER_ITS];
-        $verNew = $_COOKIE['ver256'] ?? '';
-        $verLegacy = $_COOKIE['ver'] ?? '';
-        $cookieValid = false;
+        $cookieUserId  = $_COOKIE[USER_ITS];
+        $verNew        = $_COOKIE['ver256'] ?? '';
+        $verLegacy     = $_COOKIE['ver']    ?? '';
+        $cookieValid   = false;
 
-        // Modern SHA-256 Validation
+        // SHA-256 via ver256 cookie (new)
         if ($verNew !== '' && COOKIE_SECRET !== '') {
             $expectedSha256 = hash_hmac('sha256', (string) $cookieUserId, COOKIE_SECRET);
             if (hash_equals($expectedSha256, $verNew)) {
@@ -21,7 +19,7 @@ if (!isset($_SESSION[USER_LOGGED_IN])) {
             }
         }
 
-        // Legacy MD5 Validation
+        // MD5 via ver cookie (legacy — remove once all modules migrate)
         if (!$cookieValid && $verLegacy !== '' && COOKIE_SECRET_LEGACY !== '') {
             $expectedMd5 = md5($cookieUserId . COOKIE_SECRET_LEGACY);
             if (hash_equals($expectedMd5, $verLegacy)) {
@@ -31,67 +29,59 @@ if (!isset($_SESSION[USER_LOGGED_IN])) {
 
         if ($cookieValid) {
             $_SESSION[USER_LOGGED_IN] = true;
-            $_SESSION[USER_ID] = $_COOKIE[USER_ID];
-            $_SESSION[USER_ITS] = $_COOKIE[USER_ITS];
+            $_SESSION[USER_ID]        = $_COOKIE[USER_ID];
+            $_SESSION[USER_ITS]       = $_COOKIE[USER_ITS];
         }
     }
-}
-
-// Redirect to OneLogin if not authenticated
-if (!isset($_SESSION[USER_LOGGED_IN]) || $_SESSION[USER_LOGGED_IN] !== true) {
-    $redirectUrl = "https://www.talabulilm.com/send_2_onelogin.php?r=" . base64_encode(MODULE_PATH);
-    header("Location: $redirectUrl");
-    exit();
-}
-
-$user_its = (int) $_SESSION[USER_ITS];
-
-/**
- * Authorization Checks
- */
-
-// 1. Admin Check
-$stmt = $pdo->prepare("SELECT its_id FROM users_admin WHERE its_id = ?");
-$stmt->execute([$user_its]);
-$isAdminUser = $stmt->fetch();
-$is_admin = (bool) $isAdminUser;
-
-// 2. Sub Admin Check
-$is_sub_admin = false;
-try {
-    $stmt = $pdo->prepare("SELECT its_id FROM users_sub_admin WHERE its_id = ?");
-    $stmt->execute([$user_its]);
-    $is_sub_admin = (bool) $stmt->fetch();
-} catch (Exception $e) {
-    // Table might not exist
-}
-
-/**
- * Validation: Ensure user exists in allowed tables
- */
-if (!$is_admin) {
-    $stmt = $pdo->prepare("
-        SELECT 1 FROM (
-            SELECT its_id FROM users_mamureen WHERE its_id = ?
-            UNION
-            SELECT its_id FROM users_admin WHERE its_id = ?
-            UNION
-            SELECT its_id FROM users_sub_admin WHERE its_id = ?
-        ) AS combined LIMIT 1
-    ");
-    $stmt->execute([$user_its, $user_its, $user_its]);
-    
-    if (!$stmt->fetch()) {
-        ?>
-        <div style="text-align: center; padding: 50px; font-family: sans-serif;">
-            <h1>Access Denied</h1>
-            <p>ITS ID (<?php echo htmlspecialchars($user_its) ?>) is not authorized for this module.</p>
-            <a href="https://www.its52.com/Login.aspx?OneLogin=MHB&tlbre=<?php echo base64_encode(MODULE_PATH) ?>" 
-               style="padding: 10px 20px; background: #4154f1; color: white; text-decoration: none; border-radius: 5px;">
-               Log in with ITS
-            </a>
-        </div>
-        <?php
-        exit();
     }
-}
+
+    if (! isset($_SESSION['user_logged_in']) || $_SESSION['user_logged_in'] !== true) {
+    header('location:https://www.talabulilm.com/send_2_onelogin.php?r=' . base64_encode(MODULE_PATH));
+    exit();
+    }
+
+    $user_its = (int) $_SESSION[USER_ITS];
+
+    $only_admin_ITS = ['30305142', '30474444', '60412444', '78652093', '50474277', '30325584', '78652354', '60406245', '30372088', '40473195', '30320852', '30326300', '30325825',
+    '30375555', '30310749', '30310055', '78652046'];
+    // $admin_its = array('50476733', '40444857', '20372359', '30419712');
+    $query     = "SELECT its_id FROM users_admin";
+    $result    = mysqli_query($mysqli, $query);
+    $adminData = $result->fetch_all(MYSQLI_ASSOC);
+    $admin_its = array_column($adminData, 'its_id');
+
+    // Sub admin check (graceful — table may not exist yet)
+    $sub_admin_its = [];
+    $is_sub_admin  = false;
+    $saResult = @mysqli_query($mysqli, "SELECT its_id FROM users_sub_admin");
+    if ($saResult) {
+    $sub_admin_its = array_column($saResult->fetch_all(MYSQLI_ASSOC), 'its_id');
+    $is_sub_admin  = in_array((string)$user_its, $sub_admin_its);
+    }
+
+    if (in_array($user_its, $admin_its)) {
+    $is_admin = true;
+    } else {
+    $is_admin = false;
+
+    // Check if its exsists in user table, or else show mnessage
+    $query = "SELECT 'Exists' AS Result
+FROM (
+    SELECT `its_id` FROM `users_mamureen` WHERE `its_id` = '$user_its'
+    UNION
+    SELECT `its_id` FROM `users_admin` WHERE `its_id` = '$user_its'
+    UNION
+    SELECT `its_id` FROM `users_sub_admin` WHERE `its_id` = '$user_its'
+) AS combined
+LIMIT 1;";
+    $result = mysqli_query($mysqli, $query);
+    $row    = $result->fetch_all(MYSQLI_ASSOC);
+
+    if (empty($row)) {
+        ?>
+    <h1>Sorry ITS ID (<?php echo $user_its?>) is not valid for this module.</h1>
+    <h1>Click here to login with your ITS <a href="https://www.its52.com/Login.aspx?OneLogin=MHB&tlbre=aHR0cHM6Ly93d3cudGFsYWJ1bGlsbS5jb20vbWFtdXJlZW4v">LOG IN</a></h1>
+  <?php
+      exit();
+      }
+  }
