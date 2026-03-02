@@ -1,138 +1,169 @@
 <?php
-$current_page = 'manage_admin';
-require_once __DIR__ . '/../session.php';
-require_once __DIR__ . '/../inc/header.php';
+    require_once __DIR__ . '/../session.php';
+    $current_page = 'manage_admin';
+    require_once __DIR__ . '/../inc/header.php';
 
-$message = null;
+    function executeQuery($mysqli, $query)
+    {
+    try {
+        $result = mysqli_query($mysqli, $query);
+        return $result;
+    } catch (Exception $e) {
+        return ['text' => $e->getMessage(), 'tag' => 'danger'];
+    }
+    }
 
-/**
- * Logic: Add Admin via ITS
- */
-if (isset($_POST['submit'])) {
-    $its_id = (int)$_POST['its_id'];
-    $data = ApiService::getUserDetails($its_id);
+    // Handle delete operation
+    if (isset($_POST['delete'])) {
+    $its_id = (int) $_POST['its_id'];
+    $query  = "DELETE FROM `users_admin` WHERE `its_id` = '$its_id'";
+    $result = mysqli_query($mysqli, $query);
+    if ($result) {
+        $message['text'] = "Admin Deleted Successfully";
+        $message['tag']  = 'success';
+    } else {
+        $message['text'] = "Failed to delete admin: " . mysqli_error($mysqli);
+        $message['tag']  = 'danger';
+    }
+    }
+
+    // Handle submit operation
+    if (isset($_POST['submit'])) {
+    $user_its  = $_COOKIE['user_its'];
+    $ver       = $_COOKIE['ver'];
+    $is_active = 1;
+    $its_id    = (int) $_POST['its_id'];
+
+    $api_url = "https://www.talabulilm.com/api2022/core/user/getUserDetailsByItsID/$its_id";
+    $auth    = base64_encode("$user_its:$ver");
+    $headers = [
+        "Authorization: Basic $auth",
+    ];
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_RESOLVE, ['www.talabulilm.com:443:66.85.132.227']);
+    curl_setopt($ch, CURLOPT_URL, $api_url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+    $response = curl_exec($ch);
+
+    curl_close($ch);
+    $data = json_decode($response, true);
 
     if ($data) {
-        try {
-            $nationality = $data['nationality'] ?? '';
-            $miqaat_india_foreign = ($nationality === 'Indian') ? 'I' : 'F';
-            $dob = $data['dob'] ?? '';
-            $age = $dob ? (new DateTime())->diff(new DateTime($dob))->y : 0;
+        $nationality          = $data['nationality'];
+        $miqaat_india_foreign = ($nationality === 'Indian') ? 'I' : 'F';
 
-            $db->insert('users_admin', [
-                'its_id' => $its_id,
-                'fullname' => $data['full_name_en'],
-                'fullname_ar' => $data['full_name_ar'],
-                'email_id' => $data['email'],
-                'mobile' => $data['mobile'],
-                'miqaat_mauze' => $data['jamaat'],
-                'kg_age' => $age,
-                'miqaat_india_foreign' => $miqaat_india_foreign
-            ]);
-            $message = ['text' => "Admin access granted to {$data['full_name_en']}.", 'tag' => 'success'];
-        } catch (Exception $e) {
-            $message = ['text' => "Admin already exists or Database error.", 'tag' => 'danger'];
+        $dob = $data['dob'];
+
+        // Calculate age from date of birth
+        $today     = new DateTime();
+        $birthdate = new DateTime($dob);
+        $age       = $today->diff($birthdate)->y;
+
+        $insertQuery = "INSERT INTO `users_admin` (`its_id`, `fullname`, `fullname_ar`, `email_id`, `mobile`, `miqaat_mauze`, `kg_age`, `miqaat_india_foreign`)
+        VALUES ('$its_id', '$data[full_name_en]', '$data[full_name_ar]', '$data[email]', '$data[mobile]', '$data[jamaat]', '$age', '$miqaat_india_foreign')";
+
+        $result = mysqli_query($mysqli, $insertQuery);
+        if ($result) {
+            $message['text'] = "Admin Added Successfully";
+            $message['tag']  = 'success';
+        } else {
+            $message['text'] = "Failed to add admin: " . mysqli_error($mysqli);
+            $message['tag']  = 'danger';
         }
     } else {
-        $message = ['text' => "ITS ID $its_id not found.", 'tag' => 'warning'];
+        $message['text'] = "Invalid ITS ID : $its_id";
+        $message['tag']  = 'danger';
     }
-}
+    }
 
-/**
- * Logic: Revoke Access
- */
-if (isset($_POST['delete'])) {
-    $db->query("DELETE FROM users_admin WHERE its_id = ?", [(int)$_POST['its_id']]);
-    $message = ['text' => "Admin access revoked.", 'tag' => 'info'];
-}
-
-$admins = $db->fetchAll("SELECT * FROM users_admin ORDER BY fullname ASC");
+    // Fetch admin list
+    $query      = "SELECT * FROM `users_admin`";
+    $result     = mysqli_query($mysqli, $query);
+    $admin_list = $result->fetch_all(MYSQLI_ASSOC);
 ?>
 
-<main id="main" class="main main-content">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 fw-bold text-dark mb-1">System Administrators</h1>
-            <p class="text-muted small mb-0">Control global access and system-level permissions.</p>
-        </div>
-    </div>
-
-    <?php if ($message): ?>
-        <div class="alert alert-<?= $message['tag']; ?> border-0 shadow-sm rounded-4 mb-4">
-            <i class="bi bi-info-circle-fill me-2"></i> <?= $message['text']; ?>
-        </div>
-    <?php endif; ?>
-
-    <div class="row g-4">
-        <!-- Register Card -->
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm p-4">
-                <h5 class="fw-bold mb-3">Grant Access</h5>
-                <form method="post">
-                    <div class="mb-4">
-                        <label class="form-label small fw-bold">ITS ID</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light"><i class="bi bi-shield-lock"></i></span>
-                            <input type="number" name="its_id" class="form-control" placeholder="8 Digit ID" required>
-                        </div>
-                    </div>
-                    <button type="submit" name="submit" class="btn btn-primary w-100 rounded-pill py-2 shadow-sm">
-                        Assign Admin Role
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <!-- List Card -->
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm overflow-hidden h-100">
-                <div class="card-header bg-white py-3 px-4 border-bottom-0">
-                    <h5 class="fw-bold mb-0">Active Administrators</h5>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light bg-opacity-50">
-                            <tr>
-                                <th class="px-4 py-3 small text-muted text-uppercase border-0">Identity</th>
-                                <th class="py-3 small text-muted text-uppercase border-0">Contact</th>
-                                <th class="px-4 py-3 small text-muted text-uppercase border-0 text-end">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($admins as $a): ?>
-                                <tr>
-                                    <td class="px-4 py-3">
-                                        <div class="d-flex align-items-center gap-3">
-                                            <img src="<?= user_photo_url($a['its_id']) ?>" class="rounded-circle border" width="40" height="40">
-                                            <div>
-                                                <div class="fw-bold text-dark small"><?= h($a['fullname']) ?></div>
-                                                <div class="text-muted" style="font-size: 0.7rem;">ITS: <?= $a['its_id'] ?></div>
+<main id="main" class="main">
+    <section class="section dashboard">
+        <div class="row">
+            <?php require_once __DIR__ . '/../inc/messages.php'; ?>
+            <div class="card">
+                <div class="card-body" style="overflow-y: auto;">
+                    <h5 class="card-title">Manage Admin</h5>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Add new Admin</h5>
+                                    <form method="post">
+                                        <div class="row">
+                                            <div class="col-md-5">
+                                                <input type="number" name="its_id" class="form-control" placeholder="ITS ID" required>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="d-grid gap-2">
+                                                    <button class="btn btn-primary" name="submit" type="submit">Submit</button>
+                                                </div>
                                             </div>
                                         </div>
-                                    </td>
-                                    <td class="py-3">
-                                        <div class="small text-dark"><?= h($a['email_id']) ?></div>
-                                        <div class="text-muted" style="font-size: 0.7rem;"><?= h($a['mobile']) ?></div>
-                                    </td>
-                                    <td class="px-4 py-3 text-end">
-                                        <form method="post" onsubmit="return confirm('Revoke admin access?');">
-                                            <input type="hidden" name="its_id" value="<?= $a['its_id'] ?>">
-                                            <button type="submit" name="delete" class="btn btn-light btn-sm rounded-pill text-danger">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <h5 class="card-title">List of Admin</h5>
+                            <table class="table table-striped" id="datatable">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">ITS</th>
+                                        <th scope="col">Name</th>
+                                        <th scope="col">Email</th>
+                                        <th scope="col">Mobile</th>
+                                        <th scope="col">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($admin_list as $admin): ?>
+                                        <tr>
+                                            <form method="post">
+                                                <td><?php echo $admin['its_id'] ?></td>
+                                                <td><?php echo $admin['fullname'] ?></td>
+                                                <td><?php echo $admin['email_id'] ?></td>
+                                                <td><?php echo $admin['mobile'] ?></td>
+                                                <td>
+                                                    <input type="hidden" name="its_id" value="<?php echo $admin['its_id'] ?>" />
+                                                    <button type="submit" name="delete" class="btn btn-outline-danger remove-btn"><i class="bi bi-trash-fill"></i></button>
+                                                </td>
+                                            </form>
+                                        </tr>
+
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 </main>
 
-<?php 
-require_once __DIR__ . '/../inc/footer.php'; 
-require_once __DIR__ . '/../inc/js-block.php'; 
+<?php
+    require_once __DIR__ . '/../inc/footer.php';
+    require_once __DIR__ . '/../inc/js-block.php';
 ?>
+</body>
+<script>
+    $(document).ready(function() {
+        // Handler for 'Remove' button click
+        $('.remove-btn').click(function(event) {
+            if (!confirm("Are you sure you want to remove this record?")) {
+                event.preventDefault(); // Prevent form submission if user cancels
+            }
+        });
+    });
+</script>
+
+</html>

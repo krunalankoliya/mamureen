@@ -267,18 +267,8 @@
       // Validate file attachments
       var fileInput = document.getElementById("attachments");
       if (fileInput && fileInput.files.length > 0) {
-        var allowedTypes = [
-          "image/jpeg",
-          "image/png",
-          "video/mp4",
-          "video/quicktime",
-          "video/x-msvideo",
-          "audio/mpeg",
-          "audio/wav",
-          "audio/ogg",
-          "application/pdf",
-        ];
-        var maxFileSize = 5 * 1024 * 1024; // 5 MB per file
+        var allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+        var maxFileSize = 5 * 1024 * 1024; // 5 MB
 
         for (var i = 0; i < fileInput.files.length; i++) {
           var file = fileInput.files[i];
@@ -294,7 +284,7 @@
             alert(
               'File "' +
                 file.name +
-                '" type not allowed. Only JPG/PNG images, MP4/MOV/AVI video, MP3/WAV/OGG audio or PDF are accepted.',
+                '" type not allowed. Only JPEG, PNG, and WebP are supported.',
             );
             return;
           }

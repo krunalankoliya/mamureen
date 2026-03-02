@@ -1,221 +1,291 @@
 <?php
-$current_page = 'manage_bqi_categories';
-require_once __DIR__ . '/../session.php';
-require_once __DIR__ . '/../inc/header.php';
+    require_once __DIR__ . '/../session.php';
+    $current_page = 'manage_bqi_categories';
+    require_once __DIR__ . '/../inc/header.php';
 
-$message = null;
-$category_types = [
+    // Category types mapping
+    $category_types = [
     'challenge'   => 'Challenges / Solutions',
     'experience'  => 'Noteworthy Experiences',
     'preparation' => 'Khidmat Preparations',
-];
+    ];
 
-/**
- * Logic: Add
- */
-if (isset($_POST['add_category'])) {
+    // Handle Add
+    if (isset($_POST['add_category'])) {
+    $category_type = mysqli_real_escape_string($mysqli, $_POST['category_type']);
+    $category_name = trim(mysqli_real_escape_string($mysqli, $_POST['category_name']));
+    $sort_order    = (int) ($_POST['sort_order'] ?? 0);
+
+    if (empty($category_name) || ! array_key_exists($category_type, $category_types)) {
+        $message = ['text' => 'Category name and valid type are required.', 'tag' => 'danger'];
+    } else {
+        $query = "INSERT INTO `bqi_categories` (`category_type`, `category_name`, `is_active`, `sort_order`)
+                  VALUES ('$category_type', '$category_name', 1, '$sort_order')";
+        try {
+            mysqli_query($mysqli, $query);
+            $message = ['text' => "Category '$category_name' added successfully.", 'tag' => 'success'];
+        } catch (\Exception $e) {
+            $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
+        }
+    }
+    }
+
+    // Handle Edit
+    if (isset($_POST['update_category'])) {
+    $edit_id       = (int) $_POST['edit_id'];
+    $category_type = mysqli_real_escape_string($mysqli, $_POST['category_type']);
+    $category_name = trim(mysqli_real_escape_string($mysqli, $_POST['category_name']));
+    $sort_order    = (int) ($_POST['sort_order'] ?? 0);
+
+    if (empty($category_name) || ! array_key_exists($category_type, $category_types)) {
+        $message = ['text' => 'Category name and valid type are required.', 'tag' => 'danger'];
+    } else {
+        $query = "UPDATE `bqi_categories` SET `category_type` = '$category_type', `category_name` = '$category_name',
+                  `sort_order` = '$sort_order' WHERE `id` = '$edit_id'";
+        try {
+            mysqli_query($mysqli, $query);
+            $message = ['text' => 'Category updated successfully.', 'tag' => 'success'];
+        } catch (\Exception $e) {
+            $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
+        }
+    }
+    }
+
+    // Handle Toggle Active/Inactive
+    if (isset($_POST['toggle_active'])) {
+    $toggle_id  = (int) $_POST['toggle_id'];
+    $new_status = (int) $_POST['new_status'];
+    $query      = "UPDATE `bqi_categories` SET `is_active` = '$new_status' WHERE `id` = '$toggle_id'";
     try {
-        $db->insert('bqi_categories', [
-            'category_type' => $_POST['category_type'],
-            'category_name' => trim($_POST['category_name']),
-            'sort_order' => (int)$_POST['sort_order'],
-            'is_active' => 1
-        ]);
-        $message = ['text' => 'New category defined.', 'tag' => 'success'];
-    } catch (Exception $e) {
+        mysqli_query($mysqli, $query);
+        $message = ['text' => 'Category status updated.', 'tag' => 'success'];
+    } catch (\Exception $e) {
         $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
     }
-}
-
-/**
- * Logic: Update
- */
-if (isset($_POST['update_category'])) {
-    try {
-        $db->query("UPDATE bqi_categories SET category_type = ?, category_name = ?, sort_order = ? WHERE id = ?", [
-            $_POST['category_type'], $_POST['category_name'], (int)$_POST['sort_order'], (int)$_POST['edit_id']
-        ]);
-        $message = ['text' => 'Category configuration updated.', 'tag' => 'success'];
-    } catch (Exception $e) {
-        $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
     }
-}
 
-/**
- * Logic: Toggle
- */
-if (isset($_POST['toggle_active'])) {
-    $db->query("UPDATE bqi_categories SET is_active = ? WHERE id = ?", [(int)$_POST['new_status'], (int)$_POST['toggle_id']]);
-}
+    // Handle Delete
+    if (isset($_POST['delete_category'])) {
+    $delete_id = (int) $_POST['delete_id'];
 
-$filter_type = $_GET['type'] ?? '';
-$where = $filter_type ? "WHERE category_type = ?" : "WHERE 1=1";
-$params = $filter_type ? [$filter_type] : [];
+    // Check if category is in use
+    $in_use = false;
+    $tables = ['bqi_challenges_solutions', 'bqi_noteworthy_experiences', 'bqi_khidmat_preparations'];
+    foreach ($tables as $table) {
+        $check = mysqli_query($mysqli, "SELECT COUNT(*) as cnt FROM `$table` WHERE `category_id` = '$delete_id'");
+        $row   = $check->fetch_assoc();
+        if ($row['cnt'] > 0) {
+            $in_use = true;
+            break;
+        }
+    }
 
-$categories = $db->fetchAll("SELECT * FROM bqi_categories $where ORDER BY category_type ASC, sort_order ASC", $params);
+    if ($in_use) {
+        $message = ['text' => 'Cannot delete: this category is in use. You can deactivate it instead.', 'tag' => 'danger'];
+    } else {
+        $query = "DELETE FROM `bqi_categories` WHERE `id` = '$delete_id'";
+        try {
+            mysqli_query($mysqli, $query);
+            $message = ['text' => 'Category deleted successfully.', 'tag' => 'success'];
+        } catch (\Exception $e) {
+            $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
+        }
+    }
+    }
+
+    // Filter by type
+    $filter_type = $_GET['type'] ?? '';
+
+    // Fetch all categories
+    $where = "";
+    if (! empty($filter_type) && array_key_exists($filter_type, $category_types)) {
+    $filter_type_esc = mysqli_real_escape_string($mysqli, $filter_type);
+    $where           = "WHERE `category_type` = '$filter_type_esc'";
+    }
+    $query      = "SELECT * FROM `bqi_categories` $where ORDER BY `category_type`, `sort_order`, `category_name`";
+    $result     = mysqli_query($mysqli, $query);
+    $categories = $result->fetch_all(MYSQLI_ASSOC);
 ?>
 
-<main id="main" class="main main-content">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 fw-bold text-dark mb-1">Impact Categories</h1>
-            <p class="text-muted small mb-0">Classify challenges, experiences, and preparations for advanced reporting.</p>
-        </div>
-    </div>
+<main id="main" class="main">
+    <section class="section dashboard">
+        <div class="row">
+            <?php require_once __DIR__ . '/../inc/messages.php'; ?>
+            <div class="card">
+                <div class="card-body" style="overflow-y: auto;">
+                    <h5 class="card-title">Manage BQI 1447 Categories</h5>
 
-    <?php if ($message): ?>
-        <div class="alert alert-<?= $message['tag']; ?> border-0 shadow-sm rounded-4 mb-4">
-            <i class="bi bi-info-circle-fill me-2"></i> <?= $message['text']; ?>
-        </div>
-    <?php endif; ?>
-
-    <div class="row g-4">
-        <!-- Definition Card -->
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm p-4">
-                <h5 class="fw-bold mb-3">Define Category</h5>
-                <form method="post">
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Classification Type</label>
-                        <select name="category_type" class="form-select" required>
-                            <option value="">Choose Type...</option>
-                            <?php foreach ($category_types as $val => $label): ?>
-                                <option value="<?= $val ?>"><?= $label ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Label / Name</label>
-                        <input type="text" name="category_name" class="form-control" placeholder="e.g. Logistics" required>
-                    </div>
-                    <div class="mb-4">
-                        <label class="form-label small fw-bold">Sort Order</label>
-                        <input type="number" name="sort_order" class="form-control" value="0">
-                    </div>
-                    <button type="submit" name="add_category" class="btn btn-primary w-100 rounded-pill py-2 shadow-sm">
-                        Create Category
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <!-- Directory Card -->
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm overflow-hidden">
-                <div class="card-header bg-white py-3 px-4 border-bottom-0 d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold mb-0">Category Directory</h5>
-                    <div class="dropdown">
-                        <button class="btn btn-light btn-sm rounded-pill px-3 border dropdown-toggle" data-bs-toggle="dropdown">
-                            <i class="bi bi-filter me-1"></i> Filter
-                        </button>
-                        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg rounded-3">
-                            <li><a class="dropdown-item small" href="?">All Types</a></li>
-                            <?php foreach($category_types as $v => $l): ?>
-                                <li><a class="dropdown-item small" href="?type=<?= $v ?>"><?= $l ?></a></li>
-                            <?php endforeach; ?>
-                        </ul>
-                    </div>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 datatable">
-                        <thead class="bg-light bg-opacity-50">
-                            <tr>
-                                <th class="px-4 py-3 small text-muted text-uppercase border-0">Label</th>
-                                <th class="py-3 small text-muted text-uppercase border-0">Classification</th>
-                                <th class="py-3 small text-muted text-uppercase border-0">Order</th>
-                                <th class="px-4 py-3 small text-muted text-uppercase border-0 text-end">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($categories as $c): ?>
-                                <tr>
-                                    <td class="px-4 py-3">
-                                        <div class="fw-bold text-dark small"><?= h($c['category_name']) ?></div>
-                                        <?php if($c['is_active']): ?>
-                                            <span class="badge bg-success bg-opacity-10 text-success rounded-pill" style="font-size: 0.6rem;">ACTIVE</span>
-                                        <?php else: ?>
-                                            <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill" style="font-size: 0.6rem;">DISABLED</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td class="py-3">
-                                        <span class="small text-muted"><?= $category_types[$c['category_type']] ?? $c['category_type'] ?></span>
-                                    </td>
-                                    <td class="py-3 small"><?= $c['sort_order'] ?></td>
-                                    <td class="px-4 py-3 text-end">
-                                        <div class="d-flex gap-1 justify-content-end">
-                                            <button class="btn btn-light btn-sm rounded-pill edit-btn" 
-                                                    data-id="<?= $c['id'] ?>" data-name="<?= h($c['category_name']) ?>" 
-                                                    data-type="<?= $c['category_type'] ?>" data-sort="<?= $c['sort_order'] ?>"
-                                                    data-bs-toggle="modal" data-bs-target="#editModal">
-                                                <i class="bi bi-pencil"></i>
-                                            </button>
-                                            <form method="post" class="d-inline">
-                                                <input type="hidden" name="toggle_id" value="<?= $c['id'] ?>">
-                                                <input type="hidden" name="new_status" value="<?= $c['is_active'] ? 0 : 1 ?>">
-                                                <button type="submit" name="toggle_active" class="btn btn-light btn-sm rounded-pill text-muted">
-                                                    <i class="bi bi-power"></i>
-                                                </button>
-                                            </form>
+                    <div class="row">
+                        <!-- Add New Category Form -->
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Add New Category</h5>
+                                    <form method="post">
+                                        <div class="row g-2 align-items-end">
+                                            <div class="col-md-3">
+                                                <label for="add_category_type" class="form-label">Type</label>
+                                                <select id="add_category_type" name="category_type" class="form-select" required>
+                                                    <option value="" disabled selected>Select Type...</option>
+                                                    <?php foreach ($category_types as $val => $label): ?>
+                                                        <option value="<?php echo $val ?>"><?php echo $label ?></option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-5">
+                                                <label for="add_category_name" class="form-label">Category Name</label>
+                                                <input id="add_category_name" type="text" name="category_name" class="form-control" dir="auto" placeholder="e.g., Community Service / خدمت" required>
+                                            </div>
+                                            <div class="col-md-1">
+                                                <label for="add_sort_order" class="form-label">Order</label>
+                                                <input id="add_sort_order" type="number" name="sort_order" class="form-control" value="0" min="0">
+                                            </div>
+                                            <div class="col-md-2">
+                                                <button class="btn btn-primary w-100" name="add_category" type="submit">Add Category</button>
+                                            </div>
                                         </div>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Filter Tabs -->
+                        <div class="col-md-12">
+                            <ul class="nav nav-tabs mb-3">
+                                <li class="nav-item">
+                                    <a class="nav-link <?php echo empty($filter_type) ? 'active' : '' ?>" href="?">All</a>
+                                </li>
+                                <?php foreach ($category_types as $val => $label): ?>
+                                    <li class="nav-item">
+                                        <a class="nav-link <?php echo($filter_type === $val) ? 'active' : '' ?>" href="?type=<?php echo $val ?>"><?php echo $label ?></a>
+                                    </li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
+
+                        <!-- Categories Table -->
+                        <div class="col-md-12">
+                            <table class="table table-striped" id="datatable">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Type</th>
+                                        <th>Category Name</th>
+                                        <th>Sort Order</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($categories as $key => $c): ?>
+                                        <tr>
+                                            <td><?php echo $key + 1 ?></td>
+                                            <td><span class="badge bg-<?php echo $c['category_type'] === 'challenge' ? 'warning' : ($c['category_type'] === 'experience' ? 'info' : 'primary') ?>"><?php echo htmlspecialchars($category_types[$c['category_type']] ?? $c['category_type']) ?></span></td>
+                                            <td dir="auto"><?php echo htmlspecialchars($c['category_name']) ?></td>
+                                            <td><?php echo $c['sort_order'] ?></td>
+                                            <td>
+                                                <form method="post" style="display:inline;">
+                                                    <input type="hidden" name="toggle_id" value="<?php echo $c['id'] ?>">
+                                                    <input type="hidden" name="new_status" value="<?php echo $c['is_active'] ? 0 : 1 ?>">
+                                                    <button type="submit" name="toggle_active" class="btn btn-sm <?php echo $c['is_active'] ? 'btn-success' : 'btn-secondary' ?>">
+                                                        <?php echo $c['is_active'] ? 'Active' : 'Inactive' ?>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-sm btn-outline-info edit-btn"
+                                                    data-id="<?php echo $c['id'] ?>"
+                                                    data-type="<?php echo htmlspecialchars($c['category_type']) ?>"
+                                                    data-name="<?php echo htmlspecialchars($c['category_name']) ?>"
+                                                    data-sort="<?php echo $c['sort_order'] ?>"
+                                                    data-bs-toggle="modal" data-bs-target="#editModal">
+                                                    <i class="bi bi-pencil-square"></i>
+                                                </button>
+                                                <form method="post" style="display:inline;">
+                                                    <input type="hidden" name="delete_id" value="<?php echo $c['id'] ?>">
+                                                    <button type="submit" name="delete_category" class="btn btn-sm btn-outline-danger delete-btn">
+                                                        <i class="bi bi-trash-fill"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 </main>
 
 <!-- Edit Modal -->
 <div class="modal fade" id="editModal" tabindex="-1">
     <div class="modal-dialog">
-        <div class="modal-content border-0 shadow-lg rounded-4">
+        <div class="modal-content">
             <form method="post">
-                <div class="modal-header border-0 pt-4 px-4">
-                    <h5 class="fw-bold mb-0">Update Classification</h5>
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Category</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body px-4">
+                <div class="modal-body">
                     <input type="hidden" name="edit_id" id="edit_id">
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">Classification Type</label>
+                        <label class="form-label">Type</label>
                         <select name="category_type" id="edit_type" class="form-select" required>
                             <?php foreach ($category_types as $val => $label): ?>
-                                <option value="<?= $val ?>"><?= $label ?></option>
+                                <option value="<?php echo $val ?>"><?php echo $label ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">Label / Name</label>
-                        <input type="text" name="category_name" id="edit_name" class="form-control" required>
+                        <label class="form-label">Category Name</label>
+                        <input type="text" name="category_name" id="edit_name" class="form-control" dir="auto" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label small fw-bold">Sort Order</label>
-                        <input type="number" name="sort_order" id="edit_sort" class="form-control">
+                        <label class="form-label">Sort Order</label>
+                        <input type="number" name="sort_order" id="edit_sort" class="form-control" min="0">
                     </div>
                 </div>
-                <div class="modal-footer border-0 pb-4 px-4">
-                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" name="update_category" class="btn btn-primary rounded-pill px-4">Save Changes</button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" name="update_category" class="btn btn-primary">Update</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<?php 
-require_once __DIR__ . '/../inc/footer.php'; 
-require_once __DIR__ . '/../inc/js-block.php'; 
-?>
+<?php require_once __DIR__ . '/../inc/footer.php'; ?>
+</body>
 <script>
-$(document).ready(function(){
-    $('.edit-btn').click(function(){
+$(document).ready(function () {
+    // Edit modal populate
+    $('.edit-btn').click(function() {
         $('#edit_id').val($(this).data('id'));
-        $('#edit_name').val($(this).data('name'));
         $('#edit_type').val($(this).data('type'));
+        $('#edit_name').val($(this).data('name'));
         $('#edit_sort').val($(this).data('sort'));
+    });
+
+    // Delete confirmation
+    $('.delete-btn').click(function(event) {
+        if (!confirm("Are you sure you want to delete this category?")) {
+            event.preventDefault();
+        }
+    });
+
+    // DataTable
+    $('#datatable').DataTable({
+        dom: 'Bfrtip',
+        pageLength: 25,
+        buttons: [
+            { extend: 'copy', filename: function(){ return 'bqi_categories-' + Date.now(); } },
+            { extend: 'csv', filename: function(){ return 'bqi_categories-' + Date.now(); } },
+            { extend: 'excel', filename: function(){ return 'bqi_categories-' + Date.now(); } }
+        ]
     });
 });
 </script>
+</html>

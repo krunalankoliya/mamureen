@@ -1,6 +1,9 @@
 $(document).ready(function () {
   $("#datatable, #datatable1, #datatable2").each(function () {
     var exportFormat = {
+      header: function (data, column, node) {
+        return $(node).data("full") || data;
+      },
       body: function (data, row, column, node) {
         return $(node).data("full") || data;
       },

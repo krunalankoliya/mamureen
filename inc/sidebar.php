@@ -67,7 +67,7 @@
             ['page' => 'report_challenges_solutions', 'link' => 'admin/report_challenges_solutions.php', 'text' => 'Report: Challenges & Solutions', 'icon' => 'bi bi-bar-chart'],
             ['page' => 'report_noteworthy_experiences', 'link' => 'admin/report_noteworthy_experiences.php', 'text' => 'Report: Noteworthy Experiences', 'icon' => 'bi bi-bar-chart'],
             ['page' => 'report_khidmat_preparations', 'link' => 'admin/report_khidmat_preparations.php', 'text' => 'Report: Khidmat Preparations', 'icon' => 'bi bi-bar-chart'],
-            //['page' => 'report_maaraz', 'link' => 'admin/report_maaraz.php', 'text' => 'Report: Ma\'raz', 'icon' => 'bi bi-bar-chart'],
+            ['page' => 'report_maraz', 'link' => 'admin/report_maraz.php', 'text' => 'Report: Ma\'raz', 'icon' => 'bi bi-bar-chart'],
         ];
         generateCollapsibleSidebarItem(
             array_column($adminPages, 'page'),
@@ -97,6 +97,7 @@
             <?php generateSidebarItem('report_challenges_solutions', $current_page, 'bi bi-bar-chart', 'Challenges & Solutions', 'admin/report_challenges_solutions.php'); ?>
             <?php generateSidebarItem('report_noteworthy_experiences', $current_page, 'bi bi-bar-chart', 'Noteworthy Experiences', 'admin/report_noteworthy_experiences.php'); ?>
             <?php generateSidebarItem('report_khidmat_preparations', $current_page, 'bi bi-bar-chart', 'Khidmat Preparations', 'admin/report_khidmat_preparations.php'); ?>
+            <?php generateSidebarItem('report_maraz', $current_page, 'bi bi-bar-chart', 'Ma\'raz Report', 'admin/report_maraz.php'); ?>
             <?php generateSidebarItem('support_tickets_admin', $current_page, 'bi bi-headset', 'Support Queries', 'admin/support_tickets.php'); ?>
 
         <?php else: ?>

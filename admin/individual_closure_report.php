@@ -6,7 +6,7 @@ require_once(__DIR__ . '/../inc/header.php');
 // Get the ITS ID of the mamur. If not submitted then redirect to list page.
 $mamur_its = isset($_GET['its']) ? (int) $_GET['its'] : '';
 if(!$mamur_its) {
-    header('Location: ' . MODULE_PATH . 'admin/list_closure_reports.php');
+    header('Location: https://www.talabulilm.com/mamureen/admin/list_closure_reports.php');
     exit();
 }
 // Get the completion status of the report.

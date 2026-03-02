@@ -1,59 +1,51 @@
 <?php
-require_once __DIR__ . '/config.php';
-require_once __DIR__ . '/inc/Database.php';
-require_once __DIR__ . '/inc/ApiService.php';
+$host = 'localhost';
+$db = 'talabulilm_mamureen';
+$user = 'talabulilm_mamureen';
+$password = 'M@mur352515';
 
-/**
- * Global Database Instance (Modern OOP)
- */
-$db = Database::getInstance();
+$mysqli = mysqli_connect($host, $user, $password, $db);
 
-// Expose underlying PDO object for legacy code
-$pdo = $db->pdo;
-
-/**
- * Legacy MySQLi Connection (For backward compatibility during migration)
- */
-$mysqli = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+// Check connection
 if ($mysqli === false) {
     die("ERROR: Could not connect. " . mysqli_connect_error());
 }
-$mysqli->set_charset("utf8mb4");
+$mysqli -> set_charset("utf8");
 
-/**
- * Core Database Handle
- */
-$core_dsn = "mysql:host=" . CORE_DB_HOST . ";dbname=" . CORE_DB_NAME . ";charset=utf8mb4";
-try {
-    $core_pdo = new PDO($core_dsn, CORE_DB_USER, CORE_DB_PASS, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
-    ]);
-} catch (Exception $e) {
-    // Graceful fail for core DB
-    $core_pdo = null;
+$corehost = 'localhost';
+$coredb = 'talabulilm_core';
+$coreuser = 'talabulilm_core';
+$corepassword = 'core@515253';
+
+$coremysqli = mysqli_connect($corehost, $coreuser, $corepassword, $coredb);
+
+// Check connection
+if ($coremysqli === false) {
+    die("ERROR: Could not connect. " . mysqli_connect_error());
+}
+$coremysqli -> set_charset("utf8");
+
+define('ITS_KEY', '1qaz2w24sx');
+define('COOKIE_SECRET',        'adfefdddb86e4d5d2347e0dd5b560f0df37b2392ae19a05df4906e60158e7ebd');
+define('COOKIE_SECRET_LEGACY', 'tlbilm@112345678+515253');
+
+function user_photo_url($its_id) {
+    return MODULE_PATH . 'img.php?id=' . (int) $its_id;
 }
 
-$coremysqli = mysqli_connect(CORE_DB_HOST, CORE_DB_USER, CORE_DB_PASS, CORE_DB_NAME);
-
-/**
- * Global Helper Functions
- */
-
-if (!function_exists('user_photo_url')) {
-    function user_photo_url($its_id) {
-        return MODULE_PATH . 'img.php?id=' . (int) $its_id;
-    }
-}
-
-if (!function_exists('redirect')) {
-    function redirect($path) {
-        header("Location: " . MODULE_PATH . ltrim($path, '/'));
-        exit;
-    }
-}
-
-if (!function_exists('h')) {
-    function h($str) {
-        return htmlspecialchars($str ?? '', ENT_QUOTES, 'UTF-8');
-    }
-}
+define('USER_LOGGED_IN', 'user_logged_in');
+define('USER_ID', 'user_id');
+define('USER_ITS', 'user_its');
+define('GROUP_ID', 'group_id');
+define('ENABLE_WRITE_LOG', FALSE);
+define('MARHALA_ID', 'marhala_id');
+define('IS_ADMIN', 'is_admin');
+define('USER_ROLE', 'user_role');
+define('TANZEEM_ID', 'tanzeem_id');
+define('USER_TYPE', 'user_type');
+define('JAMAT_NAME', 'jamat_name');
+define('EDU_HUB', 'edu_hub');
+define('IS_EDU_HUB', 'is_edu_hub');
+define('SUCCESS_MESSAGE', 'success_message');
+define('ERROR_MESSAGE', 'error_message');
+define('MODULE_PATH', 'https://www.talabulilm.com/mamureen/');

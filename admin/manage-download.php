@@ -1,149 +1,219 @@
 <?php
+require_once(__DIR__ . '/../session.php');
 $current_page = 'Manage_Resources';
-require_once __DIR__ . '/../session.php';
-require_once __DIR__ . '/../inc/header.php';
+require_once(__DIR__ . '/../inc/header.php');
 
-$message = null;
-
-/**
- * Logic: Update Resource Title
- */
 if (isset($_POST['update'])) {
+    $title = $_POST['title'];
+    $id = $_POST['id'];
+
+    $query = "UPDATE `my_downloads` SET `title` = '$title' WHERE `id` = '$id'";
     try {
-        $db->query("UPDATE my_downloads SET title = ? WHERE id = ?", [$_POST['title'], (int)$_POST['id']]);
-        $message = ['text' => "Resource title updated.", 'tag' => 'success'];
+        $result = mysqli_query($mysqli, $query);
+        $message['text'] = "Update Record Successfully";
+        $message['tag'] = 'success';
     } catch (Exception $e) {
-        $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
+        $message = array('text' => $e->getMessage(), 'tag' => 'danger');
     }
 }
 
-/**
- * Logic: Delete Resource
- */
+
+// Traditional form submission is kept for backward compatibility
+if (isset($_POST['submit']) && isset($_FILES['upload_photo']) && $_FILES['upload_photo']['error'] === 0) {
+    /***************For Image Upload Code STRART*******************/
+
+    $tempPath = $_FILES['upload_photo']["tmp_name"];
+    $fileName = str_replace(' ', '_', $_FILES['upload_photo']['name']);
+    $fileType = pathinfo($fileName, PATHINFO_EXTENSION);
+    $fileUploadName = $fileName;
+    $moved_file = move_uploaded_file($tempPath, __DIR__ . "/../uploads/" . $fileName);
+
+    /***************For Image Upload Code END*******************/
+    $title = $_POST['title'];
+    $dot_color = $_POST['dot_color'];
+    $date = date('Y-m-d');
+    $upload_photo = $fileName;
+
+    $query = "INSERT INTO `my_downloads` (`upload_date`, `title`, `file_name`, `dot_color`, `added_its`) VALUES ('$date', '$title', '$upload_photo', '$dot_color', '$user_its')";
+
+    try {
+        $result = mysqli_query($mysqli, $query);
+        $message['text'] = "File Upload Successfully";
+        $message['tag'] = 'success';
+    } catch (Exception $e) {
+        $message = array('text' => $e->getMessage(), 'tag' => 'danger');
+    }
+}
+
+
 if (isset($_POST['delete'])) {
-    $id = (int)$_POST['id'];
-    $file = $db->fetch("SELECT file_name FROM my_downloads WHERE id = ?", [$id]);
-    if ($file) {
-        $path = __DIR__ . "/../uploads/" . $file['file_name'];
-        if (file_exists($path)) @unlink($path);
-        $db->query("DELETE FROM my_downloads WHERE id = ?", [$id]);
-        $message = ['text' => "Resource deleted successfully.", 'tag' => 'info'];
+    $id = $_POST['id'];
+
+    // Fetch the file name before deleting
+    $fetchQuery = "SELECT file_name FROM my_downloads WHERE id = '$id'";
+    $fetchResult = mysqli_query($mysqli, $fetchQuery);
+    $fileData = mysqli_fetch_assoc($fetchResult);
+    
+    if ($fileData) {
+        $filePath = __DIR__ . "/../uploads/" . $fileData['file_name'];
+        
+        // Delete file from the upload folder
+        if (file_exists($filePath)) {
+            unlink($filePath);
+        }
+
+        // Delete the database entry
+        $deleteQuery = "DELETE FROM my_downloads WHERE id = '$id'";
+        try {
+            $result = mysqli_query($mysqli, $deleteQuery);
+            $message['text'] = "File deleted successfully";
+            $message['tag'] = 'success';
+        } catch (Exception $e) {
+            $message = array('text' => $e->getMessage(), 'tag' => 'danger');
+        }
+    } else {
+        $message = array('text' => "File not fousnd", 'tag' => 'danger');
     }
 }
 
-$resources = $db->fetchAll("SELECT * FROM `my_downloads` ORDER BY upload_date DESC");
+
+$query = "SELECT * FROM `my_downloads`";
+$result = mysqli_query($mysqli, $query);
+$row = $result->fetch_all(MYSQLI_ASSOC);
+
+$select = '<select id="inputState" class="form-select" name="dot_color" required>
+                <option value="" disabled selected hidden>Select category...</option>
+                <option value="text-success">Social Media</option>
+                <option value="text-info">Zakereen</option>
+                <option value="text-danger">Shaadi Tafheem</option>
+                <option value="text-warning">General</option>
+            </select>';
 ?>
 
-<main id="main" class="main main-content">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 fw-bold text-dark mb-1">Resource Management</h1>
-            <p class="text-muted small mb-0">Upload and manage official documents available for user download.</p>
-        </div>
-    </div>
+<main id="main" class="main">
 
-    <?php if ($message): ?>
-        <div class="alert alert-<?= $message['tag']; ?> border-0 shadow-sm rounded-4 mb-4">
-            <i class="bi bi-info-circle-fill me-2"></i> <?= $message['text']; ?>
-        </div>
-    <?php endif; ?>
+    <section class="section dashboard">
+        <div class="row">
+            <?php require_once(__DIR__ . '/../inc/messages.php'); ?>
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
 
-    <div class="row g-4">
-        <div class="col-lg-5">
-            <div class="card border-0 shadow-sm p-4 h-100">
-                <h5 class="fw-bold mb-3">Upload New File</h5>
-                <form method="post" id="addUserForm" enctype="multipart/form-data">
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">Document Title</label>
-                        <input type="text" name="title" id="inputTitle" class="form-control" placeholder="e.g. Activity Guidelines" required>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold">File Source</label>
-                        <input type="file" name="upload_photo" id="uploadFile" class="form-control" required>
+                            <div class="card">
+                                <div class="card-body pt-4">
+                                    <h5 class="card-title">Upload Download Resource</h5>
+                                    <p><strong>IMPORTANT INSTRUCTIONS:</strong></p>
+                                    <ul>
+                                        <li>All fields marked with <span class="required_star">*</span> are required.</li>
+                                    </ul>
+                                    <!-- Horizontal Form -->
+                                    <form method="post" id="addUserForm" enctype="multipart/form-data">
+                                        <div class="row mb-3">
+                                            <label for="inputTitle" class="col-sm-4 col-form-label">Title<span class="required_star">*</span></label>
+                                            <div class="col-sm-8">
+                                                <input type="text" class="form-control" id="inputTitle" name='title' required>
+                                            </div>
+                                        </div>
 
-                        <div id="progressContainer" class="mt-3 d-none">
-                            <div class="progress rounded-pill shadow-sm" style="height: 10px;">
-                                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;"></div>
-                            </div>
-                            <div class="d-flex justify-content-between mt-1 small text-muted">
-                                <span><span id="uploadedSize">0</span> MB / <span id="totalSize">0</span> MB</span>
-                                <span id="progressMsg">0%</span>
-                            </div>
-                            <div id="uploadMessage" class="mt-2 text-center fw-bold text-primary d-none">
-                                Upload in progress, please wait...
+                                        <div class="row mb-3">
+                                            <label for="uploadFile" class="col-sm-4 col-form-label">Upload file<span class="required_star">*</span></label>
+                                            <div class="col-sm-8">
+                                                <input type="file" class="form-control file" name="upload_photo" id="uploadFile" required>
+                                                <!-- Progress bar will be added here via JS -->
+                                                <div id="progressContainer" class="mt-2 d-none">
+                                                    <div class="progress">
+                                                        <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                                                    </div>
+                                                    <div class="mt-1 small text-muted">
+                                                        <span id="uploadedSize">0</span> of <span id="totalSize">0</span> MB uploaded
+                                                    </div>
+                                                    <div id="uploadMessage" class="mt-2 text-center fw-bold text-primary d-none">
+                                                        Upload in progress, please wait...
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row mb-3">
+                                            <label for="inputState" class="col-sm-4 col-form-label">Category<span class="required_star">*</span></label>
+                                            <div class="col-sm-8">
+                                                <?= $select ?>
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-8"></div>
+                                            <div class="col-md-2">
+                                                <div class="text-center">
+                                                    <div class="d-grid gap-2">
+                                                        <input type="reset" value="Reset Form" name="reset" id="resetBtn" class="btn btn-outline-secondary" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="text-center">
+                                                    <div class="d-grid gap-2">
+                                                        <input type="button" value="Submit" name="submit" id="submitBtn" class="btn btn-primary" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </form><!-- End Horizontal Form -->
+
+                                </div>
                             </div>
                         </div>
+                        <div class="col-md-6">
+                            <h5 class="card-title">Previously Uploaded Reports</h5>
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">#</th>
+                                        <th scope="col">Upload date</th>
+                                        <th scope="col">Title</th>
+                                        <th scope="col">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    foreach ($row as $key => $data) {
+                                    ?>
+                                        <form method="post" enctype="multipart/form-data">
+                                            <tr>
+                                                <th scope="row"><?= $data['id'] ?></th>
+                                                <td><?= $data['upload_date'] ?></td>
+                                                <td>
+                                                    <input type="text" name="title" class="form-control" placeholder="Expertise" value="<?= $data['title'] ?>" required />
+                                                </td>
+                                                <td>
+                                                    <input type="hidden" name="id" value="<?= $data['id'] ?>" />
+                                                    <input type="submit" name="update" value="Update" class="btn btn-outline-primary" />
+                                                    <input type="submit" name="delete" value="Delete" class="btn btn-outline-danger" />
+                                                </td>
+                                            </tr>
+                                        </form>
+                                    <?php
+                                    }
+                                    ?>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                    <div class="mb-4">
-                        <label class="form-label small fw-bold">Category</label>
-                        <select name="dot_color" id="inputState" class="form-select" required>
-                            <option value="" disabled selected hidden>Select category...</option>
-                            <option value="text-success">Social Media</option>
-                            <option value="text-info">Zakereen</option>
-                            <option value="text-danger">Shaadi Tafheem</option>
-                            <option value="text-warning">General</option>
-                        </select>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <input type="reset" value="Reset" id="resetBtn" class="btn btn-outline-secondary w-50 rounded-pill" />
-                        <input type="button" value="Upload" id="submitBtn" class="btn btn-primary w-50 rounded-pill" />
-                    </div>
-                </form>
+                </div>
             </div>
-        </div>
 
-        <div class="col-lg-7">
-            <div class="card border-0 shadow-sm overflow-hidden h-100">
-                <div class="card-header bg-white py-3 px-4 border-bottom-0">
-                    <h5 class="fw-bold mb-0">Published Resources</h5>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="bg-light bg-opacity-50">
-                            <tr>
-                                <th class="px-4 py-3 small text-muted text-uppercase border-0">File Title</th>
-                                <th class="py-3 small text-muted text-uppercase border-0">Date</th>
-                                <th class="px-4 py-3 small text-muted text-uppercase border-0 text-end">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($resources as $res): ?>
-                                <tr>
-                                    <form method="post">
-                                        <input type="hidden" name="id" value="<?= $res['id'] ?>">
-                                        <td class="px-4 py-3">
-                                            <div class="d-flex align-items-center gap-2">
-                                                <i class="bi bi-circle-fill <?= $res['dot_color'] ?> small"></i>
-                                                <input type="text" name="title" class="form-control form-control-sm border-0 bg-light rounded-pill px-3" value="<?= h($res['title']) ?>" required>
-                                            </div>
-                                            <div class="text-muted small mt-1 ps-4" style="font-size: 0.65rem;"><?= h($res['file_name']) ?></div>
-                                        </td>
-                                        <td class="py-3 small text-muted">
-                                            <?= date('d M, y', strtotime($res['upload_date'])) ?>
-                                        </td>
-                                        <td class="px-4 py-3 text-end">
-                                            <div class="d-flex gap-1 justify-content-end">
-                                                <button type="submit" name="update" class="btn btn-light btn-sm rounded-pill text-primary">
-                                                    <i class="bi bi-save"></i>
-                                                </button>
-                                                <button type="submit" name="delete" class="btn btn-light btn-sm rounded-pill text-danger" onclick="return confirm('Permanently delete this file?');">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </form>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
         </div>
-    </div>
-</main>
+    </section>
+
+</main><!-- End #main -->
 
 <?php
-require_once __DIR__ . '/../inc/footer.php';
-require_once __DIR__ . '/../inc/js-block.php';
+require_once(__DIR__ . '/../inc/footer.php');
 ?>
+<style>
+.progress        { height: 25px; }
+.progress-bar    { line-height: 25px; font-weight: bold; }
+#uploadMessage   { font-size: 14px; }
+</style>
 <script src="../assets/js/manage-download.js"></script>

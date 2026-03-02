@@ -1,219 +1,414 @@
 <?php
+require_once(__DIR__ . '/session.php');
 $current_page = 'individual_tafheem';
-require_once __DIR__ . '/session.php';
-require_once __DIR__ . '/inc/header.php';
 
-$message = null;
-$verified_user = null;
+require_once(__DIR__ . '/inc/header.php');
 
-$program_types = [
+$program_type_options = [
     'Zakereen Farzando Training',
     'Social Media Awareness',
     'Shaadi Tafheem',
 ];
 
-/**
- * Logic: Verify Member
- */
+// Initialize variables
+$verified_user = null;
+
+// Function to fetch user data from API (server-side)
+function fetchUserDataByITS_tafheem($its_id)
+{
+    if (empty($its_id)) {
+        return null;
+    }
+
+    $user_its = $_COOKIE['user_its'] ?? '';
+    $ver      = $_COOKIE['ver'] ?? '';
+
+    if (empty($user_its) || empty($ver)) {
+        return null;
+    }
+
+    $api_url = "https://www.talabulilm.com/api2022/core/user/getUserDetailsByItsID/" . urlencode($its_id);
+    $auth    = base64_encode("$user_its:$ver");
+    $headers = ["Authorization: Basic $auth"];
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_RESOLVE, ['www.talabulilm.com:443:66.85.132.227']);
+    curl_setopt($ch, CURLOPT_URL, $api_url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+    $response = curl_exec($ch);
+    $error    = curl_error($ch);
+    curl_close($ch);
+
+    if ($error || empty($response)) {
+        return null;
+    }
+
+    $data = json_decode($response, true);
+    if (empty($data) || !isset($data['its_id'])) {
+        return null;
+    }
+
+    return $data;
+}
+
+// Handle Verify ITS (server-side)
 if (isset($_POST['verify_its'])) {
-    $verify_id = (int)($_POST['verify_its_id'] ?? 0);
-    if ($verify_id > 10000000) {
-        $verified_user = ApiService::getUserDetails($verify_id);
-        if (!$verified_user) $message = ['text' => "ITS ID $verify_id not found.", 'tag' => 'danger'];
+    $verify_its_id = (int) $_POST['verify_its_id'];
+
+    if ($verify_its_id <= 0 || strlen((string)$verify_its_id) < 8) {
+        $message = ['text' => 'Please enter a valid 8-digit ITS ID.', 'tag' => 'danger'];
+    } else {
+        $verified_user = fetchUserDataByITS_tafheem($verify_its_id);
+        if (!$verified_user) {
+            $message = ['text' => "ITS ID $verify_its_id not found. Please check and try again.", 'tag' => 'danger'];
+        }
     }
 }
 
-/**
- * Logic: Submit Report
- */
+// Handle Submit
 if (isset($_POST['submit_tafheem'])) {
-    try {
-        $target_id = (int)$_POST['target_its_id'];
-        $reasons = $_POST['reason_ids'] ?? [];
-        
-        $record_id = $db->insert('bqi_individual_tafheem', [
-            'target_its_id' => $target_id,
-            'target_name' => $_POST['target_name'],
-            'type' => $_POST['type'],
-            'reason_id' => implode(',', array_map('intval', $reasons)),
-            'report_details' => $_POST['report_details'],
-            'user_its' => $user_its,
-            'jamaat' => $mauze,
-            'added_its' => $user_its
-        ]);
+    $target_its_id       = (int)$_POST['target_its_id'];
+    $target_name         = mysqli_real_escape_string($mysqli, $_POST['target_name']);
+    $type                = mysqli_real_escape_string($mysqli, $_POST['type'] ?? '');
+    $selected_reason_ids = $_POST['reason_ids'] ?? [];
+    $reason_ids_str      = implode(',', array_map('intval', $selected_reason_ids));
+    $report_details      = mysqli_real_escape_string($mysqli, $_POST['report_details']);
 
-        // Process attachments
-        if (isset($_FILES['attachments'])) {
-            foreach ($_FILES['attachments']['name'] as $i => $name) {
-                if ($_FILES['attachments']['error'][$i] === UPLOAD_ERR_OK) {
-                    $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-                    $newName = $user_its . '_tafheem_' . date('YmdHis') . '_' . $i . '.' . $ext;
-                    if (move_uploaded_file($_FILES['attachments']['tmp_name'][$i], __DIR__ . "/user_uploads/" . $newName)) {
-                        $db->insert('bqi_file_attachments', [
-                            'module' => 'tafheem',
-                            'record_id' => $record_id,
-                            'file_name' => $name,
-                            'file_path' => $newName,
-                            'file_type' => $ext,
-                            'file_size' => $_FILES['attachments']['size'][$i],
-                            'added_its' => $user_its
-                        ]);
+    if ($target_its_id <= 0 || empty($target_name) || empty($type) || empty($selected_reason_ids) || empty($report_details)) {
+        $message = ['text' => 'All required fields must be filled.', 'tag' => 'danger'];
+    } else {
+        $query = "INSERT INTO `bqi_individual_tafheem` (`target_its_id`, `target_name`, `type`, `reason_id`, `report_details`, `user_its`, `jamaat`, `added_its`)
+                  VALUES ('$target_its_id', '$target_name', '$type', '$reason_ids_str', '$report_details', '$user_its', '$mauze', '$user_its')";
+        try {
+            mysqli_query($mysqli, $query);
+            $record_id = mysqli_insert_id($mysqli);
+
+            // Handle file uploads
+            if (isset($_FILES['attachments'])) {
+                $file_count = count($_FILES['attachments']['name']);
+                for ($i = 0; $i < $file_count; $i++) {
+                    if ($_FILES['attachments']['error'][$i] === UPLOAD_ERR_OK) {
+                        $fileName = $_FILES['attachments']['name'][$i];
+                        $tempPath = $_FILES['attachments']['tmp_name'][$i];
+                        $fileSize = $_FILES['attachments']['size'][$i];
+                        $fileType = pathinfo($fileName, PATHINFO_EXTENSION);
+                        $acceptable = ['jpeg', 'jpg', 'png'];
+
+                        if ($fileSize > 4194304) continue; // Skip files > 4MB
+                        if (!in_array(strtolower($fileType), $acceptable)) continue;
+
+                        $uploadName = $user_its . '_tafheem_' . date('YmdHis') . '_' . $i . '.' . $fileType;
+                        $moved = move_uploaded_file($tempPath, __DIR__ . "/user_uploads/" . $uploadName);
+
+                        if ($moved) {
+                            $esc_name = mysqli_real_escape_string($mysqli, $fileName);
+                            $esc_type = mysqli_real_escape_string($mysqli, $fileType);
+                            $attachQuery = "INSERT INTO `bqi_file_attachments` (`module`, `record_id`, `file_name`, `file_path`, `file_type`, `file_size`, `added_its`)
+                                            VALUES ('tafheem', '$record_id', '$esc_name', '$uploadName', '$esc_type', '$fileSize', '$user_its')";
+                            mysqli_query($mysqli, $attachQuery);
+                        }
                     }
                 }
             }
+
+            $message = ['text' => 'Tafheem report submitted successfully.', 'tag' => 'success'];
+            $show_popup = true;
+        } catch (Exception $e) {
+            $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
         }
-        $message = ['text' => 'Tafheem report submitted successfully.', 'tag' => 'success'];
+    }
+}
+
+// Handle Delete
+if (isset($_POST['delete_tafheem'])) {
+    $delete_id = (int)$_POST['delete_id'];
+    $result = mysqli_query($mysqli, "DELETE FROM `bqi_individual_tafheem` WHERE `id` = '$delete_id' AND `added_its` = '$user_its'");
+    if ($result) {
+        $message = ['text' => 'Report deleted successfully.', 'tag' => 'success'];
+    } else {
+        $message = ['text' => 'Failed to delete: ' . mysqli_error($mysqli), 'tag' => 'danger'];
+    }
+}
+
+// Handle Edit
+if (isset($_POST['update_tafheem'])) {
+    $edit_id             = (int)$_POST['edit_id'];
+    $type                = mysqli_real_escape_string($mysqli, $_POST['type'] ?? '');
+    $selected_reason_ids = $_POST['reason_ids'] ?? [];
+    $reason_ids_str      = implode(',', array_map('intval', $selected_reason_ids));
+    $report_details      = mysqli_real_escape_string($mysqli, $_POST['report_details']);
+
+    $query = "UPDATE `bqi_individual_tafheem` SET `type` = '$type', `reason_id` = '$reason_ids_str', `report_details` = '$report_details',
+              `update_its` = '$user_its', `update_ts` = NOW() WHERE `id` = '$edit_id' AND `added_its` = '$user_its'";
+    try {
+        mysqli_query($mysqli, $query);
+        $message = ['text' => 'Report updated successfully.', 'tag' => 'success'];
     } catch (Exception $e) {
         $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
     }
 }
 
-// Fetch Master Data
-$reasons_raw = $db->fetchAll("SELECT * FROM `bqi_tafheem_reasons` WHERE `is_active` = 1 ORDER BY `sort_order` ASC");
-$reasons_map = array_column($reasons_raw, 'reason_name', 'id');
+// Fetch all active Tafheem Reasons (for edit modal multi-select)
+$query   = "SELECT * FROM `bqi_tafheem_reasons` WHERE `is_active` = 1 ORDER BY `sort_order`, `reason_name`";
+$result  = mysqli_query($mysqli, $query);
+$reasons = $result->fetch_all(MYSQLI_ASSOC);
 
-$reports = $db->fetchAll("
-    SELECT t.*, um.fullname AS submitted_by 
-    FROM bqi_individual_tafheem t 
-    LEFT JOIN users_mamureen um ON um.its_id = t.added_its 
-    WHERE t.added_its IN (SELECT its_id FROM users_mamureen WHERE miqaat_mauze = ?) 
-    ORDER BY t.added_ts DESC", [$mauze]);
+// Build reasons map for display (id => reason_name)
+$reasons_map = array_column($reasons, 'reason_name', 'id');
+
+// Fetch mauze's submitted records
+$mauze_its_subquery = "(SELECT `its_id` FROM `users_mamureen` WHERE `miqaat_mauze` = '$mauze')";
+$query = "SELECT t.*, um.fullname AS submitted_by FROM `bqi_individual_tafheem` t LEFT JOIN `users_mamureen` um ON um.its_id = t.added_its WHERE t.added_its IN $mauze_its_subquery ORDER BY t.added_ts DESC";
+$result = mysqli_query($mysqli, $query);
+$tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
 ?>
 
-<main id="main" class="main main-content">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 fw-bold text-dark mb-1">Individual Tafheem</h1>
-            <p class="text-muted small mb-0">Record personalized counseling and awareness sessions.</p>
-        </div>
-    </div>
+<link rel="stylesheet" href="assets/css/training_sessions.css">
+<main id="main" class="main bqi-1447">
+    <section class="section dashboard">
+        <div class="row">
+            <?php require_once(__DIR__ . '/inc/messages.php'); ?>
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Individual Tafheem Report</h5>
 
-    <?php if ($message): ?>
-        <div class="alert alert-<?= $message['tag']; ?> border-0 shadow-sm rounded-4 mb-4">
-            <i class="bi bi-info-circle-fill me-2"></i> <?= $message['text']; ?>
-        </div>
-    <?php endif; ?>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Submit New Report</h5>
 
-    <div class="row g-4">
-        <!-- Report Form -->
-        <div class="col-lg-5">
-            <div class="card border-0 shadow-sm p-4 h-100">
-                <h5 class="fw-bold mb-3">Create New Report</h5>
-
-                <?php if (!$verified_user): ?>
-                    <form method="post" class="row g-2">
-                        <div class="col-8">
-                            <label class="form-label small fw-bold">Target ITS ID</label>
-                            <input type="number" name="verify_its_id" class="form-control" placeholder="Enter ITS ID" required>
-                        </div>
-                        <div class="col-4 d-flex align-items-end">
-                            <button type="submit" name="verify_its" class="btn btn-primary w-100 rounded-pill">Verify</button>
-                        </div>
-                    </form>
-                <?php else: ?>
-                    <div class="p-3 rounded-4 bg-light border mb-4 d-flex align-items-center gap-3">
-                        <img src="<?= user_photo_url($verified_user['its_id']) ?>" class="rounded-circle" width="48" height="48">
-                        <div>
-                            <div class="fw-bold small"><?= h($verified_user['full_name_en']) ?></div>
-                            <div class="text-muted small"><?= $verified_user['its_id'] ?></div>
-                        </div>
-                        <a href="individual_tafheem.php" class="ms-auto btn btn-sm btn-outline-secondary rounded-pill border-0">Reset</a>
-                    </div>
-
-                    <form method="post" enctype="multipart/form-data" id="uploadForm">
-                        <input type="hidden" name="target_its_id" value="<?= $verified_user['its_id'] ?>">
-                        <input type="hidden" name="target_name" value="<?= $verified_user['full_name_en'] ?>">
-                        
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold">Session Type</label>
-                            <select name="type" id="tf_type_select" class="form-select" required>
-                                <option value="">Select Category...</option>
-                                <?php foreach ($program_types as $pt): ?>
-                                    <option value="<?= h($pt) ?>"><?= h($pt) ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold">Primary Reason(s)</label>
-                            <div class="bg-light p-3 rounded-3 border" style="max-height: 150px; overflow-y: auto;" id="tf_filter_list">
-                                <p class="small text-muted mb-0">Select a session type first...</p>
-                            </div>
-                            <div id="tf_hidden_inputs"></div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label small fw-bold">Report Details</label>
-                            <textarea name="report_details" class="form-control" rows="4" placeholder="Detailed notes about the session..." required></textarea>
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="form-label small fw-bold">Attachments (Optional)</label>
-                            <input type="file" name="attachments[]" class="form-control" multiple accept="image/*">
-                        </div>
-
-                        <button type="submit" name="submit_tafheem" class="btn btn-primary w-100 rounded-pill py-2 fw-bold shadow-sm">
-                            Save Report
-                        </button>
-                    </form>
-                <?php endif; ?>
-            </div>
-        </div>
-
-        <!-- History -->
-        <div class="col-lg-7">
-            <div class="card border-0 shadow-sm overflow-hidden h-100">
-                <div class="card-header bg-white py-3 px-4 border-bottom-0">
-                    <h5 class="fw-bold mb-0">Tafheem History</h5>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 datatable">
-                        <thead class="bg-light bg-opacity-50">
-                            <tr>
-                                <th class="px-4 py-3 small text-muted text-uppercase border-0">Target Member</th>
-                                <th class="py-3 small text-muted text-uppercase border-0">Type</th>
-                                <th class="px-4 py-3 small text-muted text-uppercase border-0 text-end">Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($reports as $r): ?>
-                                <tr>
-                                    <td class="px-4 py-3">
-                                        <div class="d-flex align-items-center gap-3">
-                                            <img src="<?= user_photo_url($r['target_its_id']) ?>" class="rounded-circle" width="36" height="36">
-                                            <div>
-                                                <div class="fw-bold text-dark"><?= h($r['target_name']) ?></div>
-                                                <div class="text-muted small" style="font-size: 0.75rem;">ITS: <?= $r['target_its_id'] ?></div>
+                                    <?php if ($verified_user): ?>
+                                        <!-- ITS Verified - Show details and report form -->
+                                        <div class="alert alert-success py-2">
+                                            <strong>ITS Verified Successfully</strong>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-md-3 text-center">
+                                                <img src="<?= user_photo_url($verified_user['its_id']) ?>"
+                                                     class="rounded-circle" width="80" height="80"
+                                                     alt="<?php echo htmlspecialchars($verified_user['full_name_en']) ?>">
+                                            </div>
+                                            <div class="col-md-9">
+                                                <table class="table table-sm table-borderless mb-0">
+                                                    <tr><td><strong>ITS ID:</strong></td><td><?php echo htmlspecialchars($verified_user['its_id']) ?></td></tr>
+                                                    <tr><td><strong>Name:</strong></td><td><?php echo htmlspecialchars($verified_user['full_name_en']) ?></td></tr>
+                                                    <tr><td><strong>Gender:</strong></td><td><?php echo htmlspecialchars($verified_user['gender'] ?? '') ?></td></tr>
+                                                    <tr><td><strong>Jamaat:</strong></td><td><?php echo htmlspecialchars($verified_user['jamaat'] ?? '') ?></td></tr>
+                                                </table>
                                             </div>
                                         </div>
-                                    </td>
-                                    <td class="py-3">
-                                        <div class="small fw-semibold text-primary"><?= h($r['type']) ?></div>
-                                        <div class="text-muted" style="font-size: 0.7rem;">
-                                            <?php 
-                                            $ids = explode(',', $r['reason_id']);
-                                            $names = [];
-                                            foreach($ids as $id) if(!empty($reasons_map[$id])) $names[] = $reasons_map[$id];
-                                            echo h(implode(', ', $names));
-                                            ?>
-                                        </div>
-                                    </td>
-                                    <td class="px-4 py-3 text-end">
-                                        <div class="small fw-bold"><?= date('d M, Y', strtotime($r['added_ts'])) ?></div>
-                                        <div class="text-muted" style="font-size: 0.7rem;">By: <?= h($r['submitted_by'] ?? 'System') ?></div>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+
+                                        <form method="post" enctype="multipart/form-data" id="uploadForm">
+                                            <input type="hidden" name="target_its_id" value="<?php echo htmlspecialchars($verified_user['its_id']) ?>">
+                                            <input type="hidden" name="target_name" value="<?php echo htmlspecialchars($verified_user['full_name_en']) ?>">
+
+                                            <!-- Type Dropdown -->
+                                            <div class="row mb-3">
+                                                <label class="col-sm-4 col-form-label">Type<span class="required_star">*</span></label>
+                                                <div class="col-sm-8">
+                                                    <select name="type" id="tf_type_select" class="form-select" required>
+                                                        <option value="" disabled selected>Select Type...</option>
+                                                        <?php foreach ($program_type_options as $opt): ?>
+                                                            <option value="<?= htmlspecialchars($opt) ?>"><?= htmlspecialchars($opt) ?></option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <!-- Reason Multiselect (Excel-style) -->
+                                            <div class="row mb-3">
+                                                <label class="col-sm-4 col-form-label">Reason(s)<span class="required_star">*</span></label>
+                                                <div class="col-sm-8">
+                                                    <div class="ts-filter-wrap" id="tf_filter_wrap">
+                                                        <div id="tf_hidden_inputs"></div>
+                                                        <button type="button" class="ts-filter-btn" id="tf_filter_btn">
+                                                            <span id="tf_filter_label" class="text-muted">Select a Type first</span>
+                                                            <i class="bi bi-caret-down-fill ts-caret"></i>
+                                                        </button>
+                                                        <div class="ts-filter-panel" id="tf_filter_panel">
+                                                            <div class="ts-filter-search">
+                                                                <input type="text" id="tf_search_input" placeholder="Search reasons..." autocomplete="off">
+                                                            </div>
+                                                            <div class="ts-filter-actions">
+                                                                <a href="#" id="tf_select_all">Select All</a>
+                                                                <span class="ts-sep">|</span>
+                                                                <a href="#" id="tf_clear_all">Clear</a>
+                                                            </div>
+                                                            <div class="ts-filter-list" id="tf_filter_list">
+                                                                <div class="ts-placeholder">Select a Type first</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Report Details -->
+                                            <div class="row mb-3">
+                                                <label class="col-sm-4 col-form-label">Report Details<span class="required_star">*</span></label>
+                                                <div class="col-sm-8">
+                                                    <textarea name="report_details" class="form-control" style="height: 120px;" dir="auto" required></textarea>
+                                                </div>
+                                            </div>
+
+                                            <!-- File Attachments -->
+                                            <div class="row mb-3">
+                                                <label class="col-sm-4 col-form-label">Attachments</label>
+                                                <div class="col-sm-8">
+                                                    <input type="file" name="attachments[]" class="form-control" accept="image/*" multiple>
+                                                    <small class="text-muted">Optional. JPG/PNG, max 4MB each.</small>
+                                                    <div id="progressContainer" class="mt-2 d-none">
+                                                        <div class="progress">
+                                                            <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                                                        </div>
+                                                        <div id="uploadMessage" class="mt-2 text-center fw-bold d-none"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                                <a href="<?php echo htmlspecialchars($_SERVER['PHP_SELF']) ?>" class="btn btn-secondary">Cancel</a>
+                                                <button type="submit" name="submit_tafheem" id="submitBtn" class="btn btn-primary">Submit Report</button>
+                                            </div>
+                                        </form>
+
+                                    <?php else: ?>
+                                        <!-- Step 1: Enter ITS ID and Verify -->
+                                        <form method="post">
+                                            <div class="row mb-3">
+                                                <label class="col-sm-4 col-form-label">Target ITS ID<span class="required_star">*</span></label>
+                                                <div class="col-sm-5">
+                                                    <input type="number" name="verify_its_id" class="form-control" placeholder="Enter ITS ID" required>
+                                                </div>
+                                                <div class="col-sm-3">
+                                                    <button type="submit" name="verify_its" class="btn btn-info btn-sm">Verify</button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    <?php endif; ?>
+
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submitted Reports -->
+                        <div class="col-md-6" style="overflow-x: auto;">
+                            <h5 class="card-title">Your Submitted Reports</h5>
+                            <table class="table table-striped" id="datatable">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Target ITS</th>
+                                        <th>Target Name</th>
+                                        <th>Type</th>
+                                        <th>Reason(s)</th>
+                                        <th>Date</th>
+                                        <th>Submitted By</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($tafheem_list as $key => $t) : ?>
+                                        <tr>
+                                            <td><?= $key + 1 ?></td>
+                                            <td><?= $t['target_its_id'] ?></td>
+                                            <td><?= htmlspecialchars($t['target_name']) ?></td>
+                                            <td><?= htmlspecialchars($t['type'] ?? '') ?></td>
+                                            <td>
+                                                <?php
+                                                    $ids   = array_filter(array_map('intval', explode(',', $t['reason_id'])));
+                                                    $names = [];
+                                                    foreach ($ids as $rid) {
+                                                        $names[] = htmlspecialchars($reasons_map[$rid] ?? '#' . $rid);
+                                                    }
+                                                    echo $names ? implode(', ', $names) : 'N/A';
+                                                ?>
+                                            </td>
+                                            <td><?= date('d-M-Y', strtotime($t['added_ts'])) ?></td>
+                                            <td><?= htmlspecialchars($t['submitted_by'] ?? '') ?></td>
+                                            <td>
+                                                <button type="button" class="btn btn-sm btn-outline-info view-btn"
+                                                    data-id="<?= $t['id'] ?>"
+                                                    data-its="<?= $t['target_its_id'] ?>"
+                                                    data-name="<?= htmlspecialchars($t['target_name']) ?>"
+                                                    data-type="<?= htmlspecialchars($t['type'] ?? '') ?>"
+                                                    data-reason="<?= htmlspecialchars($t['reason_id']) ?>"
+                                                    data-details="<?= htmlspecialchars($t['report_details']) ?>"
+                                                    data-bs-toggle="modal" data-bs-target="#editModal">
+                                                    <i class="bi bi-pencil-square"></i>
+                                                </button>
+                                                <form method="post" class="d-inline">
+                                                    <input type="hidden" name="delete_id" value="<?= $t['id'] ?>">
+                                                    <button type="submit" name="delete_tafheem" class="btn btn-sm btn-outline-danger delete-btn">
+                                                        <i class="bi bi-trash-fill"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 </main>
 
-<?php 
-require_once __DIR__ . '/inc/footer.php'; 
-require_once __DIR__ . '/inc/js-block.php'; 
-?>
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title">View / Edit Report</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="edit_id" id="edit_id">
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Target:</strong> <span id="edit_target_info"></span></label>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Type</label>
+                        <select name="type" id="edit_type" class="form-select" required>
+                            <option value="" disabled>Select Type...</option>
+                            <?php foreach ($program_type_options as $opt): ?>
+                                <option value="<?= htmlspecialchars($opt) ?>"><?= htmlspecialchars($opt) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Reason(s)</label>
+                        <select name="reason_ids[]" id="edit_reason" class="form-select" multiple required style="height: 160px;">
+                            <?php foreach ($reasons as $r): ?>
+                                <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['reason_name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small class="text-muted">Hold Ctrl / Cmd to select multiple.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Report Details</label>
+                        <textarea name="report_details" id="edit_details" class="form-control" style="height: 150px;" dir="auto" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" name="update_tafheem" class="btn btn-primary">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<?php require_once(__DIR__ . '/inc/footer.php'); ?>
+<style>
+.progress     { height: 25px; }
+.progress-bar { line-height: 25px; font-weight: bold; }
+#uploadMessage { font-size: 14px; }
+</style>
 <script src="assets/js/individual_tafheem.js"></script>

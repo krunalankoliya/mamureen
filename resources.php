@@ -1,7 +1,8 @@
 <?php
+require_once(__DIR__ . '/session.php');
+
 $current_page = 'resources';
-require_once __DIR__ . '/session.php';
-require_once __DIR__ . '/inc/header.php';
+require_once(__DIR__ . '/inc/header.php');
 $its_id = (int)$_SESSION[USER_ITS];
 
 $query = "SELECT

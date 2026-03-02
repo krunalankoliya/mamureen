@@ -1,114 +1,114 @@
 <?php
-    $current_page = 'manage_mamureen';
-    require_once __DIR__ . '/../session.php';
-    require_once __DIR__ . '/../inc/header.php';
+require_once __DIR__ . '/../session.php';
+$current_page = 'manage_mamureen';
+require_once __DIR__ . '/../inc/header.php';
 
-    $mamureen = $db->fetchAll("SELECT * FROM users_mamureen ORDER BY fullname ASC");
+// Fetch current mamureen list
+$result = mysqli_query($mysqli, "SELECT * FROM `users_mamureen`");
+$data   = $result ? $result->fetch_all(MYSQLI_ASSOC) : [];
 ?>
 
-<main id="main" class="main main-content">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 fw-bold text-dark mb-1">Mamureen Directory</h1>
-            <p class="text-muted small mb-0">Global user management and directory synchronization.</p>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="<?php echo MODULE_PATH ?>assets/sample.csv" class="btn btn-light btn-sm rounded-pill px-3 border shadow-sm">
-                <i class="bi bi-file-earmark-arrow-down me-1"></i> Sample CSV
-            </a>
-            <button id="addUserBtn" class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm">
-                <i class="bi bi-cloud-upload me-1"></i> Import Users
-            </button>
-        </div>
-    </div>
+<main id="main" class="main">
+    <section class="section dashboard">
+        <div class="row">
+            <?php require_once __DIR__ . '/../inc/messages.php'; ?>
+            <div class="card">
+                <div class="card-body" style="overflow-y: auto;">
+                    <h5 class="card-title">Manage Mamureen</h5>
 
-    <div class="row g-4">
-        <!-- Upload Context (Hidden by default) -->
-        <div class="col-12" id="uploadFormContainer" style="display: none;">
-            <div class="card border-0 shadow-sm p-4 bg-primary bg-opacity-10 border-primary border-opacity-25">
-                <h6 class="fw-bold mb-3">Bulk CSV Import</h6>
-                <form id="addUserForm" class="row g-3 align-items-end">
-                    <div class="col-md-6">
-                        <label class="form-label small fw-bold">Select CSV File</label>
-                        <input type="file" name="csv_file" id="csv_file" class="form-control border-0 shadow-sm" accept=".csv" required>
-                    </div>
-                    <div class="col-md-3">
-                        <button type="submit" id="uploadBtn" class="btn btn-primary w-100 rounded-pill">Start Processing</button>
-                    </div>
-                    <div class="col-md-3">
-                        <button type="button" onclick="$('#uploadFormContainer').slideUp()" class="btn btn-light w-100 rounded-pill border">Cancel</button>
-                    </div>
-                </form>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card mb-3">
+                                <div class="card-body">
 
-                <div id="uploadProgress" class="mt-4 d-none">
-                    <div class="progress rounded-pill mb-2" style="height: 12px;">
-                        <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;"></div>
-                    </div>
-                    <div id="progressMsg" class="text-center small fw-bold text-primary"></div>
-                </div>
-            </div>
-        </div>
+                                    <div class="d-flex gap-2 mb-3">
+                                        <button id="addUserBtn" class="btn btn-primary">
+                                            <i class="bi bi-upload me-1"></i>Upload CSV
+                                        </button>
+                                        <a href="https://www.talabulilm.com/mamureen/assets/sample.csv" class="btn btn-success" download>
+                                            <i class="bi bi-download me-1"></i>Download Sample CSV
+                                        </a>
+                                    </div>
 
-        <!-- Global Directory -->
-        <div class="col-12">
-            <div class="card border-0 shadow-sm overflow-hidden">
-                <div class="card-header bg-white py-3 px-4 border-bottom-0 d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold mb-0">Registered Mamureen</h5>
-                    <div class="badge bg-light text-dark border rounded-pill px-3"><?php echo count($mamureen) ?> Total Records</div>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 datatable" id="datatable_manage_mamureen">
-                        <thead class="bg-light bg-opacity-50">
-                            <tr>
-                                <th class="px-4 py-3 small text-muted text-uppercase border-0">Member</th>
-                                <th class="py-3 small text-muted text-uppercase border-0">Regional Info</th>
-                                <th class="py-3 small text-muted text-uppercase border-0">Contact</th>
-                                <th class="py-3 small text-muted text-uppercase border-0">Metadata</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($mamureen as $row): ?>
-                                <tr>
-                                    <td class="px-4 py-3">
-                                        <div class="d-flex align-items-center gap-3">
-                                            <img src="<?php echo user_photo_url($row['its_id']) ?>" class="rounded-circle border shadow-sm" width="44" height="44">
-                                            <div>
-                                                <div class="fw-bold text-dark small"><?php echo h($row['fullname']) ?></div>
-                                                <div class="text-muted" style="font-size: 0.7rem;">ITS: <?php echo $row['its_id'] ?></div>
+                                    <form id="addUserForm" style="display: none;">
+                                        <div class="alert alert-info py-2">
+                                            <strong>Note:</strong> Uploading will replace all existing records. ITS ID is required for every row.
+                                            Rows are processed in batches of 10 — no timeout issues.
+                                        </div>
+
+                                        <div class="row g-2 align-items-end mb-3">
+                                            <div class="col-auto">
+                                                <input type="file" name="csv_file" id="csv_file" class="form-control" accept=".csv" required>
+                                            </div>
+                                            <div class="col-auto">
+                                                <button type="submit" id="uploadBtn" class="btn btn-primary">
+                                                    <i class="bi bi-upload me-1"></i>Upload
+                                                </button>
                                             </div>
                                         </div>
-                                    </td>
-                                    <td class="py-3">
-                                        <div class="small fw-semibold text-primary"><?php echo h($row['miqaat_mauze']) ?></div>
-                                        <div class="text-muted" style="font-size: 0.7rem;"><?php echo h($row['zone']) ?> • <?php echo h($row['miqaat_jamiat']) ?></div>
-                                    </td>
-                                    <td class="py-3">
-                                        <div class="small text-dark"><?php echo h($row['email_id']) ?></div>
-                                        <div class="text-muted" style="font-size: 0.7rem;"><?php echo h($row['mobile']) ?></div>
-                                    </td>
-                                    <td class="py-3">
-                                        <div class="badge bg-light text-secondary rounded-pill px-2" style="font-size: 0.65rem;"><?php echo h($row['mauze_type_name']) ?></div>
-                                        <div class="text-muted" style="font-size: 0.7rem; mt-1">Age: <?php echo $row['kg_age'] ?></div>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+
+                                        <!-- Progress bar -->
+                                        <div id="uploadProgress" class="d-none">
+                                            <div class="progress mb-2" style="height: 24px;">
+                                                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated"
+                                                     role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                                            </div>
+                                            <div id="progressMsg" class="text-center fw-semibold" style="font-size: 0.88rem;"></div>
+                                        </div>
+
+                                    </form>
+
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-12">
+                            <h5 class="card-title">List of Mamureen <span class="badge bg-secondary"><?= count($data) ?></span></h5>
+                            <table class="table table-bordered cell-border" id="datatable_manage_mamureen">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>ITS ID</th>
+                                        <th>Photo</th>
+                                        <th>Full Name</th>
+                                        <th>AVS Idara</th>
+                                        <th>Email</th>
+                                        <th>Mobile</th>
+                                        <th>Mauze Type</th>
+                                        <th>Age</th>
+                                        <th>Miqaat Mauze</th>
+                                        <th>Jamiat</th>
+                                        <th>Zone</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($data as $row) : ?>
+                                        <tr>
+                                            <td><?= htmlspecialchars($row['its_id']) ?></td>
+                                            <td><img style="width:50px;height:50px;object-fit:cover;" src="<?= user_photo_url($row['its_id']) ?>" class="rounded-circle" alt=""></td>
+                                            <td><?= htmlspecialchars($row['fullname']) ?></td>
+                                            <td><?= htmlspecialchars($row['avs_idara']) ?></td>
+                                            <td><?= htmlspecialchars($row['email_id']) ?></td>
+                                            <td><?= htmlspecialchars($row['mobile']) ?></td>
+                                            <td><?= htmlspecialchars($row['mauze_type_name']) ?></td>
+                                            <td><?= htmlspecialchars($row['kg_age']) ?></td>
+                                            <td><?= htmlspecialchars($row['miqaat_mauze']) ?></td>
+                                            <td><?= htmlspecialchars($row['miqaat_jamiat']) ?></td>
+                                            <td><?= htmlspecialchars($row['zone']) ?></td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 </main>
 
-<?php
-    require_once __DIR__ . '/../inc/footer.php';
-    require_once __DIR__ . '/../inc/js-block.php';
-?>
-<script>
-$(document).ready(function(){
-    $('#addUserBtn').click(function(){
-        $('#uploadFormContainer').slideToggle();
-    });
-});
-</script>
+<?php require_once __DIR__ . '/../inc/footer.php'; ?>
+<style>
+#progressBar { line-height: 24px; font-weight: bold; font-size: 0.82rem; }
+</style>
 <script src="../assets/js/manage_mamureen.js"></script>

@@ -11,3 +11,9 @@ temp/
 *.ini
 assets/vendor/
 admin/vendor/
+New folder/
+1446pages/
+*.bak
+*.backup
+admin/includes/
+.htaccess

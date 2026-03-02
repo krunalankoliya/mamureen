@@ -3,6 +3,18 @@
     require_once __DIR__ . '/session.php';
     require_once __DIR__ . '/inc/header.php';
 
+    $already_filled = false;
+    $filled_on      = null;
+    $mauze_esc      = $mysqli->real_escape_string($mauze);
+    $check_q        = mysqli_query($mysqli, "SELECT added_ts FROM `maaraz` WHERE user_its = $user_its AND jamaat = '$mauze_esc' LIMIT 1");
+    if ($check_q && $check_q->num_rows) {
+    $already_filled = true;
+    $row            = $check_q->fetch_assoc();
+    $filled_on      = $row['added_ts'];
+    }
+
+    // Handle Submit
+
     // Handle Submit
     $message = null;
     if (isset($_POST['submit_maaraz'])) {
@@ -110,6 +122,11 @@
         </div>
         <?php endif; ?>
 
+        <?php if ($already_filled): ?>
+            <div class="alert alert-info">
+                You have already submitted the Ma'raz report for this mauze on <?php echo date('d-M-Y H:i', strtotime($filled_on)); ?>. Thank you!
+            </div>
+        <?php else: ?>
         <!-- FORM CARD -->
         <div style="background: #fff; border-radius: 20px; box-shadow: 0 4px 24px rgba(13,110,253,.08), 0 1px 4px rgba(0,0,0,.06); padding: 28px 32px; margin-bottom: 24px;">
 
@@ -347,6 +364,7 @@
         </form>
         </div>
 
+        <?php endif; ?>
         <!-- RECORDS -->
         <?php if (! empty($records)): ?>
         <div style="background: #fff; border-radius: 20px; box-shadow: 0 4px 24px rgba(13,110,253,.08), 0 1px 4px rgba(0,0,0,.06); padding: 28px 32px; overflow: hidden;">

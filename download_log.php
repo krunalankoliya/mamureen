@@ -1,36 +1,39 @@
 <?php
-/**
- * Modern Download Logger & Streamer
- */
+ob_start();
 require_once __DIR__ . '/session.php';
+ob_clean();
 
-$id = (int)($_GET['id'] ?? 0);
-if ($id <= 0) redirect('resources.php');
+$download_id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
-// Fetch Resource
-$res = $db->fetch("SELECT * FROM my_downloads WHERE id = ?", [$id]);
-if (!$res) redirect('resources.php');
-
-$path = __DIR__ . '/uploads/' . $res['file_name'];
-if (!file_exists($path)) {
-    die("Error: File not found on server.");
+if ($download_id <= 0) {
+    header('Location: ' . MODULE_PATH . 'resources.php');
+    exit;
 }
 
-// Log Activity
-$db->insert('download_log', [
-    'its_id' => $user_its,
-    'download_id' => $id,
-    'download_date' => date('Y-m-d H:i:s')
-]);
+$result   = mysqli_query($mysqli, "SELECT * FROM `my_downloads` WHERE `id` = $download_id");
+$download = $result ? $result->fetch_assoc() : null;
 
-// Stream File
-$mime = mime_content_type($path) ?: 'application/octet-stream';
-header('Content-Description: File Transfer');
+if (! $download) {
+    header('Location: ' . MODULE_PATH . 'resources.php');
+    exit;
+}
+
+$file_path = __DIR__ . '/uploads/' . $download['file_name'];
+
+if (! file_exists($file_path)) {
+    header('Location: ' . MODULE_PATH . 'resources.php');
+    exit;
+}
+
+// Log the download
+$its_id = (int) $_SESSION[USER_ITS];
+mysqli_query($mysqli, "INSERT INTO `download_log` (`its_id`, `download_id`, `download_date`) VALUES ($its_id, $download_id, NOW())");
+
+// Stream file as forced download
+$mime = mime_content_type($file_path) ?: 'application/octet-stream';
 header('Content-Type: ' . $mime);
-header('Content-Disposition: attachment; filename="' . basename($res['file_name']) . '"');
-header('Content-Length: ' . filesize($path));
-header('Pragma: public');
-header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
-
-readfile($path);
+header('Content-Disposition: attachment; filename="' . basename($download['file_name']) . '"');
+header('Content-Length: ' . filesize($file_path));
+header('Cache-Control: no-cache, must-revalidate');
+readfile($file_path);
 exit;

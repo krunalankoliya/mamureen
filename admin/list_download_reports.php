@@ -37,7 +37,7 @@ $downloadData = mysqli_fetch_all($resultDownloadReports, MYSQLI_ASSOC);
                         <tbody>
                             <?php foreach ($downloadData as $row) : ?>
                                 <tr>
-                                    <td><a href="<?php echo MODULE_PATH ?>admin/individual_download_report.php?its=<?= $row['its_id'] ?>"><?= $row['its_id'] ?></a></td>
+                                    <td><a href="https://www.talabulilm.com/mamureen/admin/individual_download_report.php?its=<?= $row['its_id'] ?>"><?= $row['its_id'] ?></a></td>
                                     <td><?= $row['fullname'] ?></td>
                                     <td><?= $row['miqaat_mauze'] ?></td>
                                     <td><?= $row['zone'] ?></td>

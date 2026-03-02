@@ -1,80 +1,115 @@
 <?php
-$current_page = 'report_noteworthy_experiences';
 require_once __DIR__ . '/../session.php';
+$current_page = 'report_noteworthy_experiences';
 require_once __DIR__ . '/../inc/header.php';
 
-$records = $db->fetchAll("
-    SELECT ne.*, c.category_name, um.fullname AS submitted_by, um.miqaat_mauze 
-    FROM bqi_noteworthy_experiences ne
-    LEFT JOIN bqi_categories c ON ne.category_id = c.id
-    LEFT JOIN users_mamureen um ON um.its_id = ne.added_its
-    ORDER BY ne.added_ts DESC");
+// Pre-load all attachments
+$attachments = [];
+$ar = mysqli_query($mysqli, "SELECT * FROM `bqi_file_attachments` WHERE `module` = 'experience'");
+while ($row = $ar->fetch_assoc()) {
+    $attachments[$row['record_id']][] = $row;
+}
+
+// Fetch all records
+$result  = mysqli_query($mysqli, "SELECT ne.*, c.category_name, u.fullname AS submitted_by
+    FROM `bqi_noteworthy_experiences` ne
+    LEFT JOIN `bqi_categories` c ON ne.category_id = c.id
+    LEFT JOIN `users_mamureen` u ON ne.added_its = u.its_id
+    ORDER BY ne.id DESC");
+$records = $result->fetch_all(MYSQLI_ASSOC);
 ?>
-
-<main id="main" class="main main-content">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="h3 fw-bold text-dark mb-1">Noteworthy Experiences Report</h1>
-            <p class="text-muted small mb-0">Global collection of inspiring moments and significant achievements recorded during khidmat.</p>
-        </div>
-        <div class="d-flex gap-2">
-            <a href="<?= MODULE_PATH ?>admin/bqi_dashboard_export.php?type=noteworthy" class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm">
-                <i class="bi bi-file-earmark-excel me-1"></i> Export Master CSV
-            </a>
-        </div>
-    </div>
-
-    <div class="row">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm overflow-hidden">
-                <div class="card-header bg-white py-3 px-4 border-bottom-0 d-flex justify-content-between align-items-center">
-                    <h5 class="fw-bold mb-0">Inspiring Records</h5>
-                    <span class="badge bg-light text-primary border rounded-pill px-3"><?= count($records) ?> Entries</span>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0 datatable">
-                        <thead class="bg-light bg-opacity-50">
-                            <tr>
-                                <th class="px-4 py-3 small text-muted text-uppercase border-0">Experience Details</th>
-                                <th class="py-3 small text-muted text-uppercase border-0">Location</th>
-                                <th class="py-3 small text-muted text-uppercase border-0">Attachments</th>
-                                <th class="px-4 py-3 small text-muted text-uppercase border-0 text-end">Registrar</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($records as $r): ?>
+<main id="main" class="main">
+    <section class="section dashboard">
+        <div class="row">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        Noteworthy Experiences Report
+                        <span class="badge bg-secondary ms-2"><?= count($records) ?> records</span>
+                    </h5>
+                    <div id="app-config" data-base-url="<?= htmlspecialchars(MODULE_PATH) ?>"></div>
+                    <div class="table-responsive">
+                        <table class="table table-striped" id="datatable">
+                            <thead>
                                 <tr>
-                                    <td class="px-4 py-3">
-                                        <div class="badge bg-success bg-opacity-10 text-success rounded-pill px-2 mb-2" style="font-size: 0.65rem;"><?= h($r['category_name']) ?></div>
-                                        <div class="text-dark small fw-semibold" style="max-width: 400px;"><?= h($r['experience_text']) ?></div>
-                                    </td>
-                                    <td class="py-3">
-                                        <div class="small fw-semibold text-dark"><?= h($r['miqaat_mauze']) ?></div>
-                                    </td>
-                                    <td class="py-3">
-                                        <?php 
-                                        $files = $db->fetchAll("SELECT * FROM bqi_file_attachments WHERE module='experience' AND record_id=?", [$r['id']]);
-                                        foreach($files as $f): ?>
-                                            <a href="<?= MODULE_PATH ?>user_uploads/<?= $f['file_path'] ?>" target="_blank" class="badge bg-light text-primary border text-decoration-none">
-                                                <i class="bi bi-paperclip"></i> View
-                                            </a>
-                                        <?php endforeach; ?>
-                                    </td>
-                                    <td class="px-4 py-3 text-end">
-                                        <div class="small fw-bold text-dark"><?= h($r['submitted_by'] ?? 'N/A') ?></div>
-                                        <div class="text-muted" style="font-size: 0.65rem;"><?= date('d M, Y', strtotime($r['added_ts'])) ?></div>
-                                    </td>
+                                    <th>#</th>
+                                    <th>Category</th>
+                                    <th>Experience</th>
+                                    <th>Jamaat</th>
+                                    <th>Submitted By</th>
+                                    <th>Date</th>
+                                    <th>Files</th>
+                                    <th>Action</th>
                                 </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($records as $i => $r):
+                                    $record_files = $attachments[$r['id']] ?? [];
+                                    $files_arr    = array_map(fn($f) => ['path' => $f['file_path'], 'type' => $f['file_type'], 'name' => $f['file_name']], $record_files);
+                                    $file_count   = count($record_files);
+
+                                    $fields_arr = [
+                                        ['label' => 'Category',     'value' => $r['category_name'] ?? ''],
+                                        ['label' => 'Experience',   'value' => $r['experience_text'] ?? ''],
+                                        ['label' => 'Jamaat',       'value' => $r['jamaat'] ?? ''],
+                                        ['label' => 'Submitted By', 'value' => ($r['submitted_by'] ?? '') . ' (' . $r['added_its'] . ')'],
+                                        ['label' => 'Date',         'value' => date('d-M-Y H:i', strtotime($r['added_ts']))],
+                                    ];
+
+                                    $fields_json = htmlspecialchars(json_encode($fields_arr, JSON_UNESCAPED_UNICODE), ENT_QUOTES);
+                                    $files_json  = htmlspecialchars(json_encode($files_arr,  JSON_UNESCAPED_UNICODE), ENT_QUOTES);
+                                ?>
+                                    <tr>
+                                        <td><?= $i + 1 ?></td>
+                                        <td><?= htmlspecialchars($r['category_name'] ?? '—') ?></td>
+                                        <td data-full="<?= htmlspecialchars($r['experience_text'] ?? '') ?>"><?= htmlspecialchars(mb_strimwidth($r['experience_text'] ?? '', 0, 60, '…')) ?></td>
+                                        <td><?= htmlspecialchars($r['jamaat'] ?? '') ?></td>
+                                        <td><?= htmlspecialchars($r['submitted_by'] ?? $r['added_its']) ?></td>
+                                        <td><?= date('d-M-Y', strtotime($r['added_ts'])) ?></td>
+                                        <td>
+                                            <?php if ($file_count > 0): ?>
+                                                <span class="badge bg-info"><?= $file_count ?> file<?= $file_count > 1 ? 's' : '' ?></span>
+                                            <?php else: ?>
+                                                <span class="text-muted">—</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary view-btn"
+                                                data-title="<?= htmlspecialchars(mb_strimwidth($r['experience_text'] ?? '', 0, 40, '…')) ?>"
+                                                data-fields="<?= $fields_json ?>"
+                                                data-files="<?= $files_json ?>">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 </main>
 
-<?php 
-require_once __DIR__ . '/../inc/footer.php'; 
-require_once __DIR__ . '/../inc/js-block.php'; 
-?>
+<!-- View Modal -->
+<div class="modal fade" id="viewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewModalLabel">Record Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-fields"></div>
+                <div id="modal-files"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<?php require_once __DIR__ . '/../inc/footer.php'; ?>
+<script src="<?= MODULE_PATH ?>assets/js/admin_reports.js"></script>
