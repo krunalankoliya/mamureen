@@ -92,14 +92,10 @@ $extBadge = [
     border-radius: 10px;
     margin-bottom: 0.55rem;
     background: #fff;
-    text-decoration: none;
-    color: inherit;
     transition: box-shadow .15s, border-color .15s;
 }
 .dl-item:hover {
     box-shadow: 0 3px 14px rgba(0,0,0,0.09);
-    text-decoration: none;
-    color: inherit;
 }
 .dl-item.is-new  { border-color: #1e3a8a; border-width: 1.5px; }
 .dl-item.is-done { opacity: 0.65; }
@@ -210,10 +206,9 @@ $extBadge = [
                                     $itemClass = 'is-new';
                                 }
                             ?>
-                            <a href="download_log.php?id=<?= $resource['id'] ?>"
-                               class="dl-item <?= $itemClass ?>"
-                               data-color="<?= htmlspecialchars($dotColor) ?>"
-                               data-title="<?= strtolower(htmlspecialchars($resource['title'])) ?>">
+                            <div class="dl-item <?= $itemClass ?>"
+                                 data-color="<?= htmlspecialchars($dotColor) ?>"
+                                 data-title="<?= strtolower(htmlspecialchars($resource['title'])) ?>">
                                 <div class="dl-badge <?= $isDownloaded ? 'done-badge' : '' ?>">
                                     <?= $badge ?>
                                 </div>
@@ -221,12 +216,17 @@ $extBadge = [
                                     <p class="dl-item-title"><?= htmlspecialchars($resource['title']) ?></p>
                                     <p class="dl-item-date"><?= $dateLabel ?></p>
                                 </div>
-                                <?php if ($isDownloaded): ?>
-                                <i class="bi bi-check2-circle text-success ms-auto flex-shrink-0 fs-5"></i>
-                                <?php else: ?>
-                                <i class="bi bi-download text-primary ms-auto flex-shrink-0 fs-5"></i>
-                                <?php endif; ?>
-                            </a>
+                                <div class="d-flex align-items-center gap-2 ms-auto flex-shrink-0">
+                                    <a href="view_file.php?id=<?= $resource['id'] ?>" target="_blank"
+                                       class="btn btn-sm btn-outline-secondary" title="View">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="download_log.php?id=<?= $resource['id'] ?>"
+                                       class="btn btn-sm <?= $isDownloaded ? 'btn-outline-success' : 'btn-primary' ?>" title="Download">
+                                        <i class="bi bi-<?= $isDownloaded ? 'check2-circle' : 'download' ?>"></i>
+                                    </a>
+                                </div>
+                            </div>
                             <?php endforeach; ?>
                         <?php endif; ?>
                         </div>
