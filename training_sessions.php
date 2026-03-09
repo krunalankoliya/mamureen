@@ -138,8 +138,8 @@
 
     // Fetch this mauze's training sessions
     $mauze_its_subquery = "(SELECT `its_id` FROM `users_mamureen` WHERE `miqaat_mauze` = '$mauze')";
-    $reports = [];
-    $result  = mysqli_query($mysqli, "SELECT ts.*, um.fullname AS submitted_by FROM `bqi_training_sessions` ts LEFT JOIN `users_mamureen` um ON um.its_id = ts.user_its WHERE ts.user_its IN $mauze_its_subquery ORDER BY ts.id DESC");
+    $reports            = [];
+    $result             = mysqli_query($mysqli, "SELECT ts.*, um.fullname AS submitted_by FROM `bqi_training_sessions` ts LEFT JOIN `users_mamureen` um ON um.its_id = ts.user_its WHERE ts.user_its IN $mauze_its_subquery ORDER BY ts.id DESC");
     if ($result) {
     $reports = $result->fetch_all(MYSQLI_ASSOC);
     }
@@ -238,9 +238,9 @@
                                         </div>
 
                                         <div class="row mb-3">
-                                            <label class="col-sm-4 col-form-label">Upload Photo 1<span class="required_star">*</span></label>
+                                            <label class="col-sm-4 col-form-label">Upload Photo 1</label>
                                             <div class="col-sm-8">
-                                                <input type="file" class="form-control" accept="image/*" name="upload_photo_1" required>
+                                                <input type="file" class="form-control" accept="image/*" name="upload_photo_1">
                                             </div>
                                         </div>
 

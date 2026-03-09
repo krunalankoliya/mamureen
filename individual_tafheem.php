@@ -1,21 +1,21 @@
 <?php
-require_once(__DIR__ . '/session.php');
-$current_page = 'individual_tafheem';
+    require_once __DIR__ . '/session.php';
+    $current_page = 'individual_tafheem';
 
-require_once(__DIR__ . '/inc/header.php');
+    require_once __DIR__ . '/inc/header.php';
 
-$program_type_options = [
+    $program_type_options = [
     'Zakereen Farzando Training',
     'Social Media Awareness',
     'Shaadi Tafheem',
-];
+    ];
 
-// Initialize variables
-$verified_user = null;
+    // Initialize variables
+    $verified_user = null;
 
-// Function to fetch user data from API (server-side)
-function fetchUserDataByITS_tafheem($its_id)
-{
+    // Function to fetch user data from API (server-side)
+    function fetchUserDataByITS_tafheem($its_id)
+    {
     if (empty($its_id)) {
         return null;
     }
@@ -46,30 +46,30 @@ function fetchUserDataByITS_tafheem($its_id)
     }
 
     $data = json_decode($response, true);
-    if (empty($data) || !isset($data['its_id'])) {
+    if (empty($data) || ! isset($data['its_id'])) {
         return null;
     }
 
     return $data;
-}
+    }
 
-// Handle Verify ITS (server-side)
-if (isset($_POST['verify_its'])) {
+    // Handle Verify ITS (server-side)
+    if (isset($_POST['verify_its'])) {
     $verify_its_id = (int) $_POST['verify_its_id'];
 
-    if ($verify_its_id <= 0 || strlen((string)$verify_its_id) < 8) {
+    if ($verify_its_id <= 0 || strlen((string) $verify_its_id) < 8) {
         $message = ['text' => 'Please enter a valid 8-digit ITS ID.', 'tag' => 'danger'];
     } else {
         $verified_user = fetchUserDataByITS_tafheem($verify_its_id);
-        if (!$verified_user) {
+        if (! $verified_user) {
             $message = ['text' => "ITS ID $verify_its_id not found. Please check and try again.", 'tag' => 'danger'];
         }
     }
-}
+    }
 
-// Handle Submit
-if (isset($_POST['submit_tafheem'])) {
-    $target_its_id       = (int)$_POST['target_its_id'];
+    // Handle Submit
+    if (isset($_POST['submit_tafheem'])) {
+    $target_its_id       = (int) $_POST['target_its_id'];
     $target_name         = mysqli_real_escape_string($mysqli, $_POST['target_name']);
     $type                = mysqli_real_escape_string($mysqli, $_POST['type'] ?? '');
     $selected_reason_ids = $_POST['reason_ids'] ?? [];
@@ -90,21 +90,26 @@ if (isset($_POST['submit_tafheem'])) {
                 $file_count = count($_FILES['attachments']['name']);
                 for ($i = 0; $i < $file_count; $i++) {
                     if ($_FILES['attachments']['error'][$i] === UPLOAD_ERR_OK) {
-                        $fileName = $_FILES['attachments']['name'][$i];
-                        $tempPath = $_FILES['attachments']['tmp_name'][$i];
-                        $fileSize = $_FILES['attachments']['size'][$i];
-                        $fileType = pathinfo($fileName, PATHINFO_EXTENSION);
-                        $acceptable = ['jpeg', 'jpg', 'png'];
+                        $fileName   = $_FILES['attachments']['name'][$i];
+                        $tempPath   = $_FILES['attachments']['tmp_name'][$i];
+                        $fileSize   = $_FILES['attachments']['size'][$i];
+                        $fileType   = pathinfo($fileName, PATHINFO_EXTENSION);
+                        $acceptable = ['jpeg', 'jpg', 'png', 'mp4', 'mov', 'avi', 'mp3', 'wav', 'ogg', 'pdf', 'ppt', 'pptx'];
 
-                        if ($fileSize > 4194304) continue; // Skip files > 4MB
-                        if (!in_array(strtolower($fileType), $acceptable)) continue;
+                        if ($fileSize > 5 * 1024 * 1024) {
+                            continue;
+                        }
+                        // Skip files > 5MB
+                        if (! in_array(strtolower($fileType), $acceptable)) {
+                            continue;
+                        }
 
                         $uploadName = $user_its . '_tafheem_' . date('YmdHis') . '_' . $i . '.' . $fileType;
-                        $moved = move_uploaded_file($tempPath, __DIR__ . "/user_uploads/" . $uploadName);
+                        $moved      = move_uploaded_file($tempPath, __DIR__ . "/user_uploads/" . $uploadName);
 
                         if ($moved) {
-                            $esc_name = mysqli_real_escape_string($mysqli, $fileName);
-                            $esc_type = mysqli_real_escape_string($mysqli, $fileType);
+                            $esc_name    = mysqli_real_escape_string($mysqli, $fileName);
+                            $esc_type    = mysqli_real_escape_string($mysqli, $fileType);
                             $attachQuery = "INSERT INTO `bqi_file_attachments` (`module`, `record_id`, `file_name`, `file_path`, `file_type`, `file_size`, `added_its`)
                                             VALUES ('tafheem', '$record_id', '$esc_name', '$uploadName', '$esc_type', '$fileSize', '$user_its')";
                             mysqli_query($mysqli, $attachQuery);
@@ -113,28 +118,28 @@ if (isset($_POST['submit_tafheem'])) {
                 }
             }
 
-            $message = ['text' => 'Tafheem report submitted successfully.', 'tag' => 'success'];
+            $message    = ['text' => 'Tafheem report submitted successfully.', 'tag' => 'success'];
             $show_popup = true;
         } catch (Exception $e) {
             $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
         }
     }
-}
+    }
 
-// Handle Delete
-if (isset($_POST['delete_tafheem'])) {
-    $delete_id = (int)$_POST['delete_id'];
-    $result = mysqli_query($mysqli, "DELETE FROM `bqi_individual_tafheem` WHERE `id` = '$delete_id' AND `added_its` = '$user_its'");
+    // Handle Delete
+    if (isset($_POST['delete_tafheem'])) {
+    $delete_id = (int) $_POST['delete_id'];
+    $result    = mysqli_query($mysqli, "DELETE FROM `bqi_individual_tafheem` WHERE `id` = '$delete_id' AND `added_its` = '$user_its'");
     if ($result) {
         $message = ['text' => 'Report deleted successfully.', 'tag' => 'success'];
     } else {
         $message = ['text' => 'Failed to delete: ' . mysqli_error($mysqli), 'tag' => 'danger'];
     }
-}
+    }
 
-// Handle Edit
-if (isset($_POST['update_tafheem'])) {
-    $edit_id             = (int)$_POST['edit_id'];
+    // Handle Edit
+    if (isset($_POST['update_tafheem'])) {
+    $edit_id             = (int) $_POST['edit_id'];
     $type                = mysqli_real_escape_string($mysqli, $_POST['type'] ?? '');
     $selected_reason_ids = $_POST['reason_ids'] ?? [];
     $reason_ids_str      = implode(',', array_map('intval', $selected_reason_ids));
@@ -148,28 +153,28 @@ if (isset($_POST['update_tafheem'])) {
     } catch (Exception $e) {
         $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
     }
-}
+    }
 
-// Fetch all active Tafheem Reasons (for edit modal multi-select)
-$query   = "SELECT * FROM `bqi_tafheem_reasons` WHERE `is_active` = 1 ORDER BY `sort_order`, `reason_name`";
-$result  = mysqli_query($mysqli, $query);
-$reasons = $result->fetch_all(MYSQLI_ASSOC);
+    // Fetch all active Tafheem Reasons (for edit modal multi-select)
+    $query   = "SELECT * FROM `bqi_tafheem_reasons` WHERE `is_active` = 1 ORDER BY `sort_order`, `reason_name`";
+    $result  = mysqli_query($mysqli, $query);
+    $reasons = $result->fetch_all(MYSQLI_ASSOC);
 
-// Build reasons map for display (id => reason_name)
-$reasons_map = array_column($reasons, 'reason_name', 'id');
+    // Build reasons map for display (id => reason_name)
+    $reasons_map = array_column($reasons, 'reason_name', 'id');
 
-// Fetch mauze's submitted records
-$mauze_its_subquery = "(SELECT `its_id` FROM `users_mamureen` WHERE `miqaat_mauze` = '$mauze')";
-$query = "SELECT t.*, um.fullname AS submitted_by FROM `bqi_individual_tafheem` t LEFT JOIN `users_mamureen` um ON um.its_id = t.added_its WHERE t.added_its IN $mauze_its_subquery ORDER BY t.added_ts DESC";
-$result = mysqli_query($mysqli, $query);
-$tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
+    // Fetch mauze's submitted records
+    $mauze_its_subquery = "(SELECT `its_id` FROM `users_mamureen` WHERE `miqaat_mauze` = '$mauze')";
+    $query              = "SELECT t.*, um.fullname AS submitted_by FROM `bqi_individual_tafheem` t LEFT JOIN `users_mamureen` um ON um.its_id = t.added_its WHERE t.added_its IN $mauze_its_subquery ORDER BY t.added_ts DESC";
+    $result             = mysqli_query($mysqli, $query);
+    $tafheem_list       = $result->fetch_all(MYSQLI_ASSOC);
 ?>
 
 <link rel="stylesheet" href="assets/css/training_sessions.css">
 <main id="main" class="main bqi-1447">
     <section class="section dashboard">
         <div class="row">
-            <?php require_once(__DIR__ . '/inc/messages.php'); ?>
+            <?php require_once __DIR__ . '/inc/messages.php'; ?>
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">Individual Tafheem Report</h5>
@@ -187,7 +192,7 @@ $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
                                         </div>
                                         <div class="row mb-3">
                                             <div class="col-md-3 text-center">
-                                                <img src="<?= user_photo_url($verified_user['its_id']) ?>"
+                                                <img src="<?php echo user_photo_url($verified_user['its_id']) ?>"
                                                      class="rounded-circle" width="80" height="80"
                                                      alt="<?php echo htmlspecialchars($verified_user['full_name_en']) ?>">
                                             </div>
@@ -212,7 +217,7 @@ $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
                                                     <select name="type" id="tf_type_select" class="form-select" required>
                                                         <option value="" disabled selected>Select Type...</option>
                                                         <?php foreach ($program_type_options as $opt): ?>
-                                                            <option value="<?= htmlspecialchars($opt) ?>"><?= htmlspecialchars($opt) ?></option>
+                                                            <option value="<?php echo htmlspecialchars($opt) ?>"><?php echo htmlspecialchars($opt) ?></option>
                                                         <?php endforeach; ?>
                                                     </select>
                                                 </div>
@@ -257,8 +262,8 @@ $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
                                             <div class="row mb-3">
                                                 <label class="col-sm-4 col-form-label">Attachments</label>
                                                 <div class="col-sm-8">
-                                                    <input type="file" name="attachments[]" class="form-control" accept="image/*" multiple>
-                                                    <small class="text-muted">Optional. JPG/PNG, max 4MB each.</small>
+                                                    <input type="file" name="attachments[]" class="form-control" accept="image/jpeg,image/png,video/mp4,video/quicktime,video/x-msvideo,audio/mpeg,audio/wav,audio/ogg,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" multiple>
+                                                    <small class="text-muted">Optional. Allowed: JPG, PNG, MP4, MOV, AVI, MP3, WAV, OGG, PDF, PPT. Max 5MB each.</small>
                                                     <div id="progressContainer" class="mt-2 d-none">
                                                         <div class="progress">
                                                             <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
@@ -310,12 +315,12 @@ $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($tafheem_list as $key => $t) : ?>
+                                    <?php foreach ($tafheem_list as $key => $t): ?>
                                         <tr>
-                                            <td><?= $key + 1 ?></td>
-                                            <td><?= $t['target_its_id'] ?></td>
-                                            <td><?= htmlspecialchars($t['target_name']) ?></td>
-                                            <td><?= htmlspecialchars($t['type'] ?? '') ?></td>
+                                            <td><?php echo $key + 1 ?></td>
+                                            <td><?php echo $t['target_its_id'] ?></td>
+                                            <td><?php echo htmlspecialchars($t['target_name']) ?></td>
+                                            <td><?php echo htmlspecialchars($t['type'] ?? '') ?></td>
                                             <td>
                                                 <?php
                                                     $ids   = array_filter(array_map('intval', explode(',', $t['reason_id'])));
@@ -326,21 +331,21 @@ $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
                                                     echo $names ? implode(', ', $names) : 'N/A';
                                                 ?>
                                             </td>
-                                            <td><?= date('d-M-Y', strtotime($t['added_ts'])) ?></td>
-                                            <td><?= htmlspecialchars($t['submitted_by'] ?? '') ?></td>
+                                            <td><?php echo date('d-M-Y', strtotime($t['added_ts'])) ?></td>
+                                            <td><?php echo htmlspecialchars($t['submitted_by'] ?? '') ?></td>
                                             <td>
                                                 <button type="button" class="btn btn-sm btn-outline-info view-btn"
-                                                    data-id="<?= $t['id'] ?>"
-                                                    data-its="<?= $t['target_its_id'] ?>"
-                                                    data-name="<?= htmlspecialchars($t['target_name']) ?>"
-                                                    data-type="<?= htmlspecialchars($t['type'] ?? '') ?>"
-                                                    data-reason="<?= htmlspecialchars($t['reason_id']) ?>"
-                                                    data-details="<?= htmlspecialchars($t['report_details']) ?>"
+                                                    data-id="<?php echo $t['id'] ?>"
+                                                    data-its="<?php echo $t['target_its_id'] ?>"
+                                                    data-name="<?php echo htmlspecialchars($t['target_name']) ?>"
+                                                    data-type="<?php echo htmlspecialchars($t['type'] ?? '') ?>"
+                                                    data-reason="<?php echo htmlspecialchars($t['reason_id']) ?>"
+                                                    data-details="<?php echo htmlspecialchars($t['report_details']) ?>"
                                                     data-bs-toggle="modal" data-bs-target="#editModal">
                                                     <i class="bi bi-pencil-square"></i>
                                                 </button>
                                                 <form method="post" class="d-inline">
-                                                    <input type="hidden" name="delete_id" value="<?= $t['id'] ?>">
+                                                    <input type="hidden" name="delete_id" value="<?php echo $t['id'] ?>">
                                                     <button type="submit" name="delete_tafheem" class="btn btn-sm btn-outline-danger delete-btn">
                                                         <i class="bi bi-trash-fill"></i>
                                                     </button>
@@ -378,7 +383,7 @@ $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
                         <select name="type" id="edit_type" class="form-select" required>
                             <option value="" disabled>Select Type...</option>
                             <?php foreach ($program_type_options as $opt): ?>
-                                <option value="<?= htmlspecialchars($opt) ?>"><?= htmlspecialchars($opt) ?></option>
+                                <option value="<?php echo htmlspecialchars($opt) ?>"><?php echo htmlspecialchars($opt) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -386,7 +391,7 @@ $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
                         <label class="form-label">Reason(s)</label>
                         <select name="reason_ids[]" id="edit_reason" class="form-select" multiple required style="height: 160px;">
                             <?php foreach ($reasons as $r): ?>
-                                <option value="<?= $r['id'] ?>"><?= htmlspecialchars($r['reason_name']) ?></option>
+                                <option value="<?php echo $r['id'] ?>"><?php echo htmlspecialchars($r['reason_name']) ?></option>
                             <?php endforeach; ?>
                         </select>
                         <small class="text-muted">Hold Ctrl / Cmd to select multiple.</small>
@@ -405,10 +410,10 @@ $tafheem_list = $result->fetch_all(MYSQLI_ASSOC);
     </div>
 </div>
 
-<?php require_once(__DIR__ . '/inc/footer.php'); ?>
+<?php require_once __DIR__ . '/inc/footer.php'; ?>
 <style>
 .progress     { height: 25px; }
 .progress-bar { line-height: 25px; font-weight: bold; }
 #uploadMessage { font-size: 14px; }
 </style>
-<script src="assets/js/individual_tafheem.js"></script>
+<script src="assets/js/individual_tafheem.js?v=2"></script>

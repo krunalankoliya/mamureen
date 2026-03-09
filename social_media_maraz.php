@@ -21,8 +21,8 @@
     'strongly_negative' => 'danger',
     ];
     /**
-     * Submit Report
-     */
+ * Submit Report
+ */
     if (isset($_POST['submit_maraz'])) {
     try {
         $record_id = $db->insert('bqi_social_media_maraz', [
@@ -41,11 +41,21 @@
             'added_its'            => $user_its,
         ]);
 
-        // Photo uploads
+        // Attachments uploads
         if (! empty($_FILES['photos']['name'][0])) {
+            $allowedExt = ['jpg', 'jpeg', 'png', 'mp4', 'mov', 'avi', 'mp3', 'wav', 'ogg', 'pdf', 'ppt', 'pptx'];
             foreach ($_FILES['photos']['name'] as $i => $name) {
                 if ($_FILES['photos']['error'][$i] === UPLOAD_ERR_OK) {
-                    $ext     = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+                    $ext   = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+                    $fsize = (int) $_FILES['photos']['size'][$i];
+
+                    if ($fsize > 5 * 1024 * 1024) {
+                        continue;
+                    }
+                    if (! in_array($ext, $allowedExt, true)) {
+                        continue;
+                    }
+
                     $newName = $user_its . '_maraz_' . date('YmdHis') . '_' . $i . '.' . $ext;
                     if (move_uploaded_file($_FILES['photos']['tmp_name'][$i], __DIR__ . '/user_uploads/' . $newName)) {
                         $db->insert('bqi_file_attachments', [
@@ -54,7 +64,7 @@
                             'file_name' => $name,
                             'file_path' => $newName,
                             'file_type' => $ext,
-                            'file_size' => $_FILES['photos']['size'][$i],
+                            'file_size' => $fsize,
                             'added_its' => $user_its,
                         ]);
                     }
@@ -118,7 +128,7 @@
                     <button type="button" id="clearDraftBtn" class="btn btn-sm btn-outline-warning rounded-pill py-0 ms-2">Clear</button>
                 </div>
 
-                <form method="post" enctype="multipart/form-data" id="uploadForm" data-user-its="<?php echo (int)$user_its ?>">
+                <form method="post" enctype="multipart/form-data" id="uploadForm" data-user-its="<?php echo (int) $user_its ?>">
 
                     <!-- 1. Compliance Slider -->
                     <div class="mb-4">
@@ -211,11 +221,11 @@
                         </div>
                     </div>
 
-                    <!-- 10. Photos -->
+                    <!-- 10. Attachments -->
                     <div class="mb-3">
-                        <label class="form-label fw-bold small">Ma'raz ni tasaveer upload karwu</label>
-                        <input type="file" name="photos[]" class="form-control" multiple accept="image/*">
-                        <div class="form-text text-muted">JPEG / PNG – max 5 MB per photo</div>
+                        <label class="form-label fw-bold small">Ma'raz na related files upload karwu</label>
+                        <input type="file" name="photos[]" class="form-control" multiple accept="image/jpeg,image/png,video/mp4,video/quicktime,video/x-msvideo,audio/mpeg,audio/wav,audio/ogg,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation">
+                        <div class="form-text text-muted">Allowed: Images (JPG, PNG), Videos (MP4, MOV, AVI), Audio (MP3, WAV, OGG), PDF, PPT — max 5 MB per file</div>
                     </div>
 
                     <!-- 11. Additional Info -->
@@ -285,7 +295,7 @@
                                         <?php endif; ?>
                                     </td>
                                     <td class="py-3">
-                                        <span class="badge bg-primary bg-opacity-10 text-primary fw-bold"><?php echo (int)$r['compliance_pct'] ?>%</span>
+                                        <span class="badge bg-primary bg-opacity-10 text-primary fw-bold"><?php echo (int) $r['compliance_pct'] ?>%</span>
                                     </td>
                                     <td class="py-3">
                                         <?php
@@ -315,4 +325,4 @@
     require_once __DIR__ . '/inc/footer.php';
     require_once __DIR__ . '/inc/js-block.php';
 ?>
-<script src="assets/js/social_media_maraz.js"></script>
+<script src="assets/js/social_media_maraz.js?v=2"></script>

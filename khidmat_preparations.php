@@ -27,7 +27,7 @@
                         $tempPath   = $_FILES['attachments']['tmp_name'][$i];
                         $fileSize   = $_FILES['attachments']['size'][$i];
                         $fileType   = pathinfo($fileName, PATHINFO_EXTENSION);
-                        $acceptable = ['jpeg', 'jpg', 'png', 'mp4', 'mov', 'avi', 'mp3', 'wav', 'ogg', 'pdf'];
+                        $acceptable = ['jpeg', 'jpg', 'png', 'mp4', 'mov', 'avi', 'mp3', 'wav', 'ogg', 'pdf', 'ppt', 'pptx'];
 
                         if ($fileSize > 5242880) {
                             continue;
@@ -128,9 +128,9 @@
                                         <div class="row mb-3">
                                             <label class="col-sm-4 col-form-label">Attachments</label>
                                             <div class="col-sm-8">
-                                                <input type="file" name="attachments[]" class="form-control" accept="image/*,video/*,audio/*,.pdf" multiple>
+                                                <input type="file" name="attachments[]" class="form-control" accept="image/jpeg,image/png,video/mp4,video/quicktime,video/x-msvideo,audio/mpeg,audio/wav,audio/ogg,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" multiple>
                                                 <div class="alert alert-info mt-2 py-1 px-2 mb-0">
-                                                    <small><strong>Allowed:</strong> Images (JPG, PNG), Videos (MP4, MOV, AVI), Audio (MP3, WAV, OGG), PDF<br>
+                                                    <small><strong>Allowed:</strong> Images (JPG, PNG), Videos (MP4, MOV, AVI), Audio (MP3, WAV, OGG), PDF, PPT<br>
                                                     <strong>Max file size: 5 MB per file</strong></small>
                                                 </div>
                                                 <div id="progressContainer" class="mt-2 d-none">
@@ -241,4 +241,4 @@
 .progress-bar { line-height: 25px; font-weight: bold; }
 #uploadMessage { font-size: 14px; }
 </style>
-<script src="assets/js/khidmat_preparations.js"></script>
+<script src="assets/js/khidmat_preparations.js?v=2"></script>

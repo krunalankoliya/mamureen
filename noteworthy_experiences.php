@@ -1,12 +1,12 @@
 <?php
-require_once(__DIR__ . '/session.php');
-$current_page = 'noteworthy_experiences';
+    require_once __DIR__ . '/session.php';
+    $current_page = 'noteworthy_experiences';
 
-require_once(__DIR__ . '/inc/header.php');
+    require_once __DIR__ . '/inc/header.php';
 
-// Handle Submit
-if (isset($_POST['submit_experience'])) {
-    $category_id = (int)$_POST['category_id'];
+    // Handle Submit
+    if (isset($_POST['submit_experience'])) {
+    $category_id     = (int) $_POST['category_id'];
     $experience_text = mysqli_real_escape_string($mysqli, $_POST['experience_text']);
 
     if ($category_id <= 0 || empty($experience_text)) {
@@ -23,21 +23,26 @@ if (isset($_POST['submit_experience'])) {
                 $file_count = count($_FILES['attachments']['name']);
                 for ($i = 0; $i < $file_count; $i++) {
                     if ($_FILES['attachments']['error'][$i] === UPLOAD_ERR_OK) {
-                        $fileName = $_FILES['attachments']['name'][$i];
-                        $tempPath = $_FILES['attachments']['tmp_name'][$i];
-                        $fileSize = $_FILES['attachments']['size'][$i];
-                        $fileType = pathinfo($fileName, PATHINFO_EXTENSION);
-                        $acceptable = ['jpeg', 'jpg', 'png', 'pdf', 'mp4', 'mov', 'avi', 'mp3', 'wav', 'ogg'];
+                        $fileName   = $_FILES['attachments']['name'][$i];
+                        $tempPath   = $_FILES['attachments']['tmp_name'][$i];
+                        $fileSize   = $_FILES['attachments']['size'][$i];
+                        $fileType   = pathinfo($fileName, PATHINFO_EXTENSION);
+                        $acceptable = ['jpeg', 'jpg', 'png', 'pdf', 'mp4', 'mov', 'avi', 'mp3', 'wav', 'ogg', 'ppt', 'pptx'];
 
-                        if ($fileSize > 5242880) continue; // 5MB limit
-                        if (!in_array(strtolower($fileType), $acceptable)) continue;
+                        if ($fileSize > 5242880) {
+                            continue;
+                        }
+                        // 5MB limit
+                        if (! in_array(strtolower($fileType), $acceptable)) {
+                            continue;
+                        }
 
                         $uploadName = $user_its . '_experience_' . date('YmdHis') . '_' . $i . '.' . $fileType;
-                        $moved = move_uploaded_file($tempPath, __DIR__ . "/user_uploads/" . $uploadName);
+                        $moved      = move_uploaded_file($tempPath, __DIR__ . "/user_uploads/" . $uploadName);
 
                         if ($moved) {
-                            $esc_name = mysqli_real_escape_string($mysqli, $fileName);
-                            $esc_type = mysqli_real_escape_string($mysqli, $fileType);
+                            $esc_name    = mysqli_real_escape_string($mysqli, $fileName);
+                            $esc_type    = mysqli_real_escape_string($mysqli, $fileType);
                             $attachQuery = "INSERT INTO `bqi_file_attachments` (`module`, `record_id`, `file_name`, `file_path`, `file_type`, `file_size`, `added_its`)
                                             VALUES ('experience', '$record_id', '$esc_name', '$uploadName', '$esc_type', '$fileSize', '$user_its')";
                             mysqli_query($mysqli, $attachQuery);
@@ -46,18 +51,18 @@ if (isset($_POST['submit_experience'])) {
                 }
             }
 
-            $message = ['text' => 'Noteworthy experience submitted successfully.', 'tag' => 'success'];
+            $message    = ['text' => 'Noteworthy experience submitted successfully.', 'tag' => 'success'];
             $show_popup = true;
         } catch (Exception $e) {
             $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
         }
     }
-}
+    }
 
-// Handle Edit
-if (isset($_POST['update_experience'])) {
-    $edit_id = (int)$_POST['edit_id'];
-    $category_id = (int)$_POST['category_id'];
+    // Handle Edit
+    if (isset($_POST['update_experience'])) {
+    $edit_id         = (int) $_POST['edit_id'];
+    $category_id     = (int) $_POST['category_id'];
     $experience_text = mysqli_real_escape_string($mysqli, $_POST['experience_text']);
 
     $query = "UPDATE `bqi_noteworthy_experiences` SET `category_id` = '$category_id', `experience_text` = '$experience_text',
@@ -68,28 +73,28 @@ if (isset($_POST['update_experience'])) {
     } catch (Exception $e) {
         $message = ['text' => $e->getMessage(), 'tag' => 'danger'];
     }
-}
+    }
 
-// Fetch categories
-$query = "SELECT * FROM `bqi_categories` WHERE `category_type` = 'experience' AND `is_active` = 1 ORDER BY `sort_order`, `category_name`";
-$result = mysqli_query($mysqli, $query);
-$categories = $result->fetch_all(MYSQLI_ASSOC);
+    // Fetch categories
+    $query      = "SELECT * FROM `bqi_categories` WHERE `category_type` = 'experience' AND `is_active` = 1 ORDER BY `sort_order`, `category_name`";
+    $result     = mysqli_query($mysqli, $query);
+    $categories = $result->fetch_all(MYSQLI_ASSOC);
 
-// Fetch mauze's submitted records
-$mauze_its_subquery = "(SELECT `its_id` FROM `users_mamureen` WHERE `miqaat_mauze` = '$mauze')";
-$query = "SELECT ne.*, c.category_name, um.fullname AS submitted_by FROM `bqi_noteworthy_experiences` ne
+    // Fetch mauze's submitted records
+    $mauze_its_subquery = "(SELECT `its_id` FROM `users_mamureen` WHERE `miqaat_mauze` = '$mauze')";
+    $query              = "SELECT ne.*, c.category_name, um.fullname AS submitted_by FROM `bqi_noteworthy_experiences` ne
           LEFT JOIN `bqi_categories` c ON ne.category_id = c.id
           LEFT JOIN `users_mamureen` um ON um.its_id = ne.added_its
           WHERE ne.added_its IN $mauze_its_subquery
           ORDER BY ne.added_ts DESC";
-$result = mysqli_query($mysqli, $query);
-$records = $result->fetch_all(MYSQLI_ASSOC);
+    $result  = mysqli_query($mysqli, $query);
+    $records = $result->fetch_all(MYSQLI_ASSOC);
 ?>
 
 <main id="main" class="main bqi-1447">
     <section class="section dashboard">
         <div class="row">
-            <?php require_once(__DIR__ . '/inc/messages.php'); ?>
+            <?php require_once __DIR__ . '/inc/messages.php'; ?>
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">Noteworthy Experiences on Khidmat</h5>
@@ -106,8 +111,8 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                                             <div class="col-sm-8">
                                                 <select name="category_id" class="form-select" required>
                                                     <option value="" disabled selected>Select Category...</option>
-                                                    <?php foreach ($categories as $c) : ?>
-                                                        <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['category_name']) ?></option>
+                                                    <?php foreach ($categories as $c): ?>
+                                                        <option value="<?php echo $c['id'] ?>"><?php echo htmlspecialchars($c['category_name']) ?></option>
                                                     <?php endforeach; ?>
                                                 </select>
                                             </div>
@@ -123,9 +128,9 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                                         <div class="row mb-3">
                                             <label class="col-sm-4 col-form-label">Attachments</label>
                                             <div class="col-sm-8">
-                                                <input type="file" name="attachments[]" class="form-control" accept="image/*,video/*,audio/*,.pdf" multiple>
+                                                <input type="file" name="attachments[]" class="form-control" accept="image/jpeg,image/png,video/mp4,video/quicktime,video/x-msvideo,audio/mpeg,audio/wav,audio/ogg,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" multiple>
                                                 <div class="alert alert-info mt-2 py-1 px-2 mb-0">
-                                                    <small><strong>Allowed:</strong> Images (JPG, PNG), Videos (MP4, MOV, AVI), Audio (MP3, WAV, OGG), PDF<br>
+                                                    <small><strong>Allowed:</strong> Images (JPG, PNG), Videos (MP4, MOV, AVI), Audio (MP3, WAV, OGG), PDF, PPT<br>
                                                     <strong>Max file size: 5 MB per file</strong></small>
                                                 </div>
                                                 <div id="progressContainer" class="mt-2 d-none">
@@ -168,18 +173,18 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($records as $key => $r) : ?>
+                                    <?php foreach ($records as $key => $r): ?>
                                         <tr>
-                                            <td><?= $key + 1 ?></td>
-                                            <td><?= htmlspecialchars($r['category_name'] ?? 'N/A') ?></td>
-                                            <td><?= htmlspecialchars(mb_substr($r['experience_text'], 0, 80)) ?>...</td>
-                                            <td><?= date('d-M-Y', strtotime($r['added_ts'])) ?></td>
-                                            <td><?= htmlspecialchars($r['submitted_by'] ?? '') ?></td>
+                                            <td><?php echo $key + 1 ?></td>
+                                            <td><?php echo htmlspecialchars($r['category_name'] ?? 'N/A') ?></td>
+                                            <td><?php echo htmlspecialchars(mb_substr($r['experience_text'], 0, 80)) ?>...</td>
+                                            <td><?php echo date('d-M-Y', strtotime($r['added_ts'])) ?></td>
+                                            <td><?php echo htmlspecialchars($r['submitted_by'] ?? '') ?></td>
                                             <td>
                                                 <button type="button" class="btn btn-sm btn-outline-info edit-btn"
-                                                    data-id="<?= $r['id'] ?>"
-                                                    data-category="<?= $r['category_id'] ?>"
-                                                    data-experience="<?= htmlspecialchars($r['experience_text']) ?>"
+                                                    data-id="<?php echo $r['id'] ?>"
+                                                    data-category="<?php echo $r['category_id'] ?>"
+                                                    data-experience="<?php echo htmlspecialchars($r['experience_text']) ?>"
                                                     data-bs-toggle="modal" data-bs-target="#editModal">
                                                     <i class="bi bi-pencil-square"></i>
                                                 </button>
@@ -211,8 +216,8 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                     <div class="mb-3">
                         <label class="form-label">Category</label>
                         <select name="category_id" id="edit_category" class="form-select" required>
-                            <?php foreach ($categories as $c) : ?>
-                                <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['category_name']) ?></option>
+                            <?php foreach ($categories as $c): ?>
+                                <option value="<?php echo $c['id'] ?>"><?php echo htmlspecialchars($c['category_name']) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -230,10 +235,10 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
     </div>
 </div>
 
-<?php require_once(__DIR__ . '/inc/footer.php'); ?>
+<?php require_once __DIR__ . '/inc/footer.php'; ?>
 <style>
 .progress     { height: 25px; }
 .progress-bar { line-height: 25px; font-weight: bold; }
 #uploadMessage { font-size: 14px; }
 </style>
-<script src="assets/js/noteworthy_experiences.js"></script>
+<script src="assets/js/noteworthy_experiences.js?v=2"></script>

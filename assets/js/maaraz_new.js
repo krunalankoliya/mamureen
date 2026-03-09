@@ -267,7 +267,36 @@
       // Validate file attachments
       var fileInput = document.getElementById("attachments");
       if (fileInput && fileInput.files.length > 0) {
-        var allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+        var allowedTypes = [
+          "image/jpeg",
+          "image/png",
+          "video/mp4",
+          "video/quicktime",
+          "video/x-msvideo",
+          "audio/mpeg",
+          "audio/mp3",
+          "audio/wav",
+          "audio/x-wav",
+          "audio/wave",
+          "audio/ogg",
+          "application/pdf",
+          "application/vnd.ms-powerpoint",
+          "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        ];
+        var allowedExt = [
+          "jpg",
+          "jpeg",
+          "png",
+          "mp4",
+          "mov",
+          "avi",
+          "mp3",
+          "wav",
+          "ogg",
+          "pdf",
+          "ppt",
+          "pptx",
+        ];
         var maxFileSize = 5 * 1024 * 1024; // 5 MB
 
         for (var i = 0; i < fileInput.files.length; i++) {
@@ -280,11 +309,19 @@
           }
 
           // Check file type
-          if (allowedTypes.indexOf(file.type) === -1) {
+          var ext = "";
+          if (file.name && file.name.lastIndexOf(".") !== -1) {
+            ext = file.name.split(".").pop().toLowerCase();
+          }
+
+          var typeAllowed =
+            allowedTypes.indexOf((file.type || "").toLowerCase()) !== -1;
+          var extAllowed = allowedExt.indexOf(ext) !== -1;
+          if (!typeAllowed && !extAllowed) {
             alert(
               'File "' +
                 file.name +
-                '" type not allowed. Only JPEG, PNG, and WebP are supported.',
+                '" type not allowed. Allowed: JPG, PNG, MP4, MOV, AVI, MP3, WAV, OGG, PDF, PPT.',
             );
             return;
           }

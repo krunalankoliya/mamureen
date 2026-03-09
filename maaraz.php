@@ -69,7 +69,7 @@
                         'jpg', 'jpeg', 'png',
                         'mp4', 'mov', 'avi',
                         'mp3', 'wav', 'ogg',
-                        'pdf',
+                        'pdf', 'ppt', 'pptx',
                     ];
                     if (! in_array($ext, $allowedExt, true)) {
                         continue;
@@ -317,11 +317,11 @@
                     <span class="q-num">9</span>
                     <div>
                         <div class="q-title">Ma'raz na related files yaha upload karo</div>
-                        <div class="q-sub">Allowed: Images (JPG, PNG), Videos (MP4, MOV, AVI), Audio (MP3, WAV, OGG), PDF &mdash; max 5 MB per file</div>
+                        <div class="q-sub">Allowed: Images (JPG, PNG), Videos (MP4, MOV, AVI), Audio (MP3, WAV, OGG), PDF, PPT &mdash; max 5 MB per file</div>
                     </div>
                 </div>
                 <input type="file" name="attachments[]" id="attachments"
-                       accept="image/jpeg,image/png,video/mp4,video/quicktime,video/x-msvideo,audio/mpeg,audio/wav,audio/ogg,application/pdf" multiple>
+                      accept="image/jpeg,image/png,video/mp4,video/quicktime,video/x-msvideo,audio/mpeg,audio/wav,audio/ogg,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation" multiple>
                 <p class="file-note">
                     &#8505; Ma'raz waste charts, promotional material ya bisri taiyaario &mdash;
                     ehne <strong>"Khidmat Preparations"</strong> ma upload karwu.
@@ -425,4 +425,4 @@
     require_once __DIR__ . '/inc/footer.php';
     require_once __DIR__ . '/inc/js-block.php';
 ?>
-<script src="<?php echo MODULE_PATH ?>assets/js/maaraz_new.js?v=1"></script>
+<script src="<?php echo MODULE_PATH ?>assets/js/maaraz_new.js?v=2"></script>
