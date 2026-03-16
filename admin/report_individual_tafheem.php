@@ -35,13 +35,15 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                     </h5>
                     <div id="app-config" data-base-url="<?= htmlspecialchars(MODULE_PATH) ?>"></div>
                     <div class="table-responsive">
-                        <table class="table table-striped" id="datatable">
+                        <table class="table table-striped" id="datatable_tafheem_report">
                             <thead>
                                 <tr>
                                     <th>#</th>
                                     <th>Target ITS</th>
                                     <th>Target Name</th>
                                     <th>Type</th>
+                                    <th>Reason(s)</th>
+                                    <th>Report Details</th>
                                     <th>Jamaat</th>
                                     <th>Submitted By</th>
                                     <th>Mauze</th>
@@ -73,15 +75,18 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                                         ['label' => 'Date',        'value' => date('d-M-Y H:i', strtotime($r['added_ts']))],
                                     ];
 
-                                    $fields_json = htmlspecialchars(json_encode($fields_arr, JSON_UNESCAPED_UNICODE), ENT_QUOTES);
-                                    $files_json  = htmlspecialchars(json_encode($files_arr,  JSON_UNESCAPED_UNICODE), ENT_QUOTES);
-                                    $file_count  = count($record_files);
+                                    $fields_json     = htmlspecialchars(json_encode($fields_arr, JSON_UNESCAPED_UNICODE), ENT_QUOTES);
+                                    $files_json      = htmlspecialchars(json_encode($files_arr,  JSON_UNESCAPED_UNICODE), ENT_QUOTES);
+                                    $file_count      = count($record_files);
+                                    $details_display = mb_strimwidth($r['report_details'] ?? '', 0, 80, '…');
                                 ?>
                                     <tr>
                                         <td><?= $i + 1 ?></td>
                                         <td><?= $r['target_its_id'] ?></td>
                                         <td><?= htmlspecialchars($r['target_name']) ?></td>
                                         <td><?= htmlspecialchars($r['type'] ?? '') ?></td>
+                                        <td data-full="<?= htmlspecialchars($reason_names, ENT_QUOTES) ?>"><?= htmlspecialchars($reason_names) ?></td>
+                                        <td data-full="<?= htmlspecialchars($r['report_details'] ?? '', ENT_QUOTES) ?>"><?= htmlspecialchars($details_display) ?></td>
                                         <td><?= htmlspecialchars($r['jamaat'] ?? '') ?></td>
                                         <td><?= htmlspecialchars($r['submitted_by'] ?? $r['added_its']) ?></td>
                                         <td><?= htmlspecialchars($r['miqaat_mauze'] ?? '—') ?></td>

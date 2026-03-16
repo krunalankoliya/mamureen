@@ -36,7 +36,7 @@
 
     function prossesFile($fileTag, $user_its)
     {
-        $maxsize    = 4194304;
+        $maxsize    = 5 * 1024 * 1024; // 5 MB
         $acceptable = ['jpeg', 'jpg', 'png'];
         $is_error   = false;
 
@@ -156,7 +156,7 @@
                     <p><strong>IMPORTANT INSTRUCTIONS:</strong></p>
                     <ul>
                         <li>Photos with extension .jpg, .jpeg or .png can only be uploaded</li>
-                        <li>Maximum allowed photo size is 4 MB</li>
+                        <li>Maximum allowed photo size is 5 MB</li>
                         <li>All fields marked with <span class="required_star">*</span> are required.</li>
                     </ul>
 

@@ -1,5 +1,23 @@
 $(document).ready(function () {
 
+    // DataTable for Individual Tafheem report — excludes Files & Action from exports
+    if ($('#datatable_tafheem_report').length) {
+        var exportFormat = {
+            header: function (data, column, node) { return $(node).data('full') || data; },
+            body:   function (data, row, column, node) { return $(node).data('full') || data; }
+        };
+        $('#datatable_tafheem_report').DataTable({
+            dom: 'lBfrtip',
+            pageLength: 10,
+            lengthMenu: [[10, 25, 50, -1], [10, 25, 50, 'All']],
+            buttons: [
+                { extend: 'copy',  exportOptions: { columns: ':not(:last-child):not(:nth-last-child(2))', format: exportFormat } },
+                { extend: 'csv',   exportOptions: { columns: ':not(:last-child):not(:nth-last-child(2))', format: exportFormat } },
+                { extend: 'excel', exportOptions: { columns: ':not(:last-child):not(:nth-last-child(2))', format: exportFormat } }
+            ]
+        });
+    }
+
     var BASE_URL    = $('#app-config').attr('data-base-url') || '';
     var imageExts   = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
     var videoExts   = ['mp4', 'mov', 'avi'];
