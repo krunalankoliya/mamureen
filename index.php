@@ -19,6 +19,12 @@
     // personal maaraz submission count (one per mauze)
     $my_maaraz_count = getCounts("SELECT COUNT(*) `count` FROM `maaraz` WHERE `user_its` = $user_its AND `jamaat` = '$mauze'", $mysqli);
 
+    // Closure Report
+    $closure_total     = getCounts("SELECT COUNT(*) `count` FROM `users_mamureen` WHERE `miqaat_mauze` = '$mauze'", $mysqli);
+    $closure_submitted = getCounts("SELECT COUNT(*) `count` FROM `closure_report` WHERE `user_its` IN $mauze_its_subquery", $mysqli);
+    $closure_pending   = $closure_total - $closure_submitted;
+    $my_closure_done   = getCounts("SELECT COUNT(*) `count` FROM `closure_report` WHERE `user_its` = $user_its", $mysqli);
+
     // Section 1: Zakereen
     $parties_count           = getCounts("SELECT COUNT(*) `count` FROM `bqi_zakereen_parties` WHERE `is_active` = 1 AND `added_its` IN $mauze_its_subquery", $mysqli);
     $farzando_count          = getCounts("SELECT COUNT(*) `count` FROM `bqi_zakereen_farzando` WHERE `added_its` IN $mauze_its_subquery", $mysqli);
@@ -49,6 +55,32 @@
 
             <!-- Left side columns -->
             <div class="col-lg-8">
+
+                <!-- CLOSURE REPORT CARD -->
+                <div class="card mb-3">
+                    <div class="card-body pb-0">
+                        <h5 class="card-title pb-0 mb-2"><i class="bi bi-file-earmark-check-fill text-purple" style="color:#6f42c1;"></i> Closure Report</h5>
+                        <div class="row align-items-stretch">
+                            <div class="col-md-12 mb-3">
+                                <a href="<?php echo MODULE_PATH ?>closure_report.php" class="text-decoration-none d-block h-100">
+                                    <div class="d-flex align-items-center p-3 rounded h-100" style="background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px; background: #6f42c1; flex-shrink: 0;">
+                                            <i class="bi bi-person-fill-check text-white" style="font-size: 20px;"></i>
+                                        </div>
+                                        <div class="ps-3">
+                                            <?php if ($my_closure_done > 0): ?>
+                                                <span class="badge bg-success" style="font-size: 13px;">Completed</span>
+                                            <?php else: ?>
+                                                <span class="badge bg-warning text-dark" style="font-size: 13px;">Pending</span>
+                                            <?php endif; ?>
+                                            <br><small class="text-muted">My Closure Report</small>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- SECTION 1: ZAKEREEN -->
                 <div class="card mb-3">
