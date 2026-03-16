@@ -1,19 +1,96 @@
 $(document).ready(function () {
 
-    // DataTable for Individual Tafheem report — excludes Files & Action from exports
+    var exportFormat = {
+        header: function (data, column, node) { return $(node).data('full') || data; },
+        body:   function (data, row, column, node) { return $(node).data('full') || data; }
+    };
+
+    // Reusable export options — excludes last 2 cols (Files/Photos + Action)
+    var exportExcludeLast2 = {
+        columns: ':not(:last-child):not(:nth-last-child(2))',
+        format: exportFormat
+    };
+
+    // ── Khidmat Preparations ──────────────────────────────────────────
+    if ($('#datatable_khidmat_prep').length) {
+        $('#datatable_khidmat_prep').DataTable({
+            dom: 'lBfrtip',
+            pageLength: 10,
+            lengthMenu: [[10, 25, 50, -1], [10, 25, 50, 'All']],
+            buttons: [
+                { extend: 'copy',  exportOptions: exportExcludeLast2 },
+                { extend: 'csv',   exportOptions: exportExcludeLast2 },
+                { extend: 'excel', exportOptions: exportExcludeLast2 }
+            ]
+        });
+    }
+
+    // ── Challenges & Solutions ────────────────────────────────────────
+    if ($('#datatable_challenges').length) {
+        $('#datatable_challenges').DataTable({
+            dom: 'lBfrtip',
+            pageLength: 10,
+            lengthMenu: [[10, 25, 50, -1], [10, 25, 50, 'All']],
+            buttons: [
+                { extend: 'copy',  exportOptions: exportExcludeLast2 },
+                { extend: 'csv',   exportOptions: exportExcludeLast2 },
+                { extend: 'excel', exportOptions: exportExcludeLast2 }
+            ]
+        });
+    }
+
+    // ── Noteworthy Experiences ────────────────────────────────────────
+    if ($('#datatable_noteworthy').length) {
+        $('#datatable_noteworthy').DataTable({
+            dom: 'lBfrtip',
+            pageLength: 10,
+            lengthMenu: [[10, 25, 50, -1], [10, 25, 50, 'All']],
+            buttons: [
+                { extend: 'copy',  exportOptions: exportExcludeLast2 },
+                { extend: 'csv',   exportOptions: exportExcludeLast2 },
+                { extend: 'excel', exportOptions: exportExcludeLast2 }
+            ]
+        });
+    }
+
+    // ── Ma'raz ────────────────────────────────────────────────────────
+    if ($('#datatable_maraz').length) {
+        $('#datatable_maraz').DataTable({
+            dom: 'lBfrtip',
+            pageLength: 10,
+            lengthMenu: [[10, 25, 50, -1], [10, 25, 50, 'All']],
+            buttons: [
+                { extend: 'copy',  exportOptions: exportExcludeLast2 },
+                { extend: 'csv',   exportOptions: exportExcludeLast2 },
+                { extend: 'excel', exportOptions: exportExcludeLast2 }
+            ]
+        });
+    }
+
+    // ── Training Sessions ─────────────────────────────────────────────
+    if ($('#datatable_training').length) {
+        $('#datatable_training').DataTable({
+            dom: 'lBfrtip',
+            pageLength: 10,
+            lengthMenu: [[10, 25, 50, -1], [10, 25, 50, 'All']],
+            buttons: [
+                { extend: 'copy',  exportOptions: exportExcludeLast2 },
+                { extend: 'csv',   exportOptions: exportExcludeLast2 },
+                { extend: 'excel', exportOptions: exportExcludeLast2 }
+            ]
+        });
+    }
+
+    // ── Individual Tafheem ────────────────────────────────────────────
     if ($('#datatable_tafheem_report').length) {
-        var exportFormat = {
-            header: function (data, column, node) { return $(node).data('full') || data; },
-            body:   function (data, row, column, node) { return $(node).data('full') || data; }
-        };
         $('#datatable_tafheem_report').DataTable({
             dom: 'lBfrtip',
             pageLength: 10,
             lengthMenu: [[10, 25, 50, -1], [10, 25, 50, 'All']],
             buttons: [
-                { extend: 'copy',  exportOptions: { columns: ':not(:last-child):not(:nth-last-child(2))', format: exportFormat } },
-                { extend: 'csv',   exportOptions: { columns: ':not(:last-child):not(:nth-last-child(2))', format: exportFormat } },
-                { extend: 'excel', exportOptions: { columns: ':not(:last-child):not(:nth-last-child(2))', format: exportFormat } }
+                { extend: 'copy',  exportOptions: exportExcludeLast2 },
+                { extend: 'csv',   exportOptions: exportExcludeLast2 },
+                { extend: 'excel', exportOptions: exportExcludeLast2 }
             ]
         });
     }

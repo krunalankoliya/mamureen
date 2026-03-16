@@ -129,7 +129,7 @@
                                     <span class="badge bg-warning text-dark fs-6"><?php echo (int) $ans; ?>/10</span>
                                 </div>
                             <?php else: ?>
-                                <p class="mb-0 text-secondary" dir="auto"><?php echo nl2br(htmlspecialchars($ans)); ?></p>
+                                <p class="mb-0" dir="auto"><?php echo nl2br(htmlspecialchars($ans)); ?></p>
                             <?php endif; ?>
                         </div>
                     <?php endforeach; ?>

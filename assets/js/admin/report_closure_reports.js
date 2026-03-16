@@ -11,9 +11,9 @@ $(document).ready(function () {
             [10, 25, 50, "All"],
         ],
         buttons: [
-            { extend: "copy",  title: "Closure Reports" },
-            { extend: "csv",   title: "Closure Reports", filename: "closure_reports_" + Date.now() },
-            { extend: "excel", title: "Closure Reports", filename: "closure_reports_" + Date.now() },
+            { extend: "copy",  title: "Closure Reports", exportOptions: { columns: [0, 2, 3, 4, 5, 6] } },
+            { extend: "csv",   title: "Closure Reports", filename: "closure_reports_" + Date.now(), exportOptions: { columns: [0, 2, 3, 4, 5, 6] } },
+            { extend: "excel", title: "Closure Reports", filename: "closure_reports_" + Date.now(), exportOptions: { columns: [0, 2, 3, 4, 5, 6] } },
         ],
         order: [[4, "asc"]], // sort by Mauze
         columnDefs: [

@@ -38,7 +38,7 @@
                     </h5>
                     <div id="app-config" data-base-url="<?php echo htmlspecialchars(MODULE_PATH) ?>"></div>
                     <div class="table-responsive">
-                        <table class="table table-striped" id="datatable">
+                        <table class="table table-striped" id="datatable_maraz">
                             <thead>
                                 <tr>
                                     <th>#</th>

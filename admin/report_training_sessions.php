@@ -28,7 +28,7 @@ $records = $result->fetch_all(MYSQLI_ASSOC);
                     </h5>
                     <div id="app-config" data-base-url="<?= htmlspecialchars(MODULE_PATH) ?>"></div>
                     <div class="table-responsive">
-                        <table class="table table-striped" id="datatable">
+                        <table class="table table-striped" id="datatable_training">
                             <thead>
                                 <tr>
                                     <th>#</th>
