@@ -49,6 +49,13 @@
                                     <th data-full="Q4 — Ma'raz ma awnaar shuru si akhir lag kitno waqt sarf karta? (on average)">Avg Visit (min)</th>
                                     <th data-full="Q8 — Mumineen nu feedback na asaas par — aa Ma'raz ye kai tarah impact kidu?">Impact</th>
                                     <th>Submitted By</th>
+                                    <th style="display:none">Q5 — Tafheem</th>
+                                    <th style="display:none">Q6 — Engagement Strategy</th>
+                                    <th style="display:none">Q7 — Key Takeaways</th>
+                                    <th style="display:none">Q10 — Additional Info</th>
+                                    <th style="display:none">Duration/Day (mins)</th>
+                                    <th style="display:none">ITS ID</th>
+                                    <th style="display:none">Submitted On</th>
                                     <th>Files</th>
                                     <th>Action</th>
                                 </tr>
@@ -120,6 +127,13 @@
                                         <td><?php echo $r['avg_visitor_minutes'] ?></td>
                                         <td><?php echo htmlspecialchars($impact_label) ?></td>
                                         <td><?php echo htmlspecialchars($r['submitted_by'] ?? $r['added_its']) ?></td>
+                                        <td style="display:none"><?php echo htmlspecialchars($r['tafheem_text'] ?? '') ?></td>
+                                        <td style="display:none"><?php echo htmlspecialchars($r['engagement_strategy'] ?? '') ?></td>
+                                        <td style="display:none"><?php echo htmlspecialchars($r['key_takeaways'] ?? '') ?></td>
+                                        <td style="display:none"><?php echo htmlspecialchars($r['additional_info'] ?? '') ?></td>
+                                        <td style="display:none"><?php echo htmlspecialchars($r['duration_per_day'] ?? '') ?></td>
+                                        <td style="display:none"><?php echo htmlspecialchars($r['added_its'] ?? '') ?></td>
+                                        <td style="display:none"><?php echo !empty($r['added_ts']) ? date('d-M-Y H:i', strtotime($r['added_ts'])) : '' ?></td>
                                         <td>
                                             <?php if ($file_count > 0): ?>
                                                 <span class="badge bg-info"><?php echo $file_count ?> file<?php echo $file_count > 1 ? 's' : '' ?></span>

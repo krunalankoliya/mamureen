@@ -55,28 +55,39 @@ $(document).ready(function () {
 
     // ── Ma'raz ────────────────────────────────────────────────────────
     if ($('#datatable_maraz').length) {
+        var marazExportOptions = {
+            columns: ':not(:last-child):not(:nth-last-child(2))',
+            format: exportFormat
+        };
         $('#datatable_maraz').DataTable({
             dom: 'lBfrtip',
             pageLength: 10,
             lengthMenu: [[10, 25, 50, -1], [10, 25, 50, 'All']],
+            columnDefs: [{ targets: [8, 9, 10, 11, 12, 13, 14], visible: false }],
             buttons: [
-                { extend: 'copy',  exportOptions: exportExcludeLast2 },
-                { extend: 'csv',   exportOptions: exportExcludeLast2 },
-                { extend: 'excel', exportOptions: exportExcludeLast2 }
+                { extend: 'copy',  exportOptions: marazExportOptions },
+                { extend: 'csv',   exportOptions: marazExportOptions },
+                { extend: 'excel', exportOptions: marazExportOptions }
             ]
         });
     }
 
     // ── Training Sessions ─────────────────────────────────────────────
     if ($('#datatable_training').length) {
+        // Excludes last 2 cols (Photos + Action) but keeps hidden extra cols
+        var trainingExportOptions = {
+            columns: ':not(:last-child):not(:nth-last-child(2))',
+            format: exportFormat
+        };
         $('#datatable_training').DataTable({
             dom: 'lBfrtip',
             pageLength: 10,
             lengthMenu: [[10, 25, 50, -1], [10, 25, 50, 'All']],
+            columnDefs: [{ targets: [8, 9, 10], visible: false }],
             buttons: [
-                { extend: 'copy',  exportOptions: exportExcludeLast2 },
-                { extend: 'csv',   exportOptions: exportExcludeLast2 },
-                { extend: 'excel', exportOptions: exportExcludeLast2 }
+                { extend: 'copy',  exportOptions: trainingExportOptions },
+                { extend: 'csv',   exportOptions: trainingExportOptions },
+                { extend: 'excel', exportOptions: trainingExportOptions }
             ]
         });
     }
