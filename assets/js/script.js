@@ -16,9 +16,9 @@ $(document).ready(function () {
         [10, 25, 50, "All"],
       ],
       buttons: [
-        { extend: "copy", exportOptions: { format: exportFormat } },
-        { extend: "csv", exportOptions: { format: exportFormat } },
-        { extend: "excel", exportOptions: { format: exportFormat } },
+        { extend: "copy",  exportOptions: { columns: ":not(:last-child)", format: exportFormat } },
+        { extend: "csv",   exportOptions: { columns: ":not(:last-child)", format: exportFormat } },
+        { extend: "excel", exportOptions: { columns: ":not(:last-child)", format: exportFormat } },
       ],
     });
   });

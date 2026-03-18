@@ -290,5 +290,25 @@ $(document).ready(function () {
     });
   }
 
-  // NOTE: #datatable is initialised globally by script.js — do NOT init here.
+  // ── Training sessions table with export (excludes Uploads + Action cols) ──
+  if ($('#datatable_training_user').length) {
+    var exportFormat = {
+      header: function (data, column, node) { return $(node).data('full') || data; },
+      body:   function (data, row, column, node) { return $(node).data('full') || data; }
+    };
+    var exportOpts = {
+      columns: ':not(:last-child):not(:nth-last-child(2))',
+      format: exportFormat
+    };
+    $('#datatable_training_user').DataTable({
+      dom: 'lBfrtip',
+      pageLength: 10,
+      lengthMenu: [[10, 25, 50, -1], [10, 25, 50, 'All']],
+      buttons: [
+        { extend: 'copy',  exportOptions: exportOpts },
+        { extend: 'csv',   exportOptions: exportOpts },
+        { extend: 'excel', exportOptions: exportOpts }
+      ]
+    });
+  }
 });

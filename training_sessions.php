@@ -146,6 +146,7 @@
 ?>
 
 <link rel="stylesheet" href="assets/css/training_sessions.css">
+<div id="app-config" data-base-url="<?php echo htmlspecialchars(MODULE_PATH) ?>"></div>
 <main id="main" class="main bqi-1447">
     <section class="section dashboard">
         <div class="row">
@@ -284,7 +285,7 @@
 
                         <div class="col-md-6" style="overflow-x: auto;">
                             <h5 class="card-title">Previously Submitted Reports</h5>
-                            <table class="table table-striped" id="datatable">
+                            <table class="table table-striped" id="datatable_training_user">
                                 <thead>
                                     <tr>
                                         <th>#</th>
@@ -294,39 +295,68 @@
                                         <th>Session Date</th>
                                         <th>Duration (min)</th>
                                         <th>Attendees</th>
-                                        <th>Uploads</th>
                                         <th>Submitted</th>
                                         <th>Submitted By</th>
+                                        <th>Uploads</th>
                                         <th>Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php foreach ($reports as $key => $data): ?>
+                                    <?php foreach ($reports as $key => $data):
+                                            // Resolve title names
+                                            $title_ids   = ! empty($data['program_title_ids']) ? explode(',', $data['program_title_ids']) : [];
+                                            $title_names = implode(', ', array_map(fn($id) => $titles_map[(int) $id] ?? '#' . $id, $title_ids));
+
+                                            // Build files array for view modal
+                                            $files_arr = [];
+                                            foreach (['upload_photo_1', 'upload_photo_2', 'upload_photo_3'] as $col) {
+                                                if (! empty($data[$col])) {
+                                                    $ext         = strtolower(pathinfo($data[$col], PATHINFO_EXTENSION));
+                                                    $files_arr[] = ['path' => $data[$col], 'type' => $ext, 'name' => $col];
+                                                }
+                                            }
+                                            $photo_count = count($files_arr);
+
+                                            $fields_arr = [
+                                                ['label' => 'Program Type', 'value' => $data['program_type'] ?? ''],
+                                                ['label' => 'Program Title(s)', 'value' => $title_names],
+                                                ['label' => 'Description', 'value' => $data['description'] ?? ''],
+                                                ['label' => 'Session Date', 'value' => date('d-M-Y', strtotime($data['session_date']))],
+                                                ['label' => 'Duration', 'value' => $data['duration_minutes'] . ' minutes'],
+                                                ['label' => 'Attendees', 'value' => (string) $data['attendee_count']],
+                                                ['label' => 'Jamaat', 'value' => $data['jamaat'] ?? ''],
+                                                ['label' => 'Submitted By', 'value' => ($data['submitted_by'] ?? '') . ' (' . $data['user_its'] . ')'],
+                                                ['label' => 'Submitted On', 'value' => date('d-M-Y H:i', strtotime($data['added_ts']))],
+                                            ];
+
+                                            $fields_json = htmlspecialchars(json_encode($fields_arr, JSON_UNESCAPED_UNICODE), ENT_QUOTES);
+                                            $files_json  = htmlspecialchars(json_encode($files_arr, JSON_UNESCAPED_UNICODE), ENT_QUOTES);
+                                    ?>
                                         <tr>
                                             <td><?php echo $key + 1 ?></td>
                                             <td><?php echo htmlspecialchars($data['program_type']) ?></td>
-                                            <td>
-                                                <?php
-                                                    if (! empty($data['program_title_ids'])) {
-                                                        $ids   = explode(',', $data['program_title_ids']);
-                                                        $names = [];
-                                                        foreach ($ids as $id) {
-                                                            $names[] = htmlspecialchars($titles_map[(int) $id] ?? '#' . $id);
-                                                        }
-                                                        echo implode(', ', $names);
-                                                    } else {
-                                                        echo '-';
-                                                    }
-                                                ?>
-                                            </td>
+                                            <td data-full="<?php echo htmlspecialchars($title_names) ?>"><?php echo htmlspecialchars(mb_strimwidth($title_names, 0, 40, '…')) ?></td>
                                             <td><?php echo htmlspecialchars($data['description']) ?></td>
                                             <td><?php echo date('d-M-Y', strtotime($data['session_date'])) ?></td>
                                             <td><?php echo $data['duration_minutes'] ?></td>
                                             <td><?php echo $data['attendee_count'] ?></td>
-                                            <td><?php echo $data['uploaded_file_count'] ?></td>
                                             <td><?php echo date('d-M-Y', strtotime($data['added_ts'])) ?></td>
                                             <td><?php echo htmlspecialchars($data['submitted_by'] ?? '') ?></td>
                                             <td>
+                                                <?php if ($photo_count > 0): ?>
+                                                    <span class="badge bg-info"><?php echo $photo_count ?> photo<?php echo $photo_count > 1 ? 's' : '' ?></span>
+                                                <?php else: ?>
+                                                    <span class="text-muted">—</span>
+                                                <?php endif; ?>
+                                            </td>
+                                            <td>
+                                                <button class="btn btn-sm btn-outline-primary view-btn"
+                                                    title="View Details"
+                                                    data-title="<?php echo htmlspecialchars($data['program_type']) ?>"
+                                                    data-fields="<?php echo $fields_json ?>"
+                                                    data-files="<?php echo $files_json ?>">
+                                                    <i class="bi bi-eye"></i>
+                                                </button>
                                                 <button type="button" class="btn btn-sm btn-outline-info edit-session-btn"
                                                     data-id="<?php echo $data['id'] ?>"
                                                     data-desc="<?php echo htmlspecialchars($data['description']) ?>"
@@ -393,6 +423,25 @@
     </div>
 </div>
 
+<!-- View Modal -->
+<div class="modal fade" id="viewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewModalLabel">Record Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-fields"></div>
+                <div id="modal-files"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?php require_once __DIR__ . '/inc/footer.php'; ?>
 <style>
 .progress     { height: 25px; }
@@ -400,3 +449,4 @@
 #uploadMessage { font-size: 14px; }
 </style>
 <script src="assets/js/training_sessions.js"></script>
+<script src="assets/js/admin_reports.js"></script>

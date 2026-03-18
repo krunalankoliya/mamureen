@@ -1,45 +1,200 @@
 <?php
     $current_page = 'closure_report';
     require_once __DIR__ . '/session.php';
-    require_once __DIR__ . '/inc/header.php';
 
-    $already_filled = false;
-    $filled_on      = null;
-    $mauze_esc      = $mysqli->real_escape_string($mauze);
-    $check_q        = mysqli_query($mysqli, "SELECT added_ts FROM `closure_report` WHERE user_its = $user_its AND mauze = '$mauze_esc' LIMIT 1");
-    if ($check_q && $check_q->num_rows) {
-    $already_filled = true;
-    $row            = $check_q->fetch_assoc();
-    $filled_on      = $row['added_ts'];
-    }
+    mysqli_report(MYSQLI_REPORT_OFF);
 
-    // Fetch dynamic questions
-    $questions_res = mysqli_query($mysqli, "SELECT * FROM `closure_report_questions` ORDER BY `section_id`, `id` ASC");
-    $db_questions  = [];
-    while ($q_row = mysqli_fetch_assoc($questions_res)) {
-    $db_questions[$q_row['q_key']] = $q_row;
-    }
-
-    $message = null;
-    if (isset($_POST['submit_closure'])) {
-    $arrival_date    = isset($_POST['arrival_date']) ? $mysqli->real_escape_string($_POST['arrival_date']) : null;
-    $departure_date  = isset($_POST['departure_date']) ? $mysqli->real_escape_string($_POST['departure_date']) : null;
-    $days_of_service = isset($_POST['days_of_service']) ? (int) $_POST['days_of_service'] : 0;
-
-    $q_vals = [];
-    for ($i = 1; $i <= 24; $i++) {
-        $key = "q$i";
-        if (isset($db_questions[$key]) && $db_questions[$key]['question_type'] == 'rating') {
-            $q_vals[$key] = isset($_POST[$key]) ? (int) $_POST[$key] : 5;
-        } else {
-            $q_vals[$key] = $mysqli->real_escape_string($_POST[$key] ?? '');
+    // ── Print My Report (?print_my_report=1) ──────────────────────────────────
+    // User_its is taken from session only — never from GET — so users cannot
+    // access another person's report.
+    if (isset($_GET['print_my_report'])) {
+    // Load questions map
+    $questionsMap = [];
+    $qResult      = mysqli_query($mysqli, "SELECT * FROM `closure_report_questions` ORDER BY `section_id`, `id` ASC");
+    if ($qResult) {
+        while ($q = $qResult->fetch_assoc()) {
+            $questionsMap[$q['q_key']] = $q;
         }
     }
 
-    $arrival_val   = $arrival_date ? "'$arrival_date'" : "NULL";
-    $departure_val = $departure_date ? "'$departure_date'" : "NULL";
+    $formSections = [
+        ['title' => 'معلومات أساسية', 'keys' => ['q1', 'q2']],
+        ['title' => 'برنامج القراْن و العلم ني خدمة نو تجربھ', 'keys' => ['q3', 'q4', 'q5', 'q6']],
+        ['title' => 'ذاكرين فرزندو متعلق', 'keys' => ['q7', 'q8', 'q9', 'q10']],
+        ['title' => 'Social Media Awareness متعلق', 'keys' => ['q11', 'q12', 'q13', 'q14', 'q15']],
+        ['title' => 'شادي تفظظيم متعلق', 'keys' => ['q16', 'q17', 'q18', 'q19']],
+        ['title' => 'مكتب المتابعة (BQI back office) متعلق', 'keys' => ['q20', 'q21', 'q22', 'q23']],
+        ['title' => 'شكر عرض', 'keys' => ['q24']],
+    ];
 
-    $query = "INSERT INTO closure_report
+    $rowResult = mysqli_query($mysqli,
+        "SELECT cr.*, u.fullname
+             FROM `closure_report` cr
+             LEFT JOIN `users_mamureen` u ON cr.user_its = u.its_id
+             WHERE cr.user_its = " . (int) $user_its . "
+             LIMIT 1");
+    $printRow = ($rowResult && $rowResult->num_rows > 0) ? $rowResult->fetch_assoc() : [];
+    $userName = isset($printRow['fullname']) ? $printRow['fullname'] : '';
+    ?>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Closure Report &mdash; <?php echo htmlspecialchars($userName ? $userName : $user_its); ?></title>
+    <link rel="stylesheet" href="<?php echo MODULE_PATH; ?>assets/vendor/bootstrap/css/bootstrap.min.css">
+    <style>
+        @font-face { font-family:'kanz'; src:url('https://www.talabulilm.com/fonts/Kanz-al-Marjaan.ttf'); }
+        body { font-family:'kanz',serif; background:#f4f6fb; }
+        .print-bar { font-family:'kanz',serif; background:linear-gradient(135deg,#1a73e8,#0d47a1); color:#fff; padding:12px 24px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+        .mamur-card { background:#fff; border-left:5px solid #1a73e8; border-radius:12px; box-shadow:0 2px 12px rgba(26,115,232,.10); padding:22px 26px; margin-bottom:24px; }
+        .mamur-photo { width:90px; height:90px; object-fit:cover; border-radius:50%; border:3px solid #1a73e8; }
+        .mamur-name { font-size:1.4rem; font-weight:700; color:#1a1a2e; }
+        .meta-row { color:#555; font-size:.92rem; }
+        .section-card { border:none; border-radius:10px; box-shadow:0 1px 5px rgba(0,0,0,.07); }
+        .section-card .card-title { color:#1a73e8; text-align:right; font-weight:600; border-bottom:1px solid #e8f0fe; padding-bottom:6px; font-size:1.15rem; }
+        .fw-semibold { font-weight:600; }
+        p, span, td, th, h1, h2, h3, h4, h5, h6, button, input, textarea, label, .badge { font-family:'kanz',serif !important; }
+        @media print {
+            body { background:#fff !important; }
+            .print-bar { display:none !important; }
+            .mamur-card { box-shadow:none !important; border:1px solid #bbb; break-inside:avoid; }
+            .section-card { box-shadow:none !important; border:1px solid #ddd !important; break-inside:avoid; page-break-inside:avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-bar">
+        <div><strong>Closure Report</strong> &mdash; <?php echo htmlspecialchars($userName ? $userName : $user_its); ?></div>
+        <div>
+            <button id="printBtn" class="btn btn-light btn-sm me-1">&#128438; Print</button>
+            <button id="closeBtn" class="btn btn-outline-light btn-sm">&#10005;</button>
+        </div>
+    </div>
+    <div class="container py-4" style="max-width:900px;">
+        <?php if (empty($printRow)): ?>
+            <div class="alert alert-warning">No submission found.</div>
+        <?php else:
+                    $row           = $printRow;
+                    $mamur_its_p   = (int) $row['user_its'];
+                    $mauze_p       = htmlspecialchars($row['mauze'] ? $row['mauze'] : '');
+                    $arrival_p     = ! empty($row['arrival_date']) ? date('d M Y', strtotime($row['arrival_date'])) : '—';
+                    $departure_p   = ! empty($row['departure_date']) ? date('d M Y', strtotime($row['departure_date'])) : '—';
+                    $days_p        = isset($row['days_of_service']) ? $row['days_of_service'] : '—';
+                    $photoUrl_p    = user_photo_url($mamur_its_p);
+                    $submittedOn_p = ! empty($row['submitted_ts']) ? date('d M Y, H:i', strtotime($row['submitted_ts'])) : '';
+            ?>
+        <!-- User Header -->
+        <div class="mamur-card d-flex align-items-center gap-4 flex-wrap">
+            <img src="<?php echo $photoUrl_p; ?>" class="mamur-photo" alt="">
+            <div class="flex-grow-1">
+                <div class="mamur-name"><?php echo htmlspecialchars($userName); ?></div>
+                <div class="meta-row mt-1">
+                    ITS:&nbsp;<strong><?php echo $mamur_its_p; ?></strong>
+                    &nbsp;|&nbsp;
+                    Mauze:&nbsp;<strong><?php echo $mauze_p; ?></strong>
+                </div>
+                <div class="mt-2 d-flex flex-wrap gap-2">
+                    <span class="badge bg-info text-dark"><i class="bi bi-calendar-check"></i>&nbsp;Arrival: <?php echo $arrival_p; ?></span>
+                    <span class="badge bg-info text-dark"><i class="bi bi-calendar-x"></i>&nbsp;Departure: <?php echo $departure_p; ?></span>
+                    <span class="badge bg-primary"><i class="bi bi-clock"></i>&nbsp;<?php echo $days_p; ?> Days of Khidmat</span>
+                    <?php if ($submittedOn_p): ?>
+                        <span class="badge bg-secondary">Submitted: <?php echo $submittedOn_p; ?></span>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+
+        <!-- Q&A by Section -->
+        <?php foreach ($formSections as $section):
+                    $hasAnswers = false;
+                    foreach ($section['keys'] as $qKey) {
+                        $ans = isset($row[$qKey]) ? $row[$qKey] : null;
+                        if ($ans !== null && $ans !== '') {$hasAnswers = true;
+                            break;}
+                    }
+                    if (! $hasAnswers) {
+                        continue;
+                    }
+
+            ?>
+        <div class="card section-card mb-3">
+            <div class="card-body">
+                <h6 class="card-title" dir="rtl"><?php echo htmlspecialchars($section['title']); ?></h6>
+                <?php foreach ($section['keys'] as $qKey):
+                                $q   = isset($questionsMap[$qKey]) ? $questionsMap[$qKey] : null;
+                                $ans = isset($row[$qKey]) ? $row[$qKey] : null;
+                                if (! $q || $ans === null || $ans === '') {
+                                    continue;
+                                }
+
+                    ?>
+                <div class="mb-3">
+                    <p class="fw-semibold mb-1 text-dark" dir="rtl"><?php echo htmlspecialchars($q['question_text']); ?></p>
+                    <?php if ($q['question_type'] === 'rating'): ?>
+                        <div class="d-flex align-items-center justify-content-end gap-2">
+                            <div class="progress" style="width:200px;height:18px;">
+                                <div class="progress-bar bg-warning" style="width:<?php echo (int) $ans * 10; ?>%"></div>
+                            </div>
+                            <span class="badge bg-warning text-dark fs-6"><?php echo (int) $ans; ?>/10</span>
+                        </div>
+                    <?php else: ?>
+                        <p class="mb-0" dir="rtl"><?php echo nl2br(htmlspecialchars($ans)); ?></p>
+                    <?php endif; ?>
+                </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
+    <script src="<?php echo MODULE_PATH; ?>assets/js/admin/closure_print_view.js"></script>
+</body>
+</html>
+    <?php
+        exit();
+        }
+
+        // ── Normal page load ───────────────────────────────────────────────────────
+        require_once __DIR__ . '/inc/header.php';
+
+        $already_filled = false;
+        $filled_on      = null;
+        $mauze_esc      = $mysqli->real_escape_string($mauze);
+        $check_q        = mysqli_query($mysqli, "SELECT added_ts FROM `closure_report` WHERE user_its = $user_its AND mauze = '$mauze_esc' LIMIT 1");
+        if ($check_q && $check_q->num_rows) {
+            $already_filled = true;
+            $row            = $check_q->fetch_assoc();
+            $filled_on      = $row['added_ts'];
+        }
+
+        // Fetch dynamic questions
+        $questions_res = mysqli_query($mysqli, "SELECT * FROM `closure_report_questions` ORDER BY `section_id`, `id` ASC");
+        $db_questions  = [];
+        while ($q_row = mysqli_fetch_assoc($questions_res)) {
+            $db_questions[$q_row['q_key']] = $q_row;
+        }
+
+        $message = null;
+        if (isset($_POST['submit_closure'])) {
+            $arrival_date    = isset($_POST['arrival_date']) ? $mysqli->real_escape_string($_POST['arrival_date']) : null;
+            $departure_date  = isset($_POST['departure_date']) ? $mysqli->real_escape_string($_POST['departure_date']) : null;
+            $days_of_service = isset($_POST['days_of_service']) ? (int) $_POST['days_of_service'] : 0;
+
+            $q_vals = [];
+            for ($i = 1; $i <= 24; $i++) {
+                $key = "q$i";
+                if (isset($db_questions[$key]) && $db_questions[$key]['question_type'] == 'rating') {
+                    $q_vals[$key] = isset($_POST[$key]) ? (int) $_POST[$key] : 5;
+                } else {
+                    $q_vals[$key] = $mysqli->real_escape_string($_POST[$key] ?? '');
+                }
+            }
+
+            $arrival_val   = $arrival_date ? "'$arrival_date'" : "NULL";
+            $departure_val = $departure_date ? "'$departure_date'" : "NULL";
+
+            $query = "INSERT INTO closure_report
                   (user_its, mauze, arrival_date, departure_date, days_of_service,
                    q1, q2, q3, q4, q5, q6, q7, q8, q9, q10, q11, q12, q13, q14, q15, q16, q17, q18, q19, q20, q21, q22, q23, q24)
                   VALUES
@@ -50,40 +205,40 @@
                    '{$q_vals['q16']}', '{$q_vals['q17']}', '{$q_vals['q18']}', '{$q_vals['q19']}', {$q_vals['q20']},
                    {$q_vals['q21']}, {$q_vals['q22']}, '{$q_vals['q23']}', '{$q_vals['q24']}')";
 
-    if (mysqli_query($mysqli, $query)) {
-        $message        = ['type' => 'success', 'text' => 'تم تقديم تقرير الإغلاق بنجاح!'];
-        $already_filled = true;
-        $filled_on      = date('Y-m-d H:i:s');
-    } else {
-        $message = ['type' => 'danger', 'text' => 'خطأ: ' . $mysqli->error];
-    }
-    }
+            if (mysqli_query($mysqli, $query)) {
+                $message        = ['type' => 'success', 'text' => 'تم تقديم تقرير الإغلاق بنجاح!'];
+                $already_filled = true;
+                $filled_on      = date('Y-m-d H:i:s');
+            } else {
+                $message = ['type' => 'danger', 'text' => 'خطأ: ' . $mysqli->error];
+            }
+        }
 
-    // Helper to render question
-    function renderQuestion($q_key, $db_questions)
-    {
-    if (! isset($db_questions[$q_key])) {
-        return '';
-    }
+        // Helper to render question
+        function renderQuestion($q_key, $db_questions)
+        {
+            if (! isset($db_questions[$q_key])) {
+                return '';
+            }
 
-    $q     = $db_questions[$q_key];
-    $html  = '<div class="q-block">';
-    $html .= '<div class="q-title">' . $q['question_text'] . '</div>';
+            $q     = $db_questions[$q_key];
+            $html  = '<div class="q-block">';
+            $html .= '<div class="q-title">' . $q['question_text'] . '</div>';
 
-    if ($q['question_type'] == 'rating') {
-        $html .= '<div class="slider-container">';
-        $html .= '<div class="rating-value">5</div>';
-        $html .= '<input type="range" name="' . $q_key . '" min="1" max="10" value="5">';
-        $html .= '<div class="rating-labels"><span>1</span><span>10</span></div>';
-        $html .= '</div>';
-    } else {
-        $placeholder  = ! empty($q['placeholder']) ? ' placeholder="' . htmlspecialchars($q['placeholder']) . '"' : '';
-        $html        .= '<textarea name="' . $q_key . '" id="' . $q_key . '" required' . $placeholder . '></textarea>';
-    }
-    $html .= '</div>';
-    return $html;
-    }
-?>
+            if ($q['question_type'] == 'rating') {
+                $html .= '<div class="slider-container">';
+                $html .= '<div class="rating-value">5</div>';
+                $html .= '<input type="range" name="' . $q_key . '" min="1" max="10" value="5">';
+                $html .= '<div class="rating-labels"><span>1</span><span>10</span></div>';
+                $html .= '</div>';
+            } else {
+                $placeholder  = ! empty($q['placeholder']) ? ' placeholder="' . htmlspecialchars($q['placeholder']) . '"' : '';
+                $html        .= '<textarea name="' . $q_key . '" id="' . $q_key . '" required' . $placeholder . '></textarea>';
+            }
+            $html .= '</div>';
+            return $html;
+        }
+    ?>
 
 <script>document.body.dataset.userIts = "<?php echo $user_its; ?>";</script>
 
@@ -313,7 +468,9 @@
             <?php if ($already_filled): ?>
                 <div class="alert alert-info text-center py-4">
                     <h4 class="mb-2">Closure report submitted successfully</h4>
-
+                    <a href="?print_my_report=1" target="_blank" class="btn btn-primary mt-2">
+                        <i class="bi bi-printer me-1"></i>Print / Download My Report
+                    </a>
                 </div>
             <?php else: ?>
 

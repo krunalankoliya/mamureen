@@ -100,7 +100,7 @@
             <?php generateSidebarItem('report_noteworthy_experiences', $current_page, 'bi bi-bar-chart', 'Noteworthy Experiences', 'admin/report_noteworthy_experiences.php'); ?>
             <?php generateSidebarItem('report_khidmat_preparations', $current_page, 'bi bi-bar-chart', 'Khidmat Preparations', 'admin/report_khidmat_preparations.php'); ?>
             <?php generateSidebarItem('report_maraz', $current_page, 'bi bi-bar-chart', 'Ma\'raz Report', 'admin/report_maraz.php'); ?>
-            <?php generateSidebarItem('closure_report', $current_page, 'bi bi-clipboard-check', 'Closure Report', 'closure_report.php'); ?>
+            <?php generateSidebarItem('report_closure_reports', $current_page, 'bi bi-clipboard-check', 'Closure Report', 'admin/report_closure_reports.php'); ?>
             <?php generateSidebarItem('support_tickets_admin', $current_page, 'bi bi-headset', 'Support Queries', 'admin/support_tickets.php'); ?>
 
         <?php else: ?>

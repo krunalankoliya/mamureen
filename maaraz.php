@@ -103,6 +103,26 @@
     $records = $res->fetch_all(MYSQLI_ASSOC);
     }
 
+    // Pre-fetch attachments for these records
+    $attachments = [];
+    if (!empty($records)) {
+        $record_ids = implode(',', array_map(fn($r) => (int)$r['id'], $records));
+        $fa_res = mysqli_query($mysqli, "SELECT * FROM `bqi_file_attachments` WHERE module = 'maaraz' AND record_id IN ($record_ids) ORDER BY id");
+        if ($fa_res) {
+            while ($fa = $fa_res->fetch_assoc()) {
+                $attachments[(int)$fa['record_id']][] = $fa;
+            }
+        }
+    }
+
+    $impact_labels = [
+        'strongly_positive' => 'Strongly Positive',
+        'positive'          => 'Positive',
+        'neutral'           => 'Neutral / Minimal',
+        'negative'          => 'Negative',
+        'strongly_negative' => 'Strongly Negative',
+    ];
+
 ?>
 
 <link rel="stylesheet" href="<?php echo MODULE_PATH ?>assets/css/maaraz_new.css?v=1.1">
@@ -369,46 +389,95 @@
         <?php if (! empty($records)): ?>
         <div style="background: #fff; border-radius: 20px; box-shadow: 0 4px 24px rgba(13,110,253,.08), 0 1px 4px rgba(0,0,0,.06); padding: 28px 32px; overflow: hidden;">
             <div style="font-size: 1.05rem; font-weight: 700; color: #1a1a2e; margin-bottom: 16px;">Submitted Reports (<?php echo count($records) ?>)</div>
-            <div style="overflow-x:auto">
-                <table style="width: 100%; border-collapse: collapse; font-size: .83rem;">
+            <div id="app-config" data-base-url="<?php echo htmlspecialchars(MODULE_PATH) ?>"></div>
+            <div class="table-responsive">
+                <table class="table table-striped" id="datatable_maraz">
                     <thead>
                         <tr>
-                            <th style="background: #f8f9fa; text-align: left; padding: 10px 14px; font-weight: 600; color: #6c757d; font-size: .72rem; text-transform: uppercase; letter-spacing: .04rem; border-bottom: 1.5px solid #e9ecef;">Dates</th>
-                            <th style="background: #f8f9fa; text-align: left; padding: 10px 14px; font-weight: 600; color: #6c757d; font-size: .72rem; text-transform: uppercase; letter-spacing: .04rem; border-bottom: 1.5px solid #e9ecef;">Scale</th>
-                            <th style="background: #f8f9fa; text-align: left; padding: 10px 14px; font-weight: 600; color: #6c757d; font-size: .72rem; text-transform: uppercase; letter-spacing: .04rem; border-bottom: 1.5px solid #e9ecef;">Prep Hrs</th>
-                            <th style="background: #f8f9fa; text-align: left; padding: 10px 14px; font-weight: 600; color: #6c757d; font-size: .72rem; text-transform: uppercase; letter-spacing: .04rem; border-bottom: 1.5px solid #e9ecef;">Avg Visit</th>
-                            <th style="background: #f8f9fa; text-align: left; padding: 10px 14px; font-weight: 600; color: #6c757d; font-size: .72rem; text-transform: uppercase; letter-spacing: .04rem; border-bottom: 1.5px solid #e9ecef;">Impact</th>
-                            <th style="background: #f8f9fa; text-align: left; padding: 10px 14px; font-weight: 600; color: #6c757d; font-size: .72rem; text-transform: uppercase; letter-spacing: .04rem; border-bottom: 1.5px solid #e9ecef;">Submitted By</th>
-                            <th style="background: #f8f9fa; text-align: left; padding: 10px 14px; font-weight: 600; color: #6c757d; font-size: .72rem; text-transform: uppercase; letter-spacing: .04rem; border-bottom: 1.5px solid #e9ecef;">Date</th>
+                            <th>#</th>
+                            <th>Jamaat</th>
+                            <th data-full="Q3 — Mumineen — Ma'raz ma kiwar si kiwar lag hazir thata? (Attendance dates &amp; duration per day)">Attendance Dates</th>
+                            <th data-full="Q1 — Ma'raz waaste je tawjehaat ane ideal models mokalwa ma aya — ye raah par kitni had lag Ma'raz organise karwu imkaan thayu?">Ideal Scale</th>
+                            <th data-full="Q2 — Ma'raz ni tayyari waste jumlatan kitno waqt sarf thayo?">Prep (hrs)</th>
+                            <th data-full="Q4 — Ma'raz ma awnaar shuru si akhir lag kitno waqt sarf karta? (on average)">Avg Visit (min)</th>
+                            <th data-full="Q8 — Mumineen nu feedback na asaas par — aa Ma'raz ye kai tarah impact kidu?">Impact</th>
+                            <th>Submitted By</th>
+                            <th style="display:none">Q5 — Tafheem</th>
+                            <th style="display:none">Q6 — Engagement Strategy</th>
+                            <th style="display:none">Q7 — Key Takeaways</th>
+                            <th style="display:none">Q10 — Additional Info</th>
+                            <th style="display:none">Duration/Day (mins)</th>
+                            <th style="display:none">ITS ID</th>
+                            <th style="display:none">Submitted On</th>
+                            <th>Files</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                    <?php
-                        $impact_map = [
-                            'strongly_positive' => ['Strongly +ve', 'badge-green'],
-                            'positive'          => ['Positive', 'badge-blue'],
-                            'neutral'           => ['Neutral', 'badge-gray'],
-                            'negative'          => ['Negative', 'badge-yellow'],
-                            'strongly_negative' => ['Strongly -ve', 'badge-red'],
+                    <?php foreach ($records as $i => $r):
+                        $impact_label = $impact_labels[$r['feedback_impact']] ?? ($r['feedback_impact'] ?? '—');
+
+                        $files_arr = [];
+                        foreach ($attachments[(int)$r['id']] ?? [] as $fa) {
+                            $files_arr[] = ['path' => $fa['file_path'], 'type' => $fa['file_type'], 'name' => $fa['file_name']];
+                        }
+                        $file_count = count($files_arr);
+
+                        $date_from  = !empty($r['attendance_from']) ? date('d-M-Y', strtotime($r['attendance_from'])) : '';
+                        $date_to    = !empty($r['attendance_to'])   ? date('d-M-Y', strtotime($r['attendance_to']))   : '';
+                        $date_range = $date_from . ($date_to ? ' – ' . $date_to : '');
+
+                        $fields_arr = [
+                            ['label' => 'Jamaat', 'value' => $r['jamaat'] ?? ''],
+                            ['label' => "Q1 — Ma'raz waaste je tawjehaat ane ideal models mokalwa ma aya — ye raah par kitni had lag Ma'raz organise karwu imkaan thayu?", 'value' => $r['ideal_model_scale'] . '%'],
+                            ['label' => "Q2 — Ma'raz ni tayyari waste jumlatan kitno waqt sarf thayo?",                                                                   'value' => $r['prep_hours'] . ' hrs'],
+                            ['label' => "Q3 — Mumineen — Ma'raz ma kiwar si kiwar lag hazir thata?",                                                                     'value' => $date_from . ' – ' . $date_to . ' | ' . $r['duration_per_day'] . ' mins/day'],
+                            ['label' => "Q4 — Ma'raz ma awnaar shuru si akhir lag kitno waqt sarf karta? (on average)",                                                  'value' => $r['avg_visitor_minutes'] . ' minutes'],
+                            ['label' => "Q5 — Ma'raz ma tafheem koiye kidi?",                                                                                            'value' => $r['tafheem_text'] ?? ''],
+                            ['label' => "Q6 — Awnaar engaged rahe ane faido hasil kare ye waste su strategy ya tools istemaal karwa ma aya?",                            'value' => $r['engagement_strategy'] ?? ''],
+                            ['label' => "Q7 — Ma'raz ma awnaar si Mumin ne kaya ehem takeaways mila?",                                                                   'value' => $r['key_takeaways'] ?? ''],
+                            ['label' => "Q8 — Mumineen nu feedback na asaas par — aa Ma'raz ye kai tarah impact kidu?",                                                  'value' => $impact_label],
+                            ['label' => "Q10 — Ma'raz mutalliq mazeed koi information share karwi hoi to yaha likhwu:",                                                  'value' => $r['additional_info'] ?? ''],
+                            ['label' => 'Submitted By',   'value' => ($r['submitted_by'] ?? '') . ' (' . $r['added_its'] . ')'],
+                            ['label' => 'Submitted On',   'value' => date('d-M-Y H:i', strtotime($r['added_ts']))],
                         ];
-                        foreach ($records as $r):
-                            $b = $impact_map[$r['feedback_impact']] ?? ['N/A', 'badge-gray'];
+
+                        $fields_json = htmlspecialchars(json_encode($fields_arr, JSON_UNESCAPED_UNICODE), ENT_QUOTES);
+                        $files_json  = htmlspecialchars(json_encode($files_arr, JSON_UNESCAPED_UNICODE), ENT_QUOTES);
                     ?>
                     <tr>
-                        <td style="padding: 10px 14px; border-bottom: 1px solid #f0f0f0; color: #1a1a2e; vertical-align: middle;">
-                            <strong><?php echo date('d M', strtotime($r['attendance_from'])) ?> – <?php echo date('d M Y', strtotime($r['attendance_to'])) ?></strong>
-                            <div style="font-size:.72rem;color:#6c757d"><?php echo $r['duration_per_day'] ?> min/day</div>
+                        <td><?php echo $i + 1 ?></td>
+                        <td><?php echo htmlspecialchars($r['jamaat'] ?? '') ?></td>
+                        <td><?php echo htmlspecialchars($date_range) ?></td>
+                        <td><?php echo $r['ideal_model_scale'] ?>%</td>
+                        <td><?php echo $r['prep_hours'] ?></td>
+                        <td><?php echo $r['avg_visitor_minutes'] ?></td>
+                        <td><?php echo htmlspecialchars($impact_label) ?></td>
+                        <td><?php echo htmlspecialchars($r['submitted_by'] ?? $r['added_its']) ?></td>
+                        <td style="display:none"><?php echo htmlspecialchars($r['tafheem_text'] ?? '') ?></td>
+                        <td style="display:none"><?php echo htmlspecialchars($r['engagement_strategy'] ?? '') ?></td>
+                        <td style="display:none"><?php echo htmlspecialchars($r['key_takeaways'] ?? '') ?></td>
+                        <td style="display:none"><?php echo htmlspecialchars($r['additional_info'] ?? '') ?></td>
+                        <td style="display:none"><?php echo htmlspecialchars($r['duration_per_day'] ?? '') ?></td>
+                        <td style="display:none"><?php echo htmlspecialchars($r['added_its'] ?? '') ?></td>
+                        <td style="display:none"><?php echo !empty($r['added_ts']) ? date('d-M-Y H:i', strtotime($r['added_ts'])) : '' ?></td>
+                        <td>
+                            <?php if ($file_count > 0): ?>
+                                <span class="badge bg-info"><?php echo $file_count ?> file<?php echo $file_count > 1 ? 's' : '' ?></span>
+                            <?php else: ?>
+                                <span class="text-muted">—</span>
+                            <?php endif; ?>
                         </td>
-                        <td style="padding: 10px 14px; border-bottom: 1px solid #f0f0f0; color: #1a1a2e; vertical-align: middle;"><span style="display: inline-block; padding: 3px 10px; border-radius: 50px; font-size: .72rem; font-weight: 600; background: #dbeafe; color: #1d4ed8;"><?php echo $r['ideal_model_scale'] ?>%</span></td>
-                        <td style="padding: 10px 14px; border-bottom: 1px solid #f0f0f0; color: #1a1a2e; vertical-align: middle;"><?php echo $r['prep_hours'] ?> hrs</td>
-                        <td style="padding: 10px 14px; border-bottom: 1px solid #f0f0f0; color: #1a1a2e; vertical-align: middle;"><?php echo $r['avg_visitor_minutes'] ?> min</td>
-                        <td style="padding: 10px 14px; border-bottom: 1px solid #f0f0f0; color: #1a1a2e; vertical-align: middle;">
-                            <span style="display: inline-block; padding: 3px 10px; border-radius: 50px; font-size: .72rem; font-weight: 600; background: <?php echo $b[1] === 'badge-green' ? '#d1fae5' : ($b[1] === 'badge-blue' ? '#dbeafe' : ($b[1] === 'badge-yellow' ? '#fef9c3' : ($b[1] === 'badge-red' ? '#fee2e2' : '#f3f4f6'))); ?>; color: <?php echo $b[1] === 'badge-green' ? '#065f46' : ($b[1] === 'badge-blue' ? '#1d4ed8' : ($b[1] === 'badge-yellow' ? '#854d0e' : ($b[1] === 'badge-red' ? '#991b1b' : '#374151'))); ?>;">
-                                <?php echo $b[0] ?>
-                            </span>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary view-btn"
+                                data-title="<?php echo htmlspecialchars($r['jamaat'] ?? "Ma'raz") ?>"
+                                data-fields="<?php echo $fields_json ?>"
+                                data-files="<?php echo $files_json ?>"
+                                data-record-id="<?php echo (int)$r['id'] ?>"
+                                data-module="maaraz">
+                                <i class="bi bi-eye"></i>
+                            </button>
                         </td>
-                        <td style="padding: 10px 14px; border-bottom: 1px solid #f0f0f0; color: #1a1a2e; vertical-align: middle;"><?php echo htmlspecialchars($r['submitted_by'] ?? 'N/A') ?></td>
-                        <td style="padding: 10px 14px; border-bottom: 1px solid #f0f0f0; color: #1a1a2e; vertical-align: middle;"><?php echo date('d M, Y', strtotime($r['added_ts'])) ?></td>
                     </tr>
                     <?php endforeach; ?>
                     </tbody>
@@ -421,8 +490,29 @@
 
 </main>
 
+<!-- View Modal -->
+<div class="modal fade" id="viewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="viewModalLabel">Record Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-fields"></div>
+                <div id="modal-files"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?php
     require_once __DIR__ . '/inc/footer.php';
     require_once __DIR__ . '/inc/js-block.php';
 ?>
 <script src="<?php echo MODULE_PATH ?>assets/js/maaraz_new.js?v=2"></script>
+<script src="<?php echo MODULE_PATH ?>assets/js/admin_reports.js"></script>
+<script src="<?php echo MODULE_PATH ?>assets/js/report_maraz.js"></script>

@@ -107,7 +107,7 @@
             ?>
             <div class="card section-card mb-3">
                 <div class="card-body">
-                    <h6 class="card-title" dir="auto"><?php echo htmlspecialchars($section['title']); ?></h6>
+                    <h6 class="card-title" dir="rtl"><?php echo htmlspecialchars($section['title']); ?></h6>
                     <?php foreach ($section['keys'] as $qKey):
                                     $q   = isset($questionsMap[$qKey]) ? $questionsMap[$qKey] : null;
                                     $ans = isset($row[$qKey]) ? $row[$qKey] : null;
@@ -117,11 +117,11 @@
 
                         ?>
                         <div class="mb-3">
-                            <p class="fw-semibold mb-1 text-dark" dir="auto">
+                            <p class="fw-semibold mb-1 text-dark" dir="rtl">
                                 <?php echo htmlspecialchars($q['question_text']); ?>
                             </p>
                             <?php if ($q['question_type'] === 'rating'): ?>
-                                <div class="d-flex align-items-center justify-content-end gap-2">
+                                <div class="d-flex align-items-center gap-2">
                                     <div class="progress" style="width:200px;height:18px;">
                                         <div class="progress-bar bg-warning"
                                              style="width:<?php echo (int) $ans * 10; ?>%"></div>
@@ -129,7 +129,7 @@
                                     <span class="badge bg-warning text-dark fs-6"><?php echo (int) $ans; ?>/10</span>
                                 </div>
                             <?php else: ?>
-                                <p class="mb-0" dir="auto"><?php echo nl2br(htmlspecialchars($ans)); ?></p>
+                                <p class="mb-0" dir="rtl"><?php echo nl2br(htmlspecialchars($ans)); ?></p>
                             <?php endif; ?>
                         </div>
                     <?php endforeach; ?>
@@ -155,7 +155,7 @@
             $userName = isset($row['fullname']) ? $row['fullname'] : '';
         ?>
     <!DOCTYPE html>
-    <html lang="en">
+    <html lang="ar" dir="rtl">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -213,7 +213,7 @@
             $allRows = ($allResult) ? $allResult->fetch_all(MYSQLI_ASSOC) : [];
         ?>
     <!DOCTYPE html>
-    <html lang="en">
+    <html lang="ar" dir="rtl">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">

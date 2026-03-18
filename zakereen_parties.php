@@ -38,9 +38,9 @@
 
     // Fetch parties (mauze-wide)
     $mauze_its_subquery = "(SELECT `its_id` FROM `users_mamureen` WHERE `miqaat_mauze` = '$mauze')";
-    $query   = "SELECT p.*, um.fullname AS submitted_by FROM `bqi_zakereen_parties` p LEFT JOIN `users_mamureen` um ON um.its_id = p.added_its WHERE p.added_its IN $mauze_its_subquery ORDER BY p.added_ts DESC";
-    $result  = mysqli_query($mysqli, $query);
-    $parties = $result->fetch_all(MYSQLI_ASSOC);
+    $query              = "SELECT p.*, um.fullname AS submitted_by FROM `bqi_zakereen_parties` p LEFT JOIN `users_mamureen` um ON um.its_id = p.added_its WHERE p.added_its IN $mauze_its_subquery ORDER BY p.added_ts DESC";
+    $result             = mysqli_query($mysqli, $query);
+    $parties            = $result->fetch_all(MYSQLI_ASSOC);
 ?>
 
 <main id="main" class="main bqi-1447">
@@ -94,9 +94,9 @@
                                             <td><?php echo htmlspecialchars($party['party_name']) ?></td>
                                             <td>
                                                 <?php if ($party['is_active'] == 1): ?>
-                                                    <span class="badge bg-success">Active</span>
+                                                    Active
                                                 <?php else: ?>
-                                                    <span class="badge bg-secondary">Inactive</span>
+                                                    Inactive
                                                 <?php endif; ?>
                                             </td>
                                             <td><?php echo htmlspecialchars($party['submitted_by'] ?? $party['added_its']) ?></td>
