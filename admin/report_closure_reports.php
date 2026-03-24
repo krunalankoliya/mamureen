@@ -3,7 +3,7 @@
 
     mysqli_report(MYSQLI_REPORT_OFF);
 
-    if (! $is_admin) {
+    if (! $is_admin && ! $is_sub_admin) {
     header('Location: ' . MODULE_PATH . 'admin/bqi_dashboard.php');
     exit();
     }

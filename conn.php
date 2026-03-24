@@ -30,7 +30,7 @@ define('COOKIE_SECRET',        'adfefdddb86e4d5d2347e0dd5b560f0df37b2392ae19a05d
 define('COOKIE_SECRET_LEGACY', 'tlbilm@112345678+515253');
 
 function user_photo_url($its_id) {
-    return MODULE_PATH . 'img.php?id=' . (int) $its_id;
+    return 'https://www.talabulilm.com/mumin_images/' . (int) $its_id . '.png';
 }
 
 define('USER_LOGGED_IN', 'user_logged_in');

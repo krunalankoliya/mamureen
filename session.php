@@ -6,10 +6,10 @@
     // if user is not logged in then check cookie, if found then log him in
     if (! isset($_SESSION[USER_LOGGED_IN])) {
     if (isset($_COOKIE[USER_ITS])) {
-        $cookieUserId  = $_COOKIE[USER_ITS];
-        $verNew        = $_COOKIE['ver256'] ?? '';
-        $verLegacy     = $_COOKIE['ver']    ?? '';
-        $cookieValid   = false;
+        $cookieUserId = $_COOKIE[USER_ITS];
+        $verNew       = $_COOKIE['ver256'] ?? '';
+        $verLegacy    = $_COOKIE['ver'] ?? '';
+        $cookieValid  = false;
 
         // SHA-256 via ver256 cookie (new)
         if ($verNew !== '' && COOKIE_SECRET !== '') {
@@ -20,7 +20,7 @@
         }
 
         // MD5 via ver cookie (legacy — remove once all modules migrate)
-        if (!$cookieValid && $verLegacy !== '' && COOKIE_SECRET_LEGACY !== '') {
+        if (! $cookieValid && $verLegacy !== '' && COOKIE_SECRET_LEGACY !== '') {
             $expectedMd5 = md5($cookieUserId . COOKIE_SECRET_LEGACY);
             if (hash_equals($expectedMd5, $verLegacy)) {
                 $cookieValid = true;
@@ -53,10 +53,10 @@
     // Sub admin check (graceful — table may not exist yet)
     $sub_admin_its = [];
     $is_sub_admin  = false;
-    $saResult = @mysqli_query($mysqli, "SELECT its_id FROM users_sub_admin");
+    $saResult      = @mysqli_query($mysqli, "SELECT its_id FROM users_sub_admin");
     if ($saResult) {
     $sub_admin_its = array_column($saResult->fetch_all(MYSQLI_ASSOC), 'its_id');
-    $is_sub_admin  = in_array((string)$user_its, $sub_admin_its);
+    $is_sub_admin  = in_array((string) $user_its, $sub_admin_its);
     }
 
     if (in_array($user_its, $admin_its)) {
@@ -79,9 +79,65 @@ LIMIT 1;";
 
     if (empty($row)) {
         ?>
-    <h1>Sorry ITS ID (<?php echo $user_its?>) is not valid for this module.</h1>
+    <h1>Sorry ITS ID (<?php echo $user_its ?>) is not valid for this module.</h1>
     <h1>Click here to login with your ITS <a href="https://www.its52.com/Login.aspx?OneLogin=MHB&tlbre=aHR0cHM6Ly93d3cudGFsYWJ1bGlsbS5jb20vbWFtdXJlZW4v">LOG IN</a></h1>
   <?php
       exit();
+          }
       }
-  }
+
+      // Block regular users — only admin and sub-admin are allowed
+      if (! $is_admin && ! $is_sub_admin) {
+      ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Access Denied</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f8f9fa;
+        }
+        .access-denied-box {
+            text-align: center;
+            background: #fff;
+            border-radius: 10px;
+            padding: 50px 40px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            max-width: 480px;
+            width: 90%;
+        }
+        .access-denied-box .icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+        .access-denied-box h2 {
+            color: #dc3545;
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+        .access-denied-box p {
+            color: #6c757d;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="access-denied-box">
+        <div class="icon">&#128274;</div>
+        <h2>Access Denied</h2>
+        <p>You are not authorized to access this page.</p>
+    </div>
+</body>
+</html>
+        <?php
+        exit();
+        }
